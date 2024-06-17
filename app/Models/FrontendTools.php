@@ -7,7 +7,5 @@ use Illuminate\Database\Eloquent\Model;
 
 class FrontendTools extends Model
 {
-    use HasFactory;
-
     protected $table = 'frontend_tools';
 }

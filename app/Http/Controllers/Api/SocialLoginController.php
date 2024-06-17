@@ -73,7 +73,7 @@ class SocialLoginController extends Controller
         if($request->google_id == 'undefined' || $request->google_token == 'undefined' || $request->google_id == '' || $request->google_token == '' || $request->google_id == null || $request->google_token == null) {
             return response()->json([
                 'status' => false,
-                'message' => 'Invalid token',
+                'message' => __('Invalid token'),
             ], 412);
         }
 
@@ -83,7 +83,7 @@ class SocialLoginController extends Controller
             Log::info("Sign in with Google - Invalid token - User not found");
             return response()->json([
                 'status' => false,
-                'message' => 'Invalid token - User not found',
+                'message' => __('Invalid token - User not found'),
             ], 412);
             
         }
@@ -130,7 +130,7 @@ class SocialLoginController extends Controller
             Log::info("Sign in with Google - Invalid passport token");
             return response()->json([
                 'status' => false,
-                'message' => 'Invalid passport token',
+                'message' => __('Invalid passport token'),
             ], 412);
         }
 
@@ -192,17 +192,25 @@ class SocialLoginController extends Controller
         if($request->apple_id == 'undefined' || $request->apple_token == 'undefined' || $request->apple_id == '' || $request->apple_token == '' || $request->apple_id == null || $request->apple_token == null) {
             return response()->json([
                 'status' => false,
-                'message' => 'Invalid token',
+                'message' => __('Invalid token'),
             ], 412);
         }
 
-        $appleUser = Socialite::driver('apple')->userFromToken($request->apple_token);
-
-        if(!$appleUser) {
-            Log::info("Sign in with Apple - Invalid token - User not found");
+        try{
+           $appleUser = Socialite::driver('apple')->userFromToken($request->apple_id); 
+        } catch (\Exception $e) {
+            Log::error("Sign in with Apple : ".$e->getMessage());
             return response()->json([
                 'status' => false,
-                'message' => 'Invalid token - User not found',
+                'message' => __('Invalid token - User not found'),
+            ], 500);
+        }
+
+        if(!$appleUser) {
+            Log::warning("Sign in with Apple - Invalid token - User not found");
+            return response()->json([
+                'status' => false,
+                'message' => __('Invalid token - User not found'),
             ], 412);
             
         }
@@ -218,7 +226,7 @@ class SocialLoginController extends Controller
             $user = User::where('email', $appleUser->getEmail())->first();
             $user->apple_token = $appleUser->token;
             $user->apple_refresh_token = $appleUser->refreshToken;
-            $user->avatar = $appleUser->getAvatar();
+            $user->avatar = $appleUser->getAvatar() ?? ($user->avatar ?? 'assets/img/auth/default-avatar.png');
             $user->affiliate_code = $user->affiliate_code ?? Str::upper(Str::random(12));
             $user->save();
         } else {
@@ -230,7 +238,7 @@ class SocialLoginController extends Controller
                 'email' => $appleUser->getEmail(),
                 'apple_token' => $appleUser->token,
                 'apple_refresh_token' => $appleUser->refreshToken,
-                'avatar' => $appleUser->getAvatar(),
+                'avatar' => $appleUser->getAvatar() ?? 'assets/img/auth/default-avatar.png',
                 'remaining_words' => explode(',', $settings->free_plan)[0],
                 'remaining_images' => explode(',', $settings->free_plan)[1] ?? 0,
                 'password' => Hash::make(Str::random(12)),
@@ -249,7 +257,7 @@ class SocialLoginController extends Controller
             Log::info("Sign in with Apple - Invalid passport token");
             return response()->json([
                 'status' => false,
-                'message' => 'Invalid passport token',
+                'message' => __('Invalid passport token'),
             ], 412);
         }
 

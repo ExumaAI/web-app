@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Model;
 class Gateways extends Model
 {
     use HasFactory;
+
     protected $table = 'gateways';
 
+    protected $guarded = [];
 }

@@ -21,6 +21,7 @@ use Illuminate\Support\Facades\Route;
 | destroy   DELETE
 |
 */
+
 Route::prefix('auth')->group(function () {
     Route::post('register',                 'App\Http\Controllers\Api\AuthController@register');
     Route::post('forgot-password',          'App\Http\Controllers\Api\AuthController@sendPasswordResetMail');
@@ -44,6 +45,7 @@ Route::middleware('auth:api')->group(function () {
         Route::prefix('profile')->group(function () { 
             Route::get('/',                 'App\Http\Controllers\Api\UserController@index');
             Route::patch('/',               'App\Http\Controllers\Api\UserController@update');
+            Route::delete('/',               'App\Http\Controllers\Api\UserController@destroy');
         });
     });
     Route::prefix('app')->group(function () { 
@@ -143,4 +145,3 @@ Route::middleware('auth:api')->group(function () {
         Route::get("/openai-filters", "App\Http\Controllers\Api\DocumentsApiController@getOpenAIFilters");
     });
 });
-

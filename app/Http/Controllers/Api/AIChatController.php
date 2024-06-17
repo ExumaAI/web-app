@@ -3,27 +3,25 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use App\Models\User;
-use App\Models\OpenaiGeneratorChatCategory;
-use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Str;
 use App\Models\OpenAIGenerator;
-use App\Models\UserOpenai;
+use App\Models\OpenaiGeneratorChatCategory;
+use App\Models\PaymentPlans;
 use App\Models\Setting;
 use App\Models\SettingTwo;
-use App\Models\PaymentPlans;
+use App\Models\User;
+use App\Models\UserOpenai;
 use App\Models\UserOpenaiChat;
 use App\Models\UserOpenaiChatMessage;
-use OpenAI\Laravel\Facades\OpenAI;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
-
+use Illuminate\Support\Str;
+use OpenAI\Laravel\Facades\OpenAI;
 
 class AIChatController extends Controller
 {
-
     protected $settings;
+
     protected $settings_two;
 
     public function __construct()
@@ -32,14 +30,17 @@ class AIChatController extends Controller
         $this->settings = Setting::first();
         $this->settings_two = SettingTwo::first();
         // Fetch the Site Settings object with openai_api_secret
-        $apiKeys = explode(',', $this->settings->openai_api_secret);
+        if ($this->settings?->user_api_option) {
+            $apiKeys = explode(',', auth()->user()?->api_keys);
+        } else {
+            $apiKeys = explode(',', $this->settings?->openai_api_secret);
+        }
         $apiKey = $apiKeys[array_rand($apiKeys)];
         config(['openai.api_key' => $apiKey]);
         set_time_limit(120);
     }
 
-
-    # Conversations under (/history) -----------------------------------------------------
+    // Conversations under (/history) -----------------------------------------------------
 
     /**
      *  get chatbot conversations by template category slug.
@@ -50,33 +51,39 @@ class AIChatController extends Controller
      *      tags={"AI Chats (Convesations)"},
      *      security={{ "passport": {} }},
      *      summary="Get chatbot conversations",
+     *
      *      @OA\Parameter(
      *          name="cat_slug",
      *          in="path",
      *          description="cat_slug of the OpenAI chat category",
      *          required=true,
+     *
      *          @OA\Schema(type="string", example="ai-chat-bot"),
      *      ),
+     *
      *      @OA\Response(
      *          response=200,
      *          description="Successful operation",
+     *
      *          @OA\JsonContent(
      *              type="object",
+     *
      *              @OA\Property(property="category", type="object"),
      *              @OA\Property(property="conversations", type="array", @OA\Items(type="object")),
      *          ),
      *      ),
+     *
      *      @OA\Response(
      *          response=404,
      *          description="Category not found",
      *      ),
      * )
-    */
+     */
     public function openAIChat(Request $request, $cat_slug)
     {
         $category = OpenaiGeneratorChatCategory::whereSlug($cat_slug)->firstOrFail();
 
-        $conversations = UserOpenaiChat::where('user_id', $request->user()->id) 
+        $conversations = UserOpenaiChat::where('user_id', $request->user()->id)
             ->where('openai_chat_category_id', $category->id)
             ->orderBy('updated_at', 'desc')
             ->get();
@@ -96,20 +103,23 @@ class AIChatController extends Controller
      *      tags={"AI Chats (Convesations)"},
      *      security={{ "passport": {} }},
      *      summary="Get recent chatbot conversations",
+     *
      *      @OA\Response(
      *          response=200,
      *          description="Successful operation",
+     *
      *          @OA\JsonContent(
      *              type="object",
+     *
      *              @OA\Property(property="conversations", type="array", @OA\Items(type="object")),
      *          ),
      *      ),
      * )
-    */
+     */
     public function recentChats(Request $request)
     {
 
-        $conversations = UserOpenaiChat::where('user_id', $request->user()->id) 
+        $conversations = UserOpenaiChat::where('user_id', $request->user()->id)
             ->orderBy('updated_at', 'desc')
             ->take(20)
             ->get();
@@ -126,26 +136,31 @@ class AIChatController extends Controller
      *      tags={"AI Chats (Convesations)"},
      *      security={{ "passport": {} }},
      *      summary="Search all chatbot conversations and return last 20",
+     *
      *      @OA\Response(
      *          response=200,
      *          description="Successful operation",
+     *
      *          @OA\JsonContent(
      *              type="object",
+     *
      *              @OA\Property(property="conversations", type="array", @OA\Items(type="object")),
      *          ),
      *      ),
      * )
-    */
+     */
     public function searchRecentChats(Request $request)
     {
         $word = $request->input('word');
 
-        if($word == null) return response()->json(['error' => 'Word missing.'], 412);
+        if ($word == null) {
+            return response()->json(['error' => __('Word missing.')], 412);
+        }
 
         $conversations = UserOpenaiChat::where([
-            ['user_id','=', $request->user()->id],
-            ['title', 'like', '%'.$word.'%']
-            ]) 
+            ['user_id', '=', $request->user()->id],
+            ['title', 'like', '%'.$word.'%'],
+        ])
             ->orderBy('updated_at', 'desc')
             ->take(20)
             ->get();
@@ -153,11 +168,9 @@ class AIChatController extends Controller
         return response()->json($conversations, 200);
     }
 
-
-
-  /**
+    /**
      * Create new chat conversation
-     * 
+     *
      * @OA\Post(
      *      path="/api/aichat/new-chat",
      *      operationId="startNewChat",
@@ -165,13 +178,17 @@ class AIChatController extends Controller
      *      summary="Create new chat conversation",
      *      description="Create new chat conversation",
      *      security={{ "passport": {} }},
+     *
      *      @OA\RequestBody(
      *         required=true,
      *         description="Request chat template data",
+     *
      *         @OA\MediaType(
      *             mediaType="multipart/form-data",
+     *
      *             @OA\Schema(
      *                 type="object",
+     *
      *                  @OA\Property(
      *                     property="category_id",
      *                     description="Category (Template) ID",
@@ -180,13 +197,16 @@ class AIChatController extends Controller
      *             ),
      *         ),
      *      ),
+     *
      *      @OA\Response(
      *          response=200,
      *          description="Successful operation",
+     *
      *          @OA\JsonContent(
      *              type="object",
      *          ),
      *      ),
+     *
      *      @OA\Response(
      *          response=401,
      *          description="Unauthenticated",
@@ -196,16 +216,18 @@ class AIChatController extends Controller
      *          description="Precondition Failed",
      *      ),
      * )
-    */
+     */
     public function startNewChat(Request $request)
     {
-        if($request->category_id == null) return response()->json(['error' => 'Category ID missing.'], 412);
+        if ($request->category_id == null) {
+            return response()->json(['error' => __('Category ID missing.')], 412);
+        }
 
         $category = OpenaiGeneratorChatCategory::where('id', $request->category_id)->firstOrFail();
         $chat = new UserOpenaiChat();
         $chat->user_id = Auth::id();
         $chat->openai_chat_category_id = $category->id;
-        $chat->title = $category->name . ' Chat';
+        $chat->title = $category->name.' Chat';
         $chat->total_credits = 0;
         $chat->total_words = 0;
         $chat->save();
@@ -215,9 +237,9 @@ class AIChatController extends Controller
         $message->user_id = Auth::id();
         $message->response = 'First Initiation';
         if ($category->role == 'default') {
-            $output =  __('Hi! I am') . ' ' . $category->name . __(', and I\'m here to answer all your questions');
+            $output = __('Hi! I am').' '.$category->name.__(', and I\'m here to answer all your questions');
         } else {
-            $output =  __('Hi! I am') . ' ' . $category->human_name . __(', and I\'m') . ' ' . $category->role . '. ' . $category->helps_with;
+            $output = __('Hi! I am').' '.$category->human_name.__(', and I\'m').' '.$category->role.'. '.$category->helps_with;
         }
         $message->output = $output;
         $message->hash = Str::random(256);
@@ -225,10 +247,8 @@ class AIChatController extends Controller
         $message->words = 0;
         $message->save();
 
- 
         return response()->json($chat, 200);
     }
-
 
     /**
      * Delete a user's OpenAI conversation.
@@ -240,13 +260,17 @@ class AIChatController extends Controller
      *      security={{ "passport": {} }},
      *      summary="Delete a conversation",
      *      description="Delete a conversation and all its messages",
+     *
      *      @OA\RequestBody(
      *          required=true,
      *          description="Conversation ID to delete",
+     *
      *          @OA\JsonContent(
+     *
      *              @OA\Property(property="conver_id", type="string", example="109"),
      *          ),
      *      ),
+     *
      *      @OA\Response(
      *          response=204,
      *          description="Successful operation",
@@ -268,25 +292,29 @@ class AIChatController extends Controller
      *          description="Precondition Failed",
      *      ),
      * )
-    */
+     */
     public function deleteChat(Request $request)
     {
-        if($request->conver_id == null)  return response()->json(['error' => "ID required"], 412);
+        if ($request->conver_id == null) {
+            return response()->json(['error' => __('ID required')], 412);
+        }
 
         $chat = UserOpenaiChat::where('id', $request->conver_id)->first();
 
         if ($chat) {
-            if($request->user()->id != $chat->user_id) {
+            if ($request->user()->id != $chat->user_id) {
                 // user does not own this conversation
-                return response()->json(['error' => "User does not own this conversation"], 403);
+                return response()->json(['error' => __('User does not own this conversation')], 403);
             }
             // Messages of the conversation are deleted by cascade property. So we delete directly.
             $chat->delete();
+
             return response()->json(['message' => 'Delete successful'], 200);
         } else {
-            return response()->json(['error' => 'Chat not found'], 404);
+            return response()->json(['error' => __('Chat not found')], 404);
         }
     }
+
     /**
      * Rename a user's OpenAI conversation.
      *
@@ -296,14 +324,18 @@ class AIChatController extends Controller
      *      tags={"AI Chats (Convesations)"},
      *      summary="Rename a conversation",
      *      security={{ "passport": {} }},
+     *
      *      @OA\RequestBody(
      *          required=true,
      *          description="Chat ID and new title",
+     *
      *          @OA\JsonContent(
+     *
      *              @OA\Property(property="conver_id", type="string", example="109"),
      *              @OA\Property(property="title", type="string", example="New Chat Title"),
      *          ),
      *      ),
+     *
      *      @OA\Response(
      *          response=200,
      *          description="Successful operation",
@@ -325,26 +357,31 @@ class AIChatController extends Controller
      *          description="Precondition Failed",
      *      ),
      * )
-    */
+     */
     public function renameChat(Request $request)
     {
 
-        if($request->conver_id == null)  return response()->json(['error' => "ID required"], 412);
-        if($request->title == null)  return response()->json(['error' => "Title required"], 412);
+        if ($request->conver_id == null) {
+            return response()->json(['error' => __('ID required')], 412);
+        }
+        if ($request->title == null) {
+            return response()->json(['error' => __('Title required')], 412);
+        }
 
         $chat = UserOpenaiChat::where('id', $request->conver_id)->first();
 
         if ($chat) {
-            if($request->user()->id != $chat->user_id) {
+            if ($request->user()->id != $chat->user_id) {
                 // user does not own this conversation
-                return response()->json(['error' => "User does not own this conversation"], 403);
+                return response()->json(['error' => __('User does not own this conversation')], 403);
             }
 
             $chat->title = $request->title;
             $chat->save();
+
             return response()->json(['message' => 'Rename successful'], 200);
         } else {
-            return response()->json(['error' => 'Chat not found'], 404);
+            return response()->json(['error' => __('Chat not found')], 404);
         }
     }
 
@@ -357,24 +394,30 @@ class AIChatController extends Controller
      *      tags={"AI Chats (Convesations)"},
      *      summary="Search for chats in template category",
      *      security={{ "passport": {} }},
+     *
      *      @OA\RequestBody(
      *          required=true,
      *          description="Category ID and search word",
+     *
      *          @OA\JsonContent(
+     *
      *              @OA\Property(property="category_id", type="integer", example=1),
      *              @OA\Property(property="search_word", type="string", example="keyword"),
      *          ),
      *      ),
+     *
      *      @OA\Response(
      *          response=200,
      *          description="Successful operation",
+     *
      *          @OA\JsonContent(
      *              type="object",
+     *
      *              @OA\Property(property="html", type="string"),
      *          ),
      *      ),
      * )
-    */
+     */
     public function searchChatHistory(Request $request)
     {
         $categoryId = $request->input('category_id');
@@ -385,12 +428,11 @@ class AIChatController extends Controller
             ->orderBy('updated_at', 'desc')
             ->where('title', 'like', '%'.$search.'%')
             ->get();
-        
+
         return response()->json($list, 200);
     }
 
-
-    # streamming under (/chat) -----------------------------------------------------
+    // streamming under (/chat) -----------------------------------------------------
     /**
      * @OA\Post(
      *     path="/api/aichat/chat/chat-send",
@@ -398,79 +440,101 @@ class AIChatController extends Controller
      *     tags={"AI Chats (Convesations)"},
      *     operationId="chatOutputPost",
      *     security={{ "passport": {} }},
+     *
      *     @OA\RequestBody(
      *         required=true,
      *         description="Request body for chat output",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="conver_id", type="integer", example="31"),
      *             @OA\Property(property="prompt", type="string", example="Your chat prompt goes here"),
      *             @OA\Property(property="category_id", type="integer", example="1"),
      *         ),
      *     ),
+     *
      *     @OA\Response(
      *         response=200,
      *         description="Successful response",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="conver_id", type="integer", example="1"),
      *             @OA\Property(property="message_id", type="integer", example="123"),
      *         ),
      *     ),
+     *
      *     @OA\Response(
      *         response=419,
      *         description="No credits left",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="errors", type="array", @OA\Items(type="string"), example={"You have no credits left. Please consider upgrading your plan."}),
      *         ),
      *     ),
+     *
      *     @OA\Response(
      *         response=500,
      *         description="Error from API call",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="error", type="string", example="Error from API call. Please try again. If error persists again, please contact the system administrator."),
      *         ),
      *     ),
      * )
-     * 
+     *
      * @OA\Get(
      *     path="/api/aichat/chat/chat-send",
      *     summary="Retrieve chat details",
      *     operationId="chatOutputGet",
      *     tags={"AI Chats (Convesations)"},
      *     security={{ "passport": {} }},
+     *
      *     @OA\Parameter(
      *         name="conver_id",
      *         in="query",
      *         description="ID of the chat",
      *         required=true,
+     *
      *         @OA\Schema(type="integer")
      *     ),
+     *
      *     @OA\Parameter(
      *         name="message_id",
      *         in="query",
      *         description="ID of the message",
      *         required=true,
+     *
      *         @OA\Schema(type="integer")
      *     ),
+     *
      *     @OA\Response(
      *         response=200,
      *         description="Successful response",
+     *
      *         @OA\MediaType(
      *             mediaType="text/event-stream",
+     *
      *             @OA\Schema(
      *                 type="string",
      *                 example="data: This is a streamed response\n\n",
      *             ),
      *         ),
      *     ),
+     *
      *     @OA\Response(
      *         response=404,
      *         description="Chat or message not found",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="error", type="string", example="Chat or message not found"),
      *         ),
      *     ),
      * )
-    */
+     */
     public function chatOutput(Request $request)
     {
         if ($request->isMethod('get')) {
@@ -479,7 +543,7 @@ class AIChatController extends Controller
             // return response()->json($user);
 
             $userId = $user->id;
-            $subscribed = getCurrentActiveSubscription($userId); 
+            $subscribed = getCurrentActiveSubscription($userId);
             if ($subscribed != null) {
                 $subscription = PaymentPlans::where('id', $subscribed->name)->first();
                 if ($subscription != null) {
@@ -490,10 +554,8 @@ class AIChatController extends Controller
             } else {
                 $chat_bot = 'gpt-3.5-turbo';
             }
+			$chat_bot == null ? 'gpt-3.5-turbo': $chat_bot;      
 
-            if ($chat_bot != 'gpt-3.5-turbo' or $chat_bot != 'gpt-4') {
-                $chat_bot = 'gpt-3.5-turbo';
-            }
 
             $conver_id = $request->conver_id;
             $message_id = $request->message_id;
@@ -501,104 +563,97 @@ class AIChatController extends Controller
 
             $message = UserOpenaiChatMessage::whereId($message_id)->first();
             $prompt = $message->input;
-            $chat = UserOpenaiChat::whereId($conver_id)->first(); #conversations
+            $chat = UserOpenaiChat::whereId($conver_id)->first(); //conversations
 
             //$lastThreeMessageQuery = $chat->messages()->whereNot('input', null)->orderBy('created_at', 'desc')->take(4);
             // $lastThreeMessage = $lastThreeMessageQuery->get()->reverse();
 
             $lastThreeMessageQuery = $chat->messages()
-            ->whereNotNull('input')
-            ->orderBy('created_at', 'desc')
-            ->take(4)
-            ->get()
-            ->reverse();
+                ->whereNotNull('input')
+                ->orderBy('created_at', 'desc')
+                ->take(4)
+                ->get()
+                ->reverse();
             $i = 0;
 
             $category = OpenaiGeneratorChatCategory::where('id', $chat->openai_chat_category_id)->first();
-            $chat_completions = str_replace(array("\r", "\n"), '', $category->chat_completions) ?? null;
+            $chat_completions = str_replace(["\r", "\n"], '', $category->chat_completions) ?? null;
 
             if ($chat_completions) {
 
                 $chat_completions = json_decode($chat_completions, true);
 
                 foreach ($chat_completions as $item) {
-                    $history[] = array(
-                        "role" => $item["role"],
-                        "content" => $item["content"]
-                    );
+                    $history[] = [
+                        'role' => $item['role'],
+                        'content' => $item['content'],
+                    ];
                 }
             } else {
-                $history[] = ["role" => "system", "content" => "You are a helpful assistant."];
+                $history[] = ['role' => 'system', 'content' => 'You are a helpful assistant.'];
             }
 
             if ($category->prompt_prefix != null) {
                 $prompt = "You will now play a character and respond as that character (You will never break character). Your name is $category->human_name.
-                I want you to act as a $category->role." . $category->prompt_prefix;
+                I want you to act as a $category->role.".$category->prompt_prefix;
 
-                $history[] = array(
-                    "role" => "system",
-                    "content" => $prompt 
-                );
-            } 
+                $history[] = [
+                    'role' => 'system',
+                    'content' => $prompt,
+                ];
+            }
 
             if (count($lastThreeMessageQuery) > 1) {
                 foreach ($lastThreeMessageQuery as $threeMessage) {
-                    $history[] = ["role" => "user", "content" => $threeMessage->input];
+                    $history[] = ['role' => 'user', 'content' => $threeMessage->input];
                     if ($threeMessage->response != null) {
-                        $history[] = ["role" => "assistant", "content" => $threeMessage->response];
+                        $history[] = ['role' => 'assistant', 'content' => $threeMessage->response];
                     }
                 }
             } else {
-                $history[] = ["role" => "user", "content" => $prompt];
+                $history[] = ['role' => 'user', 'content' => $prompt];
             }
 
-            return response()->stream(function () use ($prompt, $conver_id,  $message_id, $history, $chat_bot, $user) {
+            return response()->stream(function () use ($conver_id, $message_id, $history, $chat_bot, $user) {
 
                 try {
                     $stream = OpenAI::chat()->createStreamed([
                         'model' => $chat_bot,
                         'messages' => $history,
-                        "presence_penalty" => 0.6,
-                        "frequency_penalty" => 0,
+                        'presence_penalty' => 0.6,
+                        'frequency_penalty' => 0,
                     ]);
                 } catch (\Exception $exception) {
                     Log::info($exception);
-                    $messageError = 'Error from API call. Please try again. If error persists again please contact system administrator with this message ' . $exception->getMessage();
+                    $messageError = 'Error from API call. Please try again. If error persists again please contact system administrator with this message '.$exception->getMessage();
                     echo "data: $messageError";
                     echo "\n\n";
-                    ob_flush();
+                    //ob_flush();
                     flush();
                     echo 'data: [DONE]';
                     echo "\n\n";
-                    ob_flush();
+                    //ob_flush();
                     flush();
                     usleep(50000);
                 }
 
-
-
                 $total_used_tokens = 0;
-                $output = "";
-                $responsedText = "";
+                $output = '';
+                $responsedText = '';
 
                 foreach ($stream as $response) {
                     if (isset($response['choices'][0]['delta']['content'])) {
-
                         $message = $response['choices'][0]['delta']['content'];
-                        $messageFix = str_replace(["\r\n", "\r", "\n"], "<br/>", $message);
+                        $messageFix = str_replace(["\r\n", "\r", "\n"], '<br/>', $message);
                         $output .= $messageFix;
                         $responsedText .= $message;
                         $total_used_tokens += countWords($message);
-                        $string_length = Str::length($messageFix);
-                        $needChars = 6000 - $string_length;
-                        $random_text = Str::random($needChars);
 
                         echo PHP_EOL;
-                        // echo 'data: ' . $messageFix . '/**' . $random_text . "\n\n";
                         echo $messageFix;
-                        ob_flush();
+                        //ob_flush();
                         flush();
-                        usleep(5000);
+                        usleep(50000); //5000
                     }
                     if (connection_aborted()) {
                         break;
@@ -626,7 +681,7 @@ class AIChatController extends Controller
                 $chat->save();
                 echo 'data: [DONE]';
                 echo "\n\n";
-                ob_flush();
+                //ob_flush();
                 flush();
                 usleep(50000);
             }, 200, [
@@ -636,15 +691,16 @@ class AIChatController extends Controller
             ]);
         } else { // method POST
 
-            $chat = UserOpenaiChat::where('id', $request->conver_id)->first(); # conversation
+            $chat = UserOpenaiChat::where('id', $request->conver_id)->first(); // conversation
             $category = OpenaiGeneratorChatCategory::where('id', $request->category_id)->first();
 
             $user = Auth::user();
             if ($user->remaining_words != -1) {
                 if ($user->remaining_words <= 0) {
-                    $data = array(
+                    $data = [
                         'errors' => ['You have no credits left. Please consider upgrading your plan.'],
-                    );
+                    ];
+
                     return response()->json($data, 419);
                 }
             }
@@ -652,10 +708,8 @@ class AIChatController extends Controller
             //     $prompt = "You will now play a character and respond as that character (You will never break character). Your name is $category->human_name.
             // I want you to act as a $category->role." . $category->prompt_prefix . ' ' . $request->prompt;
             // } else {
-                $prompt = $request->prompt;
+            $prompt = $request->prompt;
             // }
-
-
 
             $total_used_tokens = 0;
 
@@ -670,7 +724,6 @@ class AIChatController extends Controller
             $entry->words = 0;
             $entry->save();
 
-
             $user->save();
 
             $chat->total_credits += $total_used_tokens;
@@ -683,7 +736,7 @@ class AIChatController extends Controller
         }
     }
 
-    # messages under (/chat) ----------------------------------------------------------
+    // messages under (/chat) ----------------------------------------------------------
     /**
      * Get OpenAI conversation by conver_id.
      *
@@ -693,13 +746,16 @@ class AIChatController extends Controller
      *      tags={"AI Chats (Messages)"},
      *      security={{ "passport": {} }},
      *      summary="Get OpenAI conversation details (relate category, related conversation, related chat_completions)",
+     *
      *      @OA\Parameter(
      *          name="conver_id",
      *          in="path",
      *          description="conver_id of the OpenAI chat conversations",
      *          required=true,
+     *
      *          @OA\Schema(type="string", example="31"),
      *      ),
+     *
      *      @OA\Response(
      *          response=200,
      *          description="Successful operation",
@@ -709,19 +765,19 @@ class AIChatController extends Controller
      *          description="Category not found",
      *      ),
      * )
-    */
+     */
     public function conversations(Request $request, $conver_id)
     {
         $conversation = UserOpenaiChat::where('user_id', $request->user()->id)->where('id', $conver_id)->first();
 
         $chat_completions = null;
-        $category= null;
+        $category = null;
 
         if ($conversation != null) {
 
             $category = OpenaiGeneratorChatCategory::where('id', $conversation->openai_chat_category_id)->first();
-            $chat_completions = str_replace(array("\r", "\n"), '', $category->chat_completions) ?? null;
-            
+            $chat_completions = str_replace(["\r", "\n"], '', $category->chat_completions) ?? null;
+
             if ($chat_completions != null) {
                 $chat_completions = json_decode($chat_completions, true);
             }
@@ -744,32 +800,41 @@ class AIChatController extends Controller
      *      security={{ "passport": {} }},
      *      summary="Get OpenAI chat details (relate category, related conversation, related messages, related chat_completions).",
      *      description="Get OpenAI chat details (relate category, related conversation, related messages, related chat_completions). ID parameter is optional. To get all messages end path with /messages",
+     *
      *      @OA\Parameter(
      *          name="conver_id",
      *          in="path",
      *          description="conver_id of the OpenAI chat conversations",
      *          required=true,
+     *
      *          @OA\Schema(type="string", example="31"),
      *      ),
+     *
      *      @OA\Parameter(
      *          name="id",
      *          in="path",
      *          description="id of the OpenAI chat message. Use to get one message only",
      *          required=false,
+     *
      *          @OA\Schema(type="string", example="0"),
      *      ),
+     *
      *      @OA\Parameter(
      *          name="page",
      *          in="query",
      *          description="Page number",
+     *
      *          @OA\Schema(type="integer", default=1),
      *      ),
+     *
      *      @OA\Parameter(
      *          name="per_page",
      *          in="query",
      *          description="Items per page",
+     *
      *          @OA\Schema(type="integer", default=10),
      *      ),
+     *
      *      @OA\Response(
      *          response=200,
      *          description="Successful operation",
@@ -779,14 +844,14 @@ class AIChatController extends Controller
      *          description="Category not found",
      *      ),
      * )
-    */
-    public function conversationChats(Request $request, $conver_id, $id=0)
+     */
+    public function conversationChats(Request $request, $conver_id, $id = 0)
     {
         $conversation = UserOpenaiChat::where('user_id', $request->user()->id)->where('id', $conver_id)->first();
         $messages = [];
 
         if ($conversation != null) {
-            if($id == 0) {
+            if ($id == 0) {
                 $messagesQuery = $conversation->messages()->orderBy('created_at', 'desc');
                 $messages = $messagesQuery->paginate($request->input('per_page', 10));
             } else {
@@ -797,9 +862,7 @@ class AIChatController extends Controller
         return response()->json($messages, 200);
     }
 
-
-
-    # other helpers under (/general) ---------------------------------------------------
+    // other helpers under (/general) ---------------------------------------------------
     /**
      * Get the last 6 recent documents for the authenticated user.
      *
@@ -810,20 +873,24 @@ class AIChatController extends Controller
      *      security={{ "passport": {} }},
      *      summary="Get the last 6 recent documents",
      *      description="Get the last 6 recent documents for the authenticated user, excluding documents of type 'image'.",
+     *
      *      @OA\Response(
      *          response=200,
      *          description="Successful operation",
+     *
      *          @OA\JsonContent(
      *              type="object",
+     *
      *              @OA\Property(property="data", type="array", @OA\Items(type="object")),
      *          ),
      *      ),
+     *
      *      @OA\Response(
      *          response=401,
      *          description="Unauthorized: User not authenticated",
      *      ),
      *  )
-    */
+     */
     public function getRecentDocuments(Request $request)
     {
         $documents = $request->user()
@@ -837,6 +904,7 @@ class AIChatController extends Controller
 
         return response()->json(['data' => $documents], 200);
     }
+
     /**
      * Get the last 6 favorite OpenAI items for the authenticated user.
      *
@@ -847,13 +915,17 @@ class AIChatController extends Controller
      *      security={{ "passport": {} }},
      *      summary="Get last 6 favorite OpenAI items",
      *      description="Get the last 6 favorite OpenAI items for the authenticated user.",
+     *
      *      @OA\Response(
      *          response=200,
      *          description="Successful operation",
+     *
      *          @OA\JsonContent(
      *              type="array",
+     *
      *              @OA\Items(
      *                  type="object",
+     *
      *                  @OA\Property(property="id", type="integer", example=1),
      *                  @OA\Property(property="title", type="string", example="Post Title Generator"),
      *                  @OA\Property(property="description", type="string", example="Get captivating post titles instantly with our title generator. Boost engagement and save time."),
@@ -880,17 +952,20 @@ class AIChatController extends Controller
      *              ),
      *          ),
      *      ),
+     *
      *      @OA\Response(
      *          response=401,
      *          description="Unauthorized: User not authenticated",
      *      ),
      *  )
-    */
+     */
     public function openAIFavoritesList(Request $request)
     {
         $favoriteOpenai = $request->user()->favoriteOpenai()->latest('created_at')->take(6)->get();
+
         return response()->json($favoriteOpenai, 200);
     }
+
     /**
      * Search for templates, workbooks, and AI chats based on the provided keyword.
      *
@@ -900,18 +975,24 @@ class AIChatController extends Controller
      *      tags={"General (Helpers)"},
      *      security={{ "passport": {} }},
      *      summary="Search for templates, workbooks, and AI chats",
+     *
      *      @OA\RequestBody(
      *          required=true,
      *          description="Keyword for the search",
+     *
      *          @OA\JsonContent(
+     *
      *              @OA\Property(property="search", type="string", example="keyword"),
      *          ),
      *      ),
+     *
      *      @OA\Response(
      *          response=200,
      *          description="Successful operation",
+     *
      *          @OA\JsonContent(
      *              type="object",
+     *
      *              @OA\Property(property="template_search", type="array", @OA\Items(type="object")),
      *              @OA\Property(property="workbook_search", type="array", @OA\Items(type="object")),
      *              @OA\Property(property="ai_chat_search", type="array", @OA\Items(type="object")),
@@ -919,12 +1000,14 @@ class AIChatController extends Controller
      *          ),
      *      ),
      * )
-    */
+     */
     public function search(Request $request)
     {
         $search = '';
         $result = '';
-        if($request->search != null) $search = $request->search;
+        if ($request->search != null) {
+            $search = $request->search;
+        }
 
         if ($search == 'delete') {
             $template_search = []; //AIWriter
@@ -934,25 +1017,25 @@ class AIChatController extends Controller
         } else {
 
             $workbook_query = [
-                ['user_openai.user_id', "=", $request->user()->id],
-                ['openai.type', '!=', 'image']
+                ['user_openai.user_id', '=', $request->user()->id],
+                ['openai.type', '!=', 'image'],
             ];
 
-            if($search != ""){
-                $query[] = ["output", "LIKE", "%".$search."%"];
-                $query[] = ["ai_title", "LIKE", "%".$search."%"];
+            if ($search != '') {
+                $query[] = ['output', 'LIKE', '%'.$search.'%'];
+                $query[] = ['ai_title', 'LIKE', '%'.$search.'%'];
             }
 
-            $workbook_search = UserOpenai::select('user_openai.*', 'openai.title as ai_title', 'openai.image as ai_image', 'openai.color as ai_color') 
-            ->join('openai', 'openai.id', '=', 'user_openai.openai_id') 
-            ->where($workbook_query)->get();
+            $workbook_search = UserOpenai::select('user_openai.*', 'openai.title as ai_title', 'openai.image as ai_image', 'openai.color as ai_color')
+                ->join('openai', 'openai.id', '=', 'user_openai.openai_id')
+                ->where($workbook_query)->get();
 
-            $template_search = OpenAIGenerator::where('title', 'like', "%".$search."%")->get();
+            $template_search = OpenAIGenerator::where('title', 'like', '%'.$search.'%')->get();
             // $workbook_search = UserOpenai::where('title', 'like', "%".$word."%")->get();
-            $ai_chat_search = OpenaiGeneratorChatCategory::where('name', 'like', "%".$search."%")
-                ->orWhere('description', 'like', "%".$search."%")->get();
+            $ai_chat_search = OpenaiGeneratorChatCategory::where('name', 'like', '%'.$search.'%')
+                ->orWhere('description', 'like', '%'.$search.'%')->get();
 
-            $ai_chat_history_search = UserOpenaiChat::where('title', 'like', "%".$search."%")->get();
+            $ai_chat_history_search = UserOpenaiChat::where('title', 'like', '%'.$search.'%')->get();
 
             if (count($template_search) == 0 and count($workbook_search) == 0 and count($ai_chat_search) == 0 and count($ai_chat_history_search) == 0) {
                 $result = 'null';

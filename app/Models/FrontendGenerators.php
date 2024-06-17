@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class FrontendGenerators extends Model
 {
-    use HasFactory;
     protected $table = 'frontend_generators';
+
+    protected $guarded = [];
 }

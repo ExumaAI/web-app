@@ -64,11 +64,18 @@ class TranslateController extends Controller
                     $newEnJson = json_encode($enDataToTranslate, JSON_PRETTY_PRINT);
                     file_put_contents($enJsonFilePath, $newEnJson);
                 }
-
-                // Translate the string using Google Translate API
-                $result = GoogleTranslate::withSource('en')
+				if($enDataToTranslate[$key] == null || empty($enDataToTranslate[$key]) || $enDataToTranslate[$key] == " "){
+                    $enDataToTranslate[$key] = $key;
+                }
+				
+                try {
+                   // Translate the string using Google Translate API
+                    $result = GoogleTranslate::withSource('en')
                     ->withTarget($lang)
                     ->translate($enDataToTranslate[$key]);
+                } catch (\Throwable $th) {
+                        continue;
+                }
     
                 $translatedText = $result->getTranslatedText();
     
@@ -92,10 +99,10 @@ class TranslateController extends Controller
             $newJson = json_encode($targetDataToTranslate, JSON_PRETTY_PRINT);
             file_put_contents($targetJsonFilePath, $newJson);
     
-            return back()->with(['message' => 'Translations have been updated successfully.', 'type' => 'success']);
+            return back()->with(['message' => __('Translations have been updated successfully.'), 'type' => 'success']);
         } else {
             // All keys have been translated
-            return back()->with(['message' => 'All translations have been completed.', 'type' => 'info']);
+            return back()->with(['message' => __('All translations have been completed.'), 'type' => 'info']);
         }
 
     }

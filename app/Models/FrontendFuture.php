@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class FrontendFuture extends Model
 {
-    use HasFactory;
-
     protected $table = 'frontend_future';
+
+    protected $guarded = [];
 }

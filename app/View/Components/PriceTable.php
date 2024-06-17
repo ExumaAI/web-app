@@ -34,10 +34,6 @@ class PriceTable extends Component
      */
     public function render(): View|Closure|string
     {
-        if(view()->exists('components.custom.price-table')){
-            return view('components.custom.price-table');
-        }else{
-            return view('components.price-table');
-        }
+        return view('components.price-table');
     }
 }

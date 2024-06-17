@@ -43,6 +43,31 @@ return [
             'visibility' => 'public',
         ],
 
+        'views' => [
+            'driver' => 'local',
+            'root' => resource_path('views'),
+            'throw' => false,
+        ],
+
+		'thumbs' => [
+			'driver' => 'local',
+			'root' => public_path() . '/uploads/thumbnail/default',
+			'url' => env('APP_URL') . '/uploads/thumbnail/default',
+			'throw' => false,
+		],
+
+		'themes' => [
+			'driver' => 'local',
+			'root' => public_path('themes'),
+			'throw' => false,
+		],
+
+        'build' => [
+            'driver' => 'local',
+            'root' => public_path('build'),
+            'throw' => false,
+        ],
+
         's3' => [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),
@@ -55,6 +80,18 @@ return [
             'throw' => true,
         ],
 
+        'r2' => [
+            'driver' => 's3',
+            'key' => env('CLOUDFLARE_R2_ACCESS_KEY_ID'),
+            'secret' => env('CLOUDFLARE_R2_SECRET_ACCESS_KEY'),
+            'region' => env('CLOUDFLARE_R2_DEFAULT_REGION', 'us-east-1'),
+            'bucket' => env('CLOUDFLARE_R2_BUCKET'),
+            'url' => env('CLOUDFLARE_R2_URL'),
+            'visibility' => 'private',
+            'endpoint' => env('CLOUDFLARE_R2_ENDPOINT'),
+            'use_path_style_endpoint' => env('CLOUDFLARE_R2_USE_PATH_STYLE_ENDPOINT', false),
+            'throw' => false,
+        ],
     ],
 
     /*

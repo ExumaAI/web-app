@@ -6,38 +6,43 @@ use App\Helpers\Classes\Helper;
 use App\Models\Setting;
 use App\Models\SettingTwo;
 use Illuminate\Http\Request;
-use Orhanerday\OpenAi\OpenAi;
 use Illuminate\Support\Str;
+use Orhanerday\OpenAi\OpenAi;
 
 class AIFineTuneController extends Controller
 {
-
-    public function addFineTune(Request $request){
+    public function addFineTune(Request $request)
+    {
 
         if (Helper::appIsDemo()) {
             return response()->json(__('This feature is disabled in Demo version.'), 419);
         }
 
-        $title   = !empty( $_POST['title'] ) ? $_POST['title'] : 'model-' . Str::random(7);
-        $purpose = !empty( $_POST['purpose'] ) ? $_POST['purpose'] : 'fine-tune';
-        $model   = !empty( $_POST['model'] ) ? $_POST['model'] : 'gpt-3.5-turbo-1106';
-        $file    = !empty( $_FILES['file'] ) ? $_FILES['file'] : array();
+        $title = ! empty($_POST['title']) ? $_POST['title'] : 'model-'.Str::random(7);
+        $purpose = ! empty($_POST['purpose']) ? $_POST['purpose'] : 'fine-tune';
+        $model = ! empty($_POST['model']) ? $_POST['model'] : 'gpt-3.5-turbo-1106';
+        $file = ! empty($_FILES['file']) ? $_FILES['file'] : [];
 
-        if ( empty( $title ) ) {
+        if (empty($title)) {
             return response()->json(__('Title filed is empty!'), 419);
         }
-        
-        if ( empty( $file['name'] ) ) {
+
+        if (empty($file['name'])) {
             return response()->json(__('Select a JSONL File!'), 419);
         } else {
-            $file_name = basename( $file['name'] );
-            $tmp_file  = $file['tmp_name'];
+            $file_name = basename($file['name']);
+            $tmp_file = $file['tmp_name'];
             $file_type = $file['type'];
-            $c_file    = curl_file_create($tmp_file, $file_type, $file_name);
+            $c_file = curl_file_create($tmp_file, $file_type, $file_name);
         }
 
         // Fetch the Site Settings object with openai_api_secret
-        $apiKeys = explode(',', Setting::first()->openai_api_secret);
+        $settings = Setting::first();
+        if ($settings?->user_api_option) {
+            $apiKeys = explode(',', auth()->user()?->api_keys);
+        } else {
+            $apiKeys = explode(',', $settings?->openai_api_secret);
+        }
         $fine_tune_list = json_decode(SettingTwo::first()->fine_tune_list, true);
         $apiKey = $apiKeys[0];
         $open_ai = new OpenAi($apiKey);
@@ -45,24 +50,24 @@ class AIFineTuneController extends Controller
 
         // upload file
         $uploadFile = $open_ai->uploadFile([
-            "purpose" => $purpose,
-            "file" => $c_file,
+            'purpose' => $purpose,
+            'file' => $c_file,
         ]);
-        $uploadFile_array = json_decode( $uploadFile, true );
-        $uploadFile = json_decode( $uploadFile );
+        $uploadFile_array = json_decode($uploadFile, true);
+        $uploadFile = json_decode($uploadFile);
 
-        if ( isset($uploadFile->error) ) {
+        if (isset($uploadFile->error)) {
             return response()->json($uploadFile->error->message, 419);
         }
 
         // create fine-tune
         $createFineTune = $open_ai->createFineTune([
-                "model" => $model,
-                "training_file" => $uploadFile->id,
+            'model' => $model,
+            'training_file' => $uploadFile->id,
         ]);
-        $createFineTune = json_decode( $createFineTune );
+        $createFineTune = json_decode($createFineTune);
 
-        if ( isset($createFineTune->error) ) {
+        if (isset($createFineTune->error)) {
             return response()->json($createFineTune->error, 419);
         }
 
@@ -77,7 +82,7 @@ class AIFineTuneController extends Controller
         $save_settings->save();
 
         return response()->json([
-            'output' => sprintf( 
+            'output' => sprintf(
                 '<tr>
                     <td>%1$s</td>
                     <td>%2$s</td>
@@ -107,42 +112,48 @@ class AIFineTuneController extends Controller
 
     }
 
-    public function deleteFineTune(Request $request){
+    public function deleteFineTune(Request $request)
+    {
 
         if (Helper::appIsDemo()) {
             return response()->json(__('This feature is disabled in Demo version.'), 419);
         }
 
-        $file_id = !empty( $_POST['file_id'] ) ? $_POST['file_id'] : '';
-        $model   = !empty( $_POST['model'] ) ? $_POST['model'] : '';
-        
-        if ( empty( $file_id ) && empty( $model ) ) {
+        $file_id = ! empty($_POST['file_id']) ? $_POST['file_id'] : '';
+        $model = ! empty($_POST['model']) ? $_POST['model'] : '';
+
+        if (empty($file_id) && empty($model)) {
             return response()->json(__('Fine-tune not found!'), 419);
         }
 
         // Fetch the Site Settings object with openai_api_secret
-        $apiKeys = explode(',', Setting::first()->openai_api_secret);
+        $settings = Setting::first();
+        if ($settings?->user_api_option) {
+            $apiKeys = explode(',', auth()->user()?->api_keys);
+        } else {
+            $apiKeys = explode(',', $settings?->openai_api_secret);
+        }
         $fine_tune_list = json_decode(SettingTwo::first()->fine_tune_list, true);
         $apiKey = $apiKeys[0];
         $open_ai = new OpenAi($apiKey);
 
-        if ( $model ) {
-            $deleteFineTune = $open_ai->deleteFineTune( $model );
-            $deleteFineTune = json_decode( $deleteFineTune );
+        if ($model) {
+            $deleteFineTune = $open_ai->deleteFineTune($model);
+            $deleteFineTune = json_decode($deleteFineTune);
 
-            if ( isset($deleteFineTune->error) ) {
+            if (isset($deleteFineTune->error)) {
                 return response()->json($deleteFineTune->error->message, 419);
             }
         }
 
-        $deleteFile = $open_ai->deleteFile( $file_id );
-        $deleteFile = json_decode( $deleteFile );
+        $deleteFile = $open_ai->deleteFile($file_id);
+        $deleteFile = json_decode($deleteFile);
 
-        if ( isset($deleteFile->error) ) {
+        if (isset($deleteFile->error)) {
             return response()->json($deleteFile->error->message, 419);
         }
 
-        if ( isset( $fine_tune_list[$file_id] ) ) {
+        if (isset($fine_tune_list[$file_id])) {
             unset($fine_tune_list[$file_id]);
             $save_settings = SettingTwo::first();
             $save_settings->fine_tune_list = json_encode($fine_tune_list);
@@ -153,26 +164,32 @@ class AIFineTuneController extends Controller
 
     }
 
-    public static function getFineTuneTableRow(){
+    public static function getFineTuneTableRow()
+    {
 
         // Fetch the Site Settings object with openai_api_secret
-        $apiKeys = explode(',', Setting::first()->openai_api_secret);
+        $settings = Setting::first();
+        if ($settings?->user_api_option) {
+            $apiKeys = explode(',', auth()->user()?->api_keys);
+        } else {
+            $apiKeys = explode(',', $settings?->openai_api_secret);
+        }
         $fine_tune_list = json_decode(SettingTwo::first()->fine_tune_list, true);
         $apiKey = $apiKeys[0];
         $open_ai = new OpenAi($apiKey);
         $html = '';
 
-        $listFiles = json_decode( $open_ai->listFiles() );
-        $listFineTunes = json_decode( $open_ai->listFineTunes() );
+        $listFiles = json_decode($open_ai->listFiles());
+        $listFineTunes = json_decode($open_ai->listFineTunes());
 
-        if ( empty( $fine_tune_list ) ) {
-            return printf( '<tr class="info"><td colspan="5">%s</td></tr>', __('There is no fine-tune data!' ) );
+        if (empty($fine_tune_list)) {
+            return printf('<tr class="info"><td colspan="5">%s</td></tr>', __('There is no fine-tune data!'));
         }
 
-        foreach ( array_reverse($fine_tune_list) as $file_id => $values ) {
-            foreach( $listFineTunes?->data ?? [] as $fine_tune ) {
-                if ( $fine_tune->training_file == $file_id ){
-                    $html .= sprintf( 
+        foreach (array_reverse($fine_tune_list) as $file_id => $values) {
+            foreach ($listFineTunes?->data ?? [] as $fine_tune) {
+                if ($fine_tune->training_file == $file_id) {
+                    $html .= sprintf(
                         '<tr>
                             <td>%1$s</td>
                             <td>%2$s</td>
@@ -209,22 +226,28 @@ class AIFineTuneController extends Controller
 
     }
 
-    public static function getFineModelOption( $selected ){
+    public static function getFineModelOption($selected)
+    {
 
         // Fetch the Site Settings object with openai_api_secret
-        $apiKeys = explode(',', Setting::first()->openai_api_secret);
+        $settings = Setting::first();
+        if ($settings?->user_api_option) {
+            $apiKeys = explode(',', auth()->user()?->api_keys);
+        } else {
+            $apiKeys = explode(',', $settings?->openai_api_secret);
+        }
         $fine_tune_list = json_decode(SettingTwo::first()->fine_tune_list, true);
         $apiKey = $apiKeys[0];
         $open_ai = new OpenAi($apiKey);
         $html = '';
 
-        $listFineTunes = json_decode( $open_ai->listFineTunes() );
+        $listFineTunes = json_decode($open_ai->listFineTunes());
 
-        foreach ( $listFineTunes?->data ?? [] as $fine_tune ) {
-            if ( $fine_tune->status == 'succeeded' && isset( $fine_tune_list[$fine_tune->training_file] ) ) {
-                
-                $html .= sprintf( 
-                    '<option value="%1$s" %3$s>%2$s (%1$s)</option>', 
+        foreach ($listFineTunes?->data ?? [] as $fine_tune) {
+            if ($fine_tune->status == 'succeeded' && isset($fine_tune_list[$fine_tune->training_file])) {
+
+                $html .= sprintf(
+                    '<option value="%1$s" %3$s>%2$s (%1$s)</option>',
                     $fine_tune->fine_tuned_model,
                     $fine_tune_list[$fine_tune->training_file]['title'],
                     $selected == $fine_tune->fine_tuned_model ? 'selected' : ''
@@ -235,5 +258,4 @@ class AIFineTuneController extends Controller
         echo $html;
 
     }
-
 }

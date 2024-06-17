@@ -11,9 +11,10 @@ use App\Http\Controllers\magicaiUpdaterController;
 use App\Http\Controllers\TestController;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Config;
+use RachidLaasri\LaravelInstaller\Middleware\ApplicationStatus;
+use App\Http\Controllers\Common\SitemapController;
 
 Route::get('/test', [TestController::class, 'test']);
-
 
 Route::group(['prefix' => LaravelLocalization::setLocale(), 'middleware' => [ 'checkInstallation', 'localeSessionRedirect', 'localizationRedirect', 'localeViewPath' ]], function() {
     Route::get('/', [IndexController::class, 'index'])->name('index');
@@ -29,6 +30,7 @@ Route::group(['prefix' => LaravelLocalization::setLocale(), 'middleware' => [ 'c
 	Route::get('/blog/category/{slug}', [BlogController::class, 'categories']);
 	Route::get('/blog/author/{slug}', [BlogController::class, 'author']);
 });
+Route::get('/sitemap.xml', [SitemapController::class, "index"]);
 
 Route::get('/activate', [IndexController::class, 'activate']);
 
@@ -39,8 +41,14 @@ Route::get('/confirm/email/{email_confirmation_code}', [MailController::class, '
 //Route::get('/install-script-env-editor', [InstallationController::class, 'envFileEditor'])->name('installer.envEditor');
 //Route::post('/install-script-env-editor/save', [InstallationController::class, 'envFileEditorSave'])->name('installer.envEditor.save');
 //Route::get('/install-script', [InstallationController::class, 'install'])->name('installer.install');
-Route::get('/upgrade-script', [InstallationController::class, 'upgrade']);
-Route::get('/update-manual', [InstallationController::class, 'updateManual']);
+Route::get('/upgrade-script', [InstallationController::class, 'upgrade'])->withoutMiddleware(
+    ApplicationStatus::class
+);
+
+Route::get('/update-manual', [InstallationController::class, 'updateManual'])->withoutMiddleware(
+    ApplicationStatus::class
+);
+Route::get('/cache-clear-menu', [InstallationController::class, 'menuClearCach']);
 
 Route::post('/install-extension/{slug}', [InstallationController::class, 'installExtension']);
 Route::post('/uninstall-extension/{slug}', [InstallationController::class, 'uninstallExtension']);
@@ -56,6 +64,11 @@ Route::get('/clear-log', function () {
 
     return response()->json(['success' => true]);
 });
+Route::get('/default', function () {
+    return response()->noContent();
+})->name('default');
+
+
 Route::get('/debug/{token}', function ($token) {
     $storedHash = Config::get('app.debug_hash');
     $hashedToken = Hash::make($token);
@@ -90,7 +103,9 @@ Route::get('/check-subscription-end', function () {
 
 Route::get('magicai.updater.check',[magicaiUpdaterController::class, 'check']);
 Route::get('magicai.updater.currentVersion', [magicaiUpdaterController::class, 'getCurrentVersion']);
-Route::get('magicai.updater.update', [magicaiUpdaterController::class, 'update'])->middleware('admin');
+Route::get('magicai.updater.update', [magicaiUpdaterController::class, 'update'])
+    ->withoutMiddleware(ApplicationStatus::class)
+    ->middleware('admin');
 
 
 if (file_exists(base_path('routes/custom_routes_web.php'))) {

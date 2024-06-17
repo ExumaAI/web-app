@@ -26,10 +26,6 @@ class AccordionItem extends Component
      */
     public function render(): View|Closure|string
     {
-        if(view()->exists('components.custom.accordion-item')){
-            return view('components.custom.accordion-item');
-        }else{
-            return view('components.accordion-item');
-        }
+        return view('components.accordion-item');
     }
 }

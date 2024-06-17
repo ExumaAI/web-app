@@ -8,7 +8,6 @@ use Mews\Purifier\Casts\CleanHtml;
 
 class Testimonials extends Model
 {
-    use HasFactory;
     protected $table = 'testimonials';
 
     protected $casts = [

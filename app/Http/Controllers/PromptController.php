@@ -16,7 +16,7 @@ class PromptController extends Controller
             ->where('user_id', auth()->user()->id)
             ->get();
 
-        return response()->json(['promptData' => $prompts, 'favData' => $favourites]);
+		return view('panel.user.openai_chat.components.prompt_library_list', ['promptData' => $prompts, 'favData' => $favourites])->render();
     }
 
     public function addNew(Request $req) {
@@ -32,7 +32,11 @@ class PromptController extends Controller
         $prompt_record->save();
 
         $prompts = Prompt::where('user_id', auth()->user()->id)->get();
-        return response()->json($prompts);
+		$favourites = Favourite::where('type', 'prompt')
+            ->where('user_id', auth()->user()->id)
+            ->get();
+
+		return view('panel.user.openai_chat.components.prompt_library_list', ['promptData' => $prompts, 'favData' => $favourites])->render();
     }
 
     public function updateFav(Request $req) {
@@ -58,4 +62,10 @@ class PromptController extends Controller
             ->get();
         return response()->json($favourites);
     }
+
+	public function deletePrompt(Request $req){
+		$id = $req->id;
+		Prompt::where('id', $id)->delete();
+		return response()->json(['status' => 'success']);
+	}
 }

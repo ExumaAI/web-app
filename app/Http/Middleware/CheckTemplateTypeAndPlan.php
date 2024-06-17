@@ -11,16 +11,18 @@ use Symfony\Component\HttpFoundation\Response;
 
 class CheckTemplateTypeAndPlan
 {
-    public $openAi;
-
     public function handle(Request $request, Closure $next): Response
     {
         if ($request->user()->isAdmin()) {
             return $next($request);
         }
-        if ($this->check($request)) {
+
+        $check = $this->check($request);
+
+        if ($check) {
             return $next($request);
         }
+
         return to_route('dashboard.user.payment.subscription')->with(['message' => trans('If you want to use premium service, update your plan.') , 'type' => 'error']);
     }
 
@@ -57,29 +59,41 @@ class CheckTemplateTypeAndPlan
         $plan = $user->relationPlan;
 
         if($plan) {
-            if( $plan->getAttribute('plan_type') == 'All') {
+
+            $open_ai_items = $plan->getAttribute('open_ai_items') ?: [];
+
+
+            if( $plan->getAttribute('plan_type') == 'All' && in_array($slug, $open_ai_items)) {
                 return true;
             }
 
-            if ($plan->getAttribute('plan_type') == 'Premium') {
-                if ($openAi->getAttribute('premium') == 1) {
+            if ($plan->getAttribute('plan_type') == 'Premium' && in_array($slug, $open_ai_items)) {
+                // if ($openAi->getAttribute('premium') == 1) {
                     return true;
-                }
+                // }
             }
 
-            if ($plan->getAttribute('plan_type') == 'Regular') {
+            if ($plan->getAttribute('plan_type') == 'Regular' && in_array($slug, $open_ai_items)) {
                 if ($openAi->getAttribute('premium') == 0) {
                     return true;
                 }
             }
+
+            return false;
+        }
+
+        $setting = Helper::setting('free_open_ai_items');
+
+        if (in_array($slug, $setting)) {
+            return true;
         }
 
         # trial users will also be able to use it
-        return true;
+        return false;
     }
 
 
-    public function settingSlug($slug)
+    public function settingSlug($slug): array
     {
         $data = [
             'ai_article_wizard_generator' => 'feature_ai_article_wizard',

@@ -16,7 +16,7 @@
                 <p id="update_status"></p>
             </div>
 			<div class="modal-footer grid grid-cols-2 p-0 gap-0">
-				<button id="update_btn" class="btn btn-success py-[0.75rem] m-0 rounded-none w-full shadow-2xl shadow-green-400" type="button" onclick="update();">
+				<button id="update_btn" class="btn btn-success py-[0.75rem] m-0 roundehidden w-full shadow-2xl shadow-green-400" type="button" onclick="update();">
 					{{__('Update')}}
 				</button>
 				<button type="button" class="btn btn-danger py-[0.75rem] m-0 rounded-none w-full" onclick="hide_update_alert()" data-bs-dismiss="modal">

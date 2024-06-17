@@ -7,7 +7,5 @@ use Illuminate\Database\Eloquent\Model;
 
 class FrontendSetting extends Model
 {
-    use HasFactory;
-
     protected $table = 'frontend_footer_settings';
 }

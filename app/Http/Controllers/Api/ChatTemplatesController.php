@@ -41,7 +41,7 @@ class ChatTemplatesController extends Controller
         }else{
             $list = OpenaiGeneratorChatCategory::find($id);
             if (!$list) {
-                return response()->json(['error' => 'Template Not Found'], 404);
+                return response()->json(['error' => __('Template Not Found')], 404);
             }
         }
         return response()->json($list, 200);
@@ -226,7 +226,7 @@ class ChatTemplatesController extends Controller
     */
     public function destroy($id = null)
     {
-        if($id == null) return response()->json(['error' => "ID required"], 412);
+        if($id == null) return response()->json(['error' => __('ID required')], 412);
 
         $template = OpenaiGeneratorChatCategory::where('id', $id)->firstOrFail();
         $template->delete();

@@ -85,8 +85,6 @@ class TeamController extends Controller
 
     public function teamMember(Team $team, TeamMember $teamMember)
     {
-        $manager = $team->user;
-
         return view('panel.user.team.edit', [
             'filter' => 'all',
             'team' => $team,

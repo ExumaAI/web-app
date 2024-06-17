@@ -12,28 +12,20 @@ class Button extends Component
      * Create a new component instance.
      */
     public function __construct(
-		public string $link = '#',
-		public string $target = '',
-		public string $label = 'Click me',
-        public string $type = 'solid', // solid, outline
-        public string $size = 'md', // solid, outline
-        public string $border = '', // any border classname
-        public string $bg = '', // any bg classname
-        public string $text = '', // any text classname
-        public string $iconPos = 'start',
-	)
-    {
-    }
+		public string $tag = 'a',
+		public string $href = '#',
+		public string $label = 'Button',
+		public string $type = '',
+		public string $size = '',
+		public string $variant = '',
+		public string $hoverVariant = '',
+	) {}
 
     /**
      * Get the view / contents that represent the component.
      */
     public function render(): View|Closure|string
     {
-        if(view()->exists('components.custom.button')){
-            return view('components.custom.button');
-        }else{
-            return view('components.button');
-        }
+        return view('components.button');
     }
 }

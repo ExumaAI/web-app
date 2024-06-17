@@ -75,7 +75,7 @@ return [
                 'app_log_level'         => 'required|string|max:50',
                 'app_url'               => 'required|url',
                 'database_connection'   => 'required|string|max:50',
-                'database_hostname'     => 'required|string|max:250',
+                'database_hostname'     => 'required|string|max:50',
                 'database_port'         => 'required|numeric',
                 'database_name'         => 'required|string|max:50',
                 'database_username'     => 'required|string|max:50',

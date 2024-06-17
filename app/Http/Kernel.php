@@ -3,6 +3,7 @@
 namespace App\Http;
 
 use Illuminate\Foundation\Http\Kernel as HttpKernel;
+use RachidLaasri\LaravelInstaller\Middleware\ApplicationStatus;
 
 class Kernel extends HttpKernel
 {
@@ -34,8 +35,10 @@ class Kernel extends HttpKernel
             \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
             \Illuminate\Session\Middleware\StartSession::class,
             \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+            \RachidLaasri\LaravelInstaller\Middleware\ApplicationStatus::class,
             \App\Http\Middleware\VerifyCsrfToken::class,
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
+			\App\Http\Middleware\UpdateUserActivity::class,
         ],
 
         'api' => [
@@ -82,5 +85,6 @@ class Kernel extends HttpKernel
         'localeCookieRedirect'    => \Mcamara\LaravelLocalization\Middleware\LocaleCookieRedirect::class,
         'localeViewPath'          => \Mcamara\LaravelLocalization\Middleware\LaravelLocalizationViewPath::class,
         'checkInstallation'       => \App\Http\Middleware\CheckInstallation::class,
+		'custom'                  => \App\Http\Middleware\Custom::class,
     ];
 }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Events\UsersActivityEvent;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Models\Setting;
@@ -12,6 +13,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
+use Google2FA;
 
 class AuthenticatedSessionController extends Controller
 {
@@ -20,13 +22,9 @@ class AuthenticatedSessionController extends Controller
      */
     public function create(): View
     {
-        if(view()->exists('panel.admin.custom.auth.login')){
-            return view('panel.admin.custom.auth.login');
-        }else{
-            return view('panel.authentication.login', [
-                'plan' => request('plan'),
-            ]);
-        }
+        return view('panel.authentication.login', [
+            'plan' => request('plan'),
+        ]);
     }
 
     /**
@@ -38,22 +36,59 @@ class AuthenticatedSessionController extends Controller
         $settings = Setting::first();
         if ((bool)$settings->login_without_confirmation == false) {
             $user = User::where('email', $request->email)->first();
-            if ($user->email_confirmed != 1 and $user->type != 'admin') {
+			if (!$user) {
+				$data = array(
+					'errors' => [trans('auth.failed')],
+				);
+				return response()->json($data, 401);
+			}
+            if ($user and $user->email_confirmed != 1 and $user->type != 'admin') {
                 dispatch(new SendConfirmationEmail($user));
                 $data = array(
-                    'errors' => ['We have sent you an email for account confirmation. Please confirm your account to continue. Please also check your spam folder'],
+                    'errors' => [__('We have sent you an email for account confirmation. Please confirm your account to continue. Please also check your spam folder')],
                     'type' => 'confirmation',
                 );
                 return response()->json($data, 401);
             }
+			
         }
 
         $request->authenticate();
 
-
         $request->session()->regenerate();
 
-        return redirect(RouteServiceProvider::HOME);
+
+        if (Auth::check()) {
+			$user = Auth::user();
+            if (Google2FA::isActivated()) {
+                $user_id = Auth::id();
+
+                Auth::logout();
+
+                session()->put('user_id', $user_id);
+                session()->save();
+
+                return response()->json([
+                    'link' => '2fa/login'
+                ]);
+            }
+
+			$user = Auth::user();
+			$ip = $request->ip();
+			$connection = $request->header('User-Agent');
+			event(new UsersActivityEvent($user->email, $user->type, $ip, $connection));
+        }
+
+        if ($plan = $request->get('plan'))
+        {
+            return response()->json([
+                'link' => '/dashboard/user/payment?plan='. $plan
+            ]);
+        }
+
+        return response()->json([
+            'link' => '/dashboard'
+        ]);
     }
 
     /**

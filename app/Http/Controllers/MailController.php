@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
+use App\Jobs\SendConfirmationEmail;
 
 class MailController extends Controller
 {
@@ -18,20 +19,23 @@ class MailController extends Controller
         $user->email_confirmed = 1;
         $user->status = 1;
         $user->save();
-
-        return redirect()->route('login')->with(['message' => 'E-Mail confirmed succesfully.', 'type' => 'success']);
+		dispatch(new SendConfirmationEmail($user));
+        return redirect()->route('login')->with(['message' => __('E-Mail confirmed succesfully.'), 'type' => 'success']);
     }
 
 
     public function sendPasswordResetMail(Request $request){
+		$request->validate([
+			'email' => 'required|email',
+		]);
         $user = User::where('email', $request->email)->first();
         if ($user != null){
             $user->password_reset_code = Str::random(67);
             $user->save();
             dispatch(new SendPasswordResetEmail($user));
-            return back()->with(['message' => 'Password reset mail sent succesfully','type' => 'success' ]);
+            return back()->with(['message' => __('Password reset mail sent succesfully'),'type' => 'success' ]);
         }else{
-            return back()->with(['message' => 'Password reset mail sent succesfully','type' => 'success' ]);
+            return back()->with(['message' => __('Password reset mail sent succesfully'),'type' => 'success' ]);
         }
     }
 

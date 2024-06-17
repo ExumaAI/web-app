@@ -8,8 +8,9 @@ use Mews\Purifier\Casts\CleanHtml;
 
 class HowitWorks extends Model
 {
-    use HasFactory;
     protected $table = 'howitworks';
+
+    protected $guarded = [];
 
     protected $casts = [
         'title' => CleanHtml::class,

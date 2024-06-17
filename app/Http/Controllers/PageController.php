@@ -20,11 +20,7 @@ class PageController extends Controller
         }
 
         if ($page) {
-            if(view()->exists('panel.admin.custom.page.index')){
-                return view('panel.admin.custom.page.index', compact('page'));
-            }else{
-                return view('page.index', compact('page'));
-            }
+            return view('page.index', compact('page'));
         } else {
             abort(404);
         }
@@ -48,7 +44,7 @@ class PageController extends Controller
     public function pageDelete($id = null){
         $page = Page::where('id', $id)->firstOrFail();
         $page->delete();
-        return back()->with(['message' => 'Deleted Successfully', 'type' => 'success']);
+        return back()->with(['message' => __('Deleted Successfully'), 'type' => 'success']);
     }
 
     public function pageAddOrUpdateSave(Request $request){
@@ -59,6 +55,7 @@ class PageController extends Controller
             $page = new Page();
         }
 		$page->titlebar_status = $request->titlebar_status;
+		$page->show_on_footer = $request->show_on_footer;
         $page->title = $request->title;
         $page->slug = Str::slug($request->slug);
         $page->content = $request->content;
@@ -73,8 +70,8 @@ class PageController extends Controller
         $settings = Setting::first();
 
         $page = (object)[];
-
-
+        $page->titlebar_status = true;
+        $page->show_on_footer = false;
         if($lang == $settingTwo->languages_default){
             $page->content = $settings->privacy_content;
         }else{
@@ -92,11 +89,7 @@ class PageController extends Controller
         }
 
         if ($settings) {
-            if(view()->exists('panel.admin.custom.page.index')){
-                return view('panel.admin.custom.page.index', compact('page'));
-            }else{
-                return view('page.index', compact('page'));
-            }
+            return view('page.index', compact('page'));
         } else {
             abort(404);
         }
@@ -110,7 +103,7 @@ class PageController extends Controller
 
 
         $page = (object)[];
-
+        $page->titlebar_status = true;
 
         if($lang == $settingTwo->languages_default){
             $page->content = $settings->terms_content;
@@ -128,11 +121,7 @@ class PageController extends Controller
         }
 
         if ($settings) {
-            if(view()->exists('panel.admin.custom.page.index')){
-                return view('panel.admin.custom.page.index', compact('page'));
-            }else{
-                return view('page.index', compact('page'));
-            }
+            return view('page.index', compact('page'));
         } else {
             abort(404);
         }

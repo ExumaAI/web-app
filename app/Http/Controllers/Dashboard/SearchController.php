@@ -21,9 +21,9 @@ class SearchController extends Controller
         }else {
             $template_search = OpenAIGenerator::where('title', 'like', "%$word%")->get();
 
-            $workbook_search = UserOpenai::where('title', 'like', "%$word%")->get();
+            $workbook_search = UserOpenai::where('user_id', auth()->user()->id)->where('title', 'like', "%$word%")->get();
 
-            $ai_chat_search = OpenaiGeneratorChatCategory::where('slug', '<>', 'ai_vision')->where('slug', '<>', 'ai_pdf')->where('name', 'like', "%$word%")->orWhere('description', 'like', "%$word%")->get();
+            $ai_chat_search = OpenaiGeneratorChatCategory::where('slug', '<>', 'ai_webchat')->where('slug', '<>', 'ai_vision')->where('slug', '<>', 'ai_pdf')->where('name', 'like', "%$word%")->orWhere('description', 'like', "%$word%")->get();
 
             if (count($template_search)==0 and count($workbook_search)==0 and count($ai_chat_search)==0){
                 $result = 'null';

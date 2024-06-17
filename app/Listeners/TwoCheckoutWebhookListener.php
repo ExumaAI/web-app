@@ -2,21 +2,13 @@
 
 namespace App\Listeners;
 
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Arr;
+use App\Events\TwoCheckoutWebhookEvent;
+use App\Models\GatewayProducts;
 use App\Models\PaymentPlans;
 use App\Models\Setting;
-use App\Models\GatewayProducts;
-use Laravel\Cashier\Subscription as Subscriptions;
 use App\Models\User;
-use App\Models\UserOrder;
-use App\Models\WebhookHistory;
-use App\Events\TwoCheckoutWebhookEvent;
-use Carbon\Carbon;
-
-use Throwable;
+use Illuminate\Support\Facades\Log;
+use Laravel\Cashier\Subscription as Subscriptions;
 
 class TwoCheckoutWebhookListener
 {
@@ -35,7 +27,7 @@ class TwoCheckoutWebhookListener
     {
         try {
             $settings = Setting::first();
-            $incomingJson = $event->payload;    
+            $incomingJson = $event->payload;
             $product_id = $incomingJson['IPN_PCODE'][0];
 
             if (str_contains($product_id, 'Prepaid')) {
@@ -50,27 +42,27 @@ class TwoCheckoutWebhookListener
             $user = User::where('email', $customer_email)->first();
             $user_id = $user->id;
 
-            if ($order_status == "COMPLETE") {
-                $subscription =  Subscriptions::where([['user_id', '=', $user_id], ['stripe_price', '=', $product_id], ['stripe_status', '=', 'active']])->first();
-                if (!$subscription)
+            if ($order_status == 'COMPLETE') {
+                $subscription = Subscriptions::where([['user_id', '=', $user_id], ['stripe_price', '=', $product_id], ['stripe_status', '=', 'active']])->first();
+                if (! $subscription) {
                     return;
-                $subscription->stripe_id =  $subscription_ref;
+                }
+                $subscription->stripe_id = $subscription_ref;
                 $subscription->save();
 
-                $plan->total_words == -1? ($user->remaining_words = -1) : ($user->remaining_words += $plan->total_words);
-                $plan->total_images == -1? ($user->remaining_images = -1) : ($user->remaining_images += $plan->total_images);
+                $plan->total_words == -1 ? ($user->remaining_words = -1) : ($user->remaining_words += $plan->total_words);
+                $plan->total_images == -1 ? ($user->remaining_images = -1) : ($user->remaining_images += $plan->total_images);
 
                 $user->save();
-            } elseif ($order_status == "CANCELED") {
-                $subscription =  Subscriptions::where([['user_id', '=', $user_id], ['stripe_price', '=', $product_id], ['stripe_status', '=', 'active']])->first();
+            } elseif ($order_status == 'CANCELED') {
+                $subscription = Subscriptions::where([['user_id', '=', $user_id], ['stripe_price', '=', $product_id], ['stripe_status', '=', 'active']])->first();
                 $subscription->stripe_status = 'cancelled';
                 $subscription->ends_at = \Carbon\Carbon::now();
                 $subscription->save();
             }
-            
-        }catch(\Exception $ex){
+
+        } catch (\Exception $ex) {
             Log::error("TwoCheckoutWebhookListener::handle()\n".$ex->getMessage());
-            error_log("TwoCheckoutWebhookListener::handle()\n".$ex->getMessage());
         }
     }
 }

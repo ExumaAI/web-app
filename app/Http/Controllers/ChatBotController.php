@@ -3,23 +3,25 @@
 namespace App\Http\Controllers;
 
 use App\Helpers\Classes\Helper;
-use App\Models\ChatBot;
+use App\Models\Chatbot\Chatbot;
 use App\Models\SettingTwo;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
 class ChatBotController extends Controller
 {
-    public function chatbotIndex(){
-        $chatbotData = ChatBot::orderBy('id', 'asc')->get();
+    public function chatbotIndex()
+    {
+        $chatbotData = Chatbot::query()->orderBy('id', 'asc')->get();
         return view('panel.chatbot.index', compact('chatbotData'));
     }
 
-    public function addOrUpdate($id = null){
+    public function addOrUpdate($id = null)
+    {
         if ($id == null){
             $chatbotData = null;
         }else{
-            $chatbotData = ChatBot::where('id', $id)->firstOrFail();
+            $chatbotData = Chatbot::query()->where('id', $id)->firstOrFail();
         }
 
         return view('panel.chatbot.form', compact('chatbotData'));
@@ -29,9 +31,9 @@ class ChatBotController extends Controller
 
         if (Helper::appIsNotDemo()) {
             if ($request->template_id != 'undefined'){
-                $template = ChatBot::where('id', $request->template_id)->firstOrFail();
+                $template = Chatbot::where('id', $request->template_id)->firstOrFail();
             }else{
-                $template = new ChatBot();
+                $template = new Chatbot();
             }
 
             $template->title = $request->title;
@@ -67,7 +69,7 @@ class ChatBotController extends Controller
 
     public function delete($id = null){
         if (Helper::appIsNotDemo()) {
-            $template = ChatBot::where('id', $id)->firstOrFail();
+            $template = Chatbot::where('id', $id)->firstOrFail();
             $template->delete();
             return back()->with(['message' => __('Deleted Successfully'), 'type' => 'success']);
         }
@@ -81,6 +83,7 @@ class ChatBotController extends Controller
             $settings_two->chatbot_position = $request->position;
             $settings_two->chatbot_login_require = $request->logged_in;
             $settings_two->chatbot_rate_limit = $request->rate_limit;
+            $settings_two->chatbot_show_timestamp = $request->chatbot_show_timestamp;
             $settings_two->save();
         } else {
             return response()->json('This feature is disabled in Demo version.', 403);

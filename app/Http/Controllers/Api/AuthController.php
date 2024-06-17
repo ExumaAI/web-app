@@ -235,7 +235,7 @@ class AuthController extends Controller
 
             return response()->json(['message' => 'Email verified successfully'], 200);
         } else {
-            return response()->json(['error' => 'Email not found'], 422);
+            return response()->json(['error' => __('Email not found')], 422);
         }
     }
     /**

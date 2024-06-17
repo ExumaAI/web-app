@@ -2,10 +2,10 @@
 
 namespace App\Services;
 
+use App\Helpers\Classes\Helper;
+use App\Models\Chatbot\ChatbotDataVector;
 use App\Models\PdfData;
-use App\Models\TextData;
-use App\Models\TextVector;
-use App\Models\Vector;
+use App\Models\UserOpenaiChat;
 use Illuminate\Support\Facades\DB;
 
 use OpenAI\Laravel\Facades\OpenAI;
@@ -18,24 +18,52 @@ class VectorService
      * @param string $text
      * @return string
      */
-    public function getMostSimilarText(string $text, $chat_id, $count = 5)
+    public function getMostSimilarText(string $text, $chat_id, $count = 5, $chatbot_id = null)
     {
+        #api key update
+        Helper::setOpenAiKey();
+
+        $chatbot_id = $chatbot_id ?? request('chatbot_id', 0);
+
         $vectors = PdfData::where('chat_id', $chat_id)->get();
-        if (count($vectors) == 0) {
+
+        $chatbotVectors = ChatbotDataVector::query()
+            ->where('chatbot_id', $chatbot_id)
+            ->where('embedding', '!=', null)
+            ->get();
+
+        if (count($vectors) == 0 && $chatbotVectors->count() == 0) {
             return "";
         }
+
         $vector = OpenAI::embeddings()->create([
             'model' => 'text-embedding-ada-002',
             'input' => $text
         ])->embeddings[0]->embedding;
+
         $similarVectors = [];
+
         foreach ($vectors as $v) {
+
             $cosineSimilarity = $this->calculateCosineSimilarity($vector, json_decode($v['vector']));
+
             $similarVectors[] = [
                 'id' => $v['id'],
                 'content' => $v['content'],
                 'similarity' => $cosineSimilarity
             ];
+        }
+
+        if ($chatbotVectors) {
+            foreach ($chatbotVectors as $v) {
+                $cosineSimilarity = $this->calculateCosineSimilarity($vector, $v['embedding']);
+
+                $similarVectors[] = [
+                    'id' => $v['id'],
+                    'content' => $v['content'],
+                    'similarity' => $cosineSimilarity
+                ];
+            }
         }
 
         usort($similarVectors, function ($a, $b) {
@@ -44,9 +72,11 @@ class VectorService
 
         $result = "";
         $resArr = array_slice($similarVectors, 0, $count);
+
         foreach ($resArr as $item) {
             $result = $result . $item['content'] . "\n\n\n";
         }
+
         return $result;
     }
 

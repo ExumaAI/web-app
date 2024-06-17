@@ -27,10 +27,6 @@ class Box extends Component
      */
     public function render(): View|Closure|string
     {
-        if(view()->exists('components.custom.box')){
-            return view('components.custom.box');
-        }else{
-            return view('components.box');
-        }
+        return view('components.box');
     }
 }

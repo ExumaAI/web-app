@@ -125,13 +125,16 @@ class CoingateService implements BaseGatewayService
     public static function subscribe($plan): View
     {
         $product = GatewayProducts::where(["plan_id" => $plan->id, "gateway_code" => self::$GATEWAY_CODE])->first();
+
         if($product == null){
             self::saveProduct($plan);
         }
 
         $order_id = 'ORDER-' . strtoupper(Str::random(13));
 
-        return view("panel.user.finance.subscription.". self::$GATEWAY_CODE, compact('plan','order_id'));
+        $newDiscountedPrice = null;
+
+        return view("panel.user.finance.subscription.". self::$GATEWAY_CODE, compact('plan','order_id', 'newDiscountedPrice'));
     }
 
     public static function subscribeCheckout(Request $request, $referral = null)
@@ -236,7 +239,7 @@ class CoingateService implements BaseGatewayService
 
                             # sent mail if required here later
                             createActivity($order->user->id, __('Purchased'), $order->plan->name. ' '. __('Plan'). ' '. __('For free'), null);
-
+							\App\Models\Usage::getSingle()->updateSalesCount($total);
                             return redirect($payment_url);
                         } catch (\Exception $th) {
                             Log::error(self::$GATEWAY_CODE."-> subscribe(): ". $th->getMessage());
@@ -347,7 +350,7 @@ class CoingateService implements BaseGatewayService
             $id = $request['id'];
 
             $order->update([ 'order_id' => $id ]);
-
+			\App\Models\Usage::getSingle()->updateSalesCount($plan->price);
             return redirect(data_get($request, 'payment_url'));
         }
 
@@ -404,10 +407,10 @@ class CoingateService implements BaseGatewayService
             $user->save();
             createActivity($user->id, 'Cancelled', 'Subscription plan', null);
 
-            return back()->with(['message' => 'Your subscription is cancelled succesfully.', 'type' => 'success']);
+            return back()->with(['message' => __('Your subscription is cancelled succesfully.'), 'type' => 'success']);
         }
 
-        return back()->with(['message' => 'Could not find active subscription. Nothing changed!', 'type' => 'error']);
+        return back()->with(['message' => __('Could not find active subscription. Nothing changed!'), 'type' => 'error']);
     }
 
     public static function cancelSubscribedPlan($subscription, $planId)

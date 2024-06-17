@@ -2,7 +2,7 @@
 
 namespace App\Services\PaymentGateways;
 
-class CoinbaseService 
+class CoinBaseService
 {
 
 

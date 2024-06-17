@@ -1,4 +1,4 @@
-INSERT INTO `email_templates` (title, subject, content, created_at, updated_at) VALUES 
+INSERT INTO `email_templates` (`title`, `subject`, `content`, `created_at`, `updated_at`) VALUES 
 ('Team Invite', 'Team Invite Email', '<div style="padding: 0 19px">
     <h1>You are Invited! Congrats!</h1>
     <h1>{site_name}</h1>

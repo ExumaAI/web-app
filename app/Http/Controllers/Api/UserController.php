@@ -217,7 +217,7 @@ class UserController extends Controller
             // Image extension check
             $imageTypes = ['jpg', 'jpeg', 'png', 'svg', 'webp'];
             if (!in_array(Str::lower($image->getClientOriginalExtension()), $imageTypes)) {
-                return response()->json(['error' => 'The file extension must be jpg, jpeg, png, webp or svg.'], 419);
+                return response()->json(['error' => __('The file extension must be jpg, jpeg, png, webp or svg.')], 419);
             }
     
             $image->move($path, $image_name);
@@ -231,11 +231,53 @@ class UserController extends Controller
         return response()->json(['message' => 'User settings saved successfully'], 200);
     }
 
+
     /**
-     * Remove the specified users from storage.
-     */
-    public function destroy(string $id)
+     * Delete user account
+     *
+     * Get the authenticated user's profile and delete account.
+     *
+     * @OA\Delete(
+     *      path="/api/auth/profile",
+     *      operationId="UserController::destroy",
+     *      tags={"User Profile"},
+     *      summary="Delete user account",
+     *      description="Get the profile of the authenticated user and delete account.",
+     *      security={{ "passport": {} }},
+     *      @OA\Response(
+     *          response=200,
+     *          description="Successful operation",
+     *          @OA\JsonContent(
+     *              type="object",
+     *          ),
+     *      ),
+     *      @OA\Response(
+     *          response=401,
+     *          description="Unauthenticated",
+     *      ),
+     * )
+    */
+    public function destroy(Request $request)
     {
-        //
+
+        $user = $request->user();
+
+        if(!$user) {
+            return response()->json([
+                'status' => false,
+                'message' => __('User not found'),
+            ], 404);
+        }
+
+        createActivity($user->id, 'Deleted', $user->fullName() . ' deleted his/her account.', null);
+
+        // All user data should be deleted from the database via cascade delete.
+
+        $user->delete();
+
+        return response()->json([
+            'status' => true,
+            'message' => __('User deleted successfully'),
+        ], 200);
     }
 }

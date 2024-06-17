@@ -3,27 +3,26 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Models\Integration\UserIntegration;
 use App\Models\Team\Team;
 use App\Models\Team\TeamMember;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
-use Laravel\Cashier\Subscription;
 use Laravel\Cashier\Billable;
+use Laravel\Cashier\Subscription;
 // use Laravel\Sanctum\HasApiTokens;
 use Laravel\Cashier\Subscription as Subscriptions;
-use App\Models\TwoCheckoutSubscriptions;
 use Laravel\Passport\HasApiTokens;
-use Stripe\Plan;
-use App\Models\Setting;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable, Billable;
+    use Billable, HasApiTokens, HasFactory, Notifiable;
 
     protected $fillable = [
         'coingate_subscriber_id',
@@ -40,15 +39,22 @@ class User extends Authenticatable
         'email_confirmation_code',
         'email_confirmed',
         'password_reset_code',
+        'anthropic_api_keys',
+        'api_keys',
+        'defi_setting',
+        'affiliate_status'
     ];
 
     protected $hidden = [
         'password',
         'remember_token',
+        'google2fa_secret',
+        'defi_setting'
     ];
 
     protected $casts = [
         'email_verified_at' => 'datetime',
+        'defi_setting' => 'json'
     ];
 
     public function isAdmin(): bool
@@ -61,11 +67,20 @@ class User extends Authenticatable
         parent::boot();
 
         static::created(function ($user) {
-            Setting::query()->increment('user_count');
+            // Setting::query()->increment('user_count');
+			Usage::getSingle()->updateUserCount(1);
         });
+		static::deleted(function ($user) {
+			$user->orders()->delete();
+		});
     }
-  
-   public function isUser(): bool
+
+    public function integrations(): HasMany
+    {
+        return $this->hasMany(UserIntegration::class)->with('integration');
+    }
+
+    public function isUser(): bool
     {
         return $this->type == 'user';
     }
@@ -104,8 +119,7 @@ class User extends Authenticatable
 
     public function getRemainingWordsAttribute($value)
     {
-        if($this->type == 'admin')
-        {
+        if ($this->type == 'admin') {
             return $value;
         }
 
@@ -128,11 +142,9 @@ class User extends Authenticatable
         return $value;
     }
 
-
     public function getRemainingImagesAttribute($value)
     {
-        if($this->type == 'admin')
-        {
+        if ($this->type == 'admin') {
             return $value;
         }
 
@@ -155,11 +167,9 @@ class User extends Authenticatable
         return $value;
     }
 
-
-
     public function fullName()
     {
-        return $this->name . ' ' . $this->surname;
+        return $this->name.' '.$this->surname;
     }
 
     public function email()
@@ -191,7 +201,7 @@ class User extends Authenticatable
         // $userId=Auth::user()->id;
         $userId = $this->id;
         // Get current active subscription
-        $activeSub = getCurrentActiveSubscription($userId); 
+        $activeSub = getCurrentActiveSubscription($userId);
         if ($activeSub != null) {
             $plan = PaymentPlans::where('id', $activeSub->plan_id)->first();
             if ($plan == null) {
@@ -206,7 +216,9 @@ class User extends Authenticatable
                 if ($difference < 365) {
                     return $plan;
                 }
-            }
+            }else{
+				return $plan;
+			}
         } else {
             $activeSub = getCurrentActiveSubscriptionYokkasa($userId);
             if ($activeSub != null) {
@@ -215,21 +227,22 @@ class User extends Authenticatable
                     return null;
                 }
                 $difference = $activeSub->updated_at->diffInDays(Carbon::now());
-                if ($plan->frequency == 'monthly') {
+                if ($plan->frequency == 'monthly' || $plan->frequency == 'lifetime_monthly') {
                     if ($difference < 31) {
                         return $plan;
                     }
-                } elseif ($plan->frequency == 'yearly') {
+                } elseif ($plan->frequency == 'yearly' || $plan->frequency == 'lifetime_yearly') {
                     if ($difference < 365) {
                         return $plan;
                     }
-                }
+                }else{
+					return $plan;
+				}
             } else {
                 return null;
             }
         }
     }
-
 
     //Support Requests
     public function supportRequests()
@@ -269,48 +282,63 @@ class User extends Authenticatable
     public function getAvatar()
     {
         if ($this->avatar == null) {
-            return '<span class="avatar">' . Str::upper(substr($this->name, 0, 1)) . Str::upper(substr($this->surname, 0, 1)) . '</span>';
+            return '<span class="avatar">'.Str::upper(substr($this->name, 0, 1)).Str::upper(substr($this->surname, 0, 1)).'</span>';
         } else {
             $avatar = $this->avatar;
             if (strpos($avatar, 'http') === false || strpos($avatar, 'https') === false) {
-                $avatar = '/' . $avatar;
+                $avatar = '/'.$avatar;
             }
-            return  ' <span class="avatar" style="background-image: url(' . $avatar . ')"></span>';
+
+            return ' <span class="avatar" style="background-image: url('.custom_theme_url($avatar).')"></span>';
         }
     }
 
     public function couponsUsed()
     {
         return $this->belongsToMany(Coupon::class, 'coupon_users')
-                    ->withTimestamps();
+            ->withTimestamps();
     }
-
 
     public function twitterSettings()
     {
-        if (class_exists(TwitterSettings::class)) {
-            return $this->hasMany(TwitterSettings::class);
+        if (class_exists(\App\Models\Automation\TwitterSettings::class)) {
+            return $this->hasMany(\App\Models\Automation\TwitterSettings::class);
         }
-        return null; 
+
+        return null;
     }
 
     public function linkedinSettings()
     {
-        if (class_exists(LinkedinTokens::class)) {
-            return $this->hasMany(LinkedinTokens::class);
+        if (class_exists(\App\Models\Automation\LinkedinTokens::class)) {
+            return $this->hasMany(\App\Models\Automation\LinkedinTokens::class);
         }
-        return null; 
+
+        return null;
     }
 
     public function scheduledPosts()
     {
-        if (class_exists(ScheduledPosts::class)) {
-            return $this->hasMany(ScheduledPosts::class);
+        if (class_exists(\App\Models\Automation\ScheduledPosts::class)) {
+            return $this->hasMany(\App\Models\Automation\ScheduledPosts::class);
         }
-        return null; 
+
+        return null;
     }
 
-    public function folders() {
+    public function folders()
+    {
         return $this->hasMany(Folders::class, 'created_by');
+    }
+
+    // my companies
+    public function companies()
+    {
+        return $this->hasMany(Company::class, 'user_id');
+    }
+
+    public function getCompanies()
+    {
+        return $this->companies()->orderBy('name', 'asc')->get();
     }
 }

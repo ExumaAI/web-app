@@ -75,7 +75,7 @@ class AdvertisController extends Controller
         $advertis->save();
 
         return redirect()->route('dashboard.admin.advertis.index')->with([
-            'message' => 'Update success!',
+            'message' => __('Update success!'),
         ]);
     }
 

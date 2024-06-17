@@ -49,7 +49,7 @@ class SupportController extends Controller
         if ($ticket->user_id == Auth::id() or Auth::user()->type == 'admin'){
             return view('panel.support.view', compact('ticket'));
         }else{
-            return  back()->with(['message' => 'Unauthorized', 'type' => 'error']);
+            return  back()->with(['message' => __('Unauthorized'), 'type' => 'error']);
         }
     }
 

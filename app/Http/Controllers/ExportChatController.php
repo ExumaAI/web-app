@@ -16,9 +16,10 @@ class ExportChatController extends Controller
     {
         
         $messages = UserOpenaiChatMessage::where('user_openai_chat_id', $request->id)->get();
+		# for test
+		return view('panel.admin.openai.chat.document.pdf', ['messages' => $messages]);
 
         $pdf = PDF::loadView('panel.admin.openai.chat.document.pdf', ['messages' => $messages]);
-
         return $pdf->download('document.pdf');
     }
 

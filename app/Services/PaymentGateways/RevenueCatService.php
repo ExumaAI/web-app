@@ -466,7 +466,7 @@ class RevenueCatService
         $activeSub = getCurrentActiveSubscription($userId); 
         if($activeSub != null){
             if($fromApi){
-                return response()->json(['message' => 'Active subscription found.', 'status' => 'active'], 200);
+                return response()->json(['message' => __('Active subscription found.'), 'status' => 'active'], 200);
             }
             return true;
         }
@@ -483,5 +483,36 @@ class RevenueCatService
             return $activeSub->stripe_status == 'trialing';
         }
         return false;
+    }
+    public static function gatewayDefinitionArray(): array
+    {
+        return [
+            'code' => 'revenuecat',
+            'title' => 'RevenueCat',
+            'link' => 'https://www.revenuecat.com/',
+            'active' => 1,
+            'available' => 1,
+            'img' => '/assets/img/payments/revenuecat.png',
+            'whiteLogo' => 0,
+            'mode' => 0,
+            'sandbox_client_id' => 0,
+            'sandbox_client_secret' => 0,
+            'sandbox_app_id' => 0,
+            'live_client_id' => 1,
+            'live_client_secret' => 0,
+            'live_app_id' => 0,
+            'currency' => 0,
+            'currency_locale' => 0,
+            'notify_url' => 0,
+            'base_url' => 0,
+            'sandbox_url' => 0,
+            'locale' => 0,
+            'validate_ssl' => 0,
+            'webhook_secret' => 0,
+            'logger' => 0,
+            'tax' => 1,              // Option in settings
+            'bank_account_details' => 0,
+            'bank_account_other' => 0,
+        ];
     }
 }

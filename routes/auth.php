@@ -1,5 +1,6 @@
 <?php
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Auth\Google2FAController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
@@ -39,8 +40,10 @@ Route::group(['prefix' => LaravelLocalization::setLocale(), 'middleware' => [ 'l
         Route::get('/github/callback', [AuthenticationController::class, 'githubCallback']);
         Route::get('/google/callback', [AuthenticationController::class, 'googleCallback']);
         Route::get('/twitter/callback', [AuthenticationController::class, 'twitterCallback']);
-        Route::get('/facebook/callback', [AuthenticationController::class, 'facebookCallback']);    
+        Route::get('/facebook/callback', [AuthenticationController::class, 'facebookCallback']);
 
+        Route::get('2fa/login',[Google2FAController::class, 'login'])->name('2fa.login');
+        Route::post('2fa/login',[Google2FAController::class, 'verify']);
     });
 
     Route::middleware('auth')->group(function () {

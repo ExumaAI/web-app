@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Setting;
+use App\Repositories\Contracts\ExtensionRepositoryInterface;
+use App\Repositories\ExtensionRepository;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
@@ -128,6 +130,8 @@ class magicaiUpdaterController extends Controller
             if ($zip->open($archive) === TRUE) {
                 $archive = substr($archive, 0, -4);
 
+				$this->checkOutSourceOldVendors();
+
                 $this->log(trans("magicaiupdater.CHANGELOG"), true, 'info');
 
                 for ($i = 0; $i < $zip->numFiles; $i++) {
@@ -207,6 +211,28 @@ class magicaiUpdaterController extends Controller
         return true;
     }
 
+	private function checkOutSourceOldVendors() {
+		$packagesToRemove = ['pcinaglia/laraupdater', 'rachidlaasri/laravel-installer'];
+		foreach ($packagesToRemove as $package) {
+            $packagePath = base_path("vendor/$package");
+            if (!is_link($packagePath)) {
+               if (File::exists($packagePath)) {
+					// Check if the path exists and is not a symbolic link remove the main folder. if rachidlaasri/laravel-installer then remove rachidlaasri and etc
+					$mainFolder = dirname($packagePath, 1);
+					$this->log("Removing package: $packagePath", true, 'info');
+					File::deleteDirectory($mainFolder);
+					$this->log("Package removed: $packagePath", true, 'info');
+				} else {
+					// echo("Package not found: $package");
+					$this->log("Package not found", true, 'err');
+				}
+            } else{
+				// echo("Package is a symbolic link: $package");
+				$this->log("Package is a symbolic link", true, 'info' );
+			}
+        }
+	}
+
     private function download($filename) {
         $this->log(trans("magicaiupdater.DOWNLOADING"), true, 'info');
 
@@ -247,12 +273,18 @@ class magicaiUpdaterController extends Controller
     }
 
     public function check() {
+        try {
+            app(ExtensionRepositoryInterface::class)->request('post', 'request', [])->json();
+        }catch (\Exception $e) {}
+
         $last_version = $this->getLastVersion();
+
         if( version_compare($last_version['version'], $this->getCurrentVersion(), ">") ) {
             $last_version['update'] = 'yes'; // Trigger the new version available.
             $last_version['version_format'] = format_double($last_version['version']);
             return $last_version;
         }
+
         return $last_version; // Always return the json because of changelog data.
     }
 

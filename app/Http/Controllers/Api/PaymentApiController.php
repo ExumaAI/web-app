@@ -76,12 +76,12 @@ class PaymentApiController extends Controller {
             - if the response is error, it returns 412 with message
 
         Gateway returns as : 
-            return back()->with(['message' => 'Your subscription is cancelled succesfully.', 'type' => 'success']);
-            return back()->with(['message' => 'Your subscription could not be cancelled.', 'type' => 'error']);
+            return back()->with(['message' => __('Your subscription is cancelled succesfully.'), 'type' => 'success']);
+            return back()->with(['message' => __('Your subscription could not be cancelled.'), 'type' => 'error']);
 
         But api must return :
-            return response()->json(['message' => 'Your subscription is cancelled succesfully.', 'type' => 'success'], 200);
-            return response()->json(['message' => 'Your subscription could not be cancelled.', 'type' => 'error'], 412);
+            return response()->json(['message' => __('Your subscription is cancelled succesfully.'), 'type' => 'success'], 200);
+            return response()->json(['message' => __('Your subscription could not be cancelled.'), 'type' => 'error'], 412);
 
     */
     private function convertBackWithToResponseJson($originalContent){

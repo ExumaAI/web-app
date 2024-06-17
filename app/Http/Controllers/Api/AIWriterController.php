@@ -7,23 +7,29 @@ use App\Models\OpenAIGenerator;
 use App\Models\PaymentPlans;
 use App\Models\Setting;
 use App\Models\SettingTwo;
+use App\Models\UserFavorite;
 use App\Models\UserOpenai;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Response;
-use OpenAI\Laravel\Facades\OpenAI as FacadesOpenAI;
-use GuzzleHttp\Client;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use OpenAI;
-use App\Models\UserFavorite;
+use OpenAI\Laravel\Facades\OpenAI as FacadesOpenAI;
+use Symfony\Component\HttpFoundation\File\File;
 
 class AIWriterController extends Controller
 {
     protected $client;
+
     protected $settings;
+
     protected $settings_two;
+
     const STABLEDIFFUSION = 'stablediffusion';
+
     const STORAGE_S3 = 's3';
+
     const STORAGE_LOCAL = 'public';
 
     public function __construct()
@@ -32,7 +38,11 @@ class AIWriterController extends Controller
         $this->settings = Setting::first();
         $this->settings_two = SettingTwo::first();
         // Fetch the Site Settings object with openai_api_secret
-        $apiKeys = explode(',', $this->settings->openai_api_secret);
+        if ($this->settings?->user_api_option) {
+            $apiKeys = explode(',', auth()->user()?->api_keys);
+        } else {
+            $apiKeys = explode(',', $this->settings?->openai_api_secret);
+        }
         $apiKey = $apiKeys[array_rand($apiKeys)];
         config(['openai.api_key' => $apiKey]);
         set_time_limit(120);
@@ -46,27 +56,35 @@ class AIWriterController extends Controller
      *      security={{ "passport": {} }},
      *      summary="returns the openai writer info and related user generated docs",
      *      description="Retrieve details of an OpenAI generator by slug",
+     *
      *      @OA\Parameter(
      *          name="slug",
      *          in="path",
      *          description="Slug of the OpenAI generator",
      *          required=true,
+     *
      *          @OA\Schema(type="string")
      *      ),
+     *
      *      @OA\Response(
      *          response=200,
      *          description="Successful operation",
+     *
      *          @OA\JsonContent(
      *              type="object",
+     *
      *              @OA\Property(property="openai", type="object"),
      *              @OA\Property(property="userOpenai", type="object"),
      *          ),
      *      ),
+     *
      *      @OA\Response(
      *          response=404,
      *          description="OpenAI generator not found",
+     *
      *          @OA\JsonContent(
      *              type="object",
+     *
      *              @OA\Property(property="error", type="string", example="Resource not found"),
      *          ),
      *      ),
@@ -96,35 +114,44 @@ class AIWriterController extends Controller
      *      security={{ "passport": {} }},
      *      summary="returns the openai writer info ",
      *      description="Retrieve details of an OpenAI generator workbook by slug",
+     *
      *      @OA\Parameter(
      *          name="slug",
      *          in="path",
      *          description="Slug of the OpenAI generator",
      *          required=true,
+     *
      *          @OA\Schema(type="string")
      *      ),
+     *
      *      @OA\Response(
      *          response=200,
      *          description="Successful operation",
+     *
      *          @OA\JsonContent(
      *              type="object",
+     *
      *              @OA\Property(property="openai", type="object"),
      *          ),
      *      ),
+     *
      *      @OA\Response(
      *          response=404,
      *          description="OpenAI generator not found",
+     *
      *          @OA\JsonContent(
      *              type="object",
+     *
      *              @OA\Property(property="error", type="string", example="Resource not found"),
      *          ),
      *      ),
      * )
-    */
+     */
     public function openAIGeneratorWorkbookApi($slug)
     {
         try {
             $openai = OpenAIGenerator::whereSlug($slug)->firstOrFail();
+
             return response()->json([
                 'openai' => $openai,
             ], 200);
@@ -133,7 +160,6 @@ class AIWriterController extends Controller
         }
     }
 
-
     /**
      * @OA\Post(
      *     path="/api/aiwriter/generate-output",
@@ -141,41 +167,53 @@ class AIWriterController extends Controller
      *     description="Handle streamed text output based on specified parameters.",
      *     tags={"AI Writer"},
      *     security={{ "passport": {} }},
+     *
      *     @OA\Parameter(
      *         name="message_id",
      *         in="query",
      *         required=true,
      *         description="ID of the message",
+     *
      *         @OA\Schema(type="integer", example=1),
      *     ),
+     *
      *     @OA\Parameter(
      *         name="creativity",
      *         in="query",
      *         required=true,
      *         description="Creativity level for the generated content (0 to 1)",
+     *
      *         @OA\Schema(type="integer", example=1),
      *     ),
+     *
      *     @OA\Parameter(
      *         name="maximum_length",
      *         in="query",
      *         required=true,
      *         description="Maximum length of the generated text",
+     *
      *         @OA\Schema(type="integer", example=500),
      *     ),
+     *
      *     @OA\Parameter(
      *         name="number_of_results",
      *         in="query",
      *         required=true,
      *         description="Number of summary results to generate",
+     *
      *         @OA\Schema(type="integer", example=1),
      *     ),
+     *
      *     @OA\Response(
      *         response=200,
      *         description="Successful response",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="status", type="string", example="DONE"),
      *         ),
      *     ),
+     *
      *      @OA\Response(
      *          response=412,
      *          description="Precondition Failed",
@@ -183,23 +221,33 @@ class AIWriterController extends Controller
      *     @OA\Response(
      *         response=500,
      *         description="Error response",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="error", type="string", example="Error from API call. Please try again."),
      *         ),
      *     ),
      * )
-    */
+     */
     public function streamedTextOutput(Request $request)
     {
-        if($request->message_id == null) return response()->json(['error' => 'Message ID is required'], 412);
-        if($request->creativity == null) return response()->json(['error' => 'Creativity is required'], 412);
-        if($request->maximum_length == null) return response()->json(['error' => 'Max length is required'], 412);
-        if($request->number_of_results == null) return response()->json(['error' => 'Number of results is required'], 412);
-        
+        if ($request->message_id == null) {
+            return response()->json(['error' => __('Message ID is required')], 412);
+        }
+        if ($request->creativity == null) {
+            return response()->json(['error' => __('Creativity is required')], 412);
+        }
+        if ($request->maximum_length == null) {
+            return response()->json(['error' => __('Max length is required')], 412);
+        }
+        if ($request->number_of_results == null) {
+            return response()->json(['error' => __('Number of results is required')], 412);
+        }
+
         $user = Auth::user();
-        if($user->remaining_words != -1){
-            if($user->remaining_words <= 0){
-                return response()->json(['error' => 'You have no remaining words. Please upgrade your plan.'], 412);
+        if ($user->remaining_words != -1) {
+            if ($user->remaining_words <= 0) {
+                return response()->json(['error' => __('You have no remaining words. Please upgrade your plan.')], 412);
             }
         }
 
@@ -214,47 +262,46 @@ class AIWriterController extends Controller
         $number_of_results = $request->number_of_results;
 
         return Response::stream(function () use ($prompt, $message_id, $settings, $creativity, $maximum_length, $number_of_results, $youtube_url, $rss_image) {
-             try {
-				if ($settings->openai_default_model == 'text-davinci-003') {
-					 $stream = FacadesOpenAI::completions()->createStreamed([
-                        'model' => 'text-davinci-003',
+            try {
+                if ($settings->openai_default_model == 'text-davinci-003') {
+                    $stream = FacadesOpenAI::completions()->createStreamed([
+                        'model' => $this->settings->openai_default_model,
                         'prompt' => $prompt,
-                        'temperature' => (int)$creativity,
-                        'max_tokens' => (int)$maximum_length,
-                        'n' => (int)$number_of_results
+                        'temperature' => (int) $creativity,
+                        'max_tokens' => (int) $maximum_length,
+                        'n' => (int) $number_of_results,
                     ]);
-                   
-				} else {
-					if ((int)$number_of_results > 1) {
-                        $prompt = $prompt . ' number of results should be ' . (int)$number_of_results;
+
+                } else {
+                    if ((int) $number_of_results > 1) {
+                        $prompt = $prompt.' number of results should be '.(int) $number_of_results;
                     }
                     $stream = FacadesOpenAI::chat()->createStreamed([
                         'model' => $this->settings->openai_default_model,
                         'messages' => [
-                            ['role' => 'user', 'content' => $prompt]
+                            ['role' => 'user', 'content' => $prompt],
                         ],
                     ]);
-				}
+                }
             } catch (\Exception $exception) {
-                $messageError = 'Error from API call. Please try again. If error persists again, please contact the system administrator with this message ' . $exception->getMessage();
-                echo 'data: {"error": "' . $messageError . '"}';
+                $messageError = 'Error from API call. Please try again. If error persists again, please contact the system administrator with this message '.$exception->getMessage();
+                echo 'data: {"error": "'.$messageError.'"}';
                 echo "\n\n";
-                ob_flush();
+                //ob_flush();
                 flush();
                 // echo 'data: {"status": "DONE"}';
                 echo 'data: [DONE]';
                 echo "\n\n";
-                ob_flush();
+                //ob_flush();
                 flush();
                 usleep(50000);
             }
 
-            
             $total_used_tokens = 0;
-            $output = "";
-            $responsedText = "";
+            $output = '';
+            $responsedText = '';
 
-			// Youtube Thumbnail
+            // Youtube Thumbnail
             if ($youtube_url) {
                 $parsedUrl = parse_url($youtube_url);
                 if (isset($parsedUrl['query'])) {
@@ -270,16 +317,16 @@ class AIWriterController extends Controller
 
                 //save file on local storage or aws s3
                 Storage::disk('public')->put($nameOfImage, $contents);
-                $path = '/uploads/' . $nameOfImage;
+                $path = '/uploads/'.$nameOfImage;
                 $uploadedFile = new File(substr($path, 1));
 
-                if (SettingTwo::first()->ai_image_storage == "s3") {
+                if (SettingTwo::first()->ai_image_storage == 's3') {
                     try {
                         $aws_path = Storage::disk('s3')->put('', $uploadedFile);
                         unlink(substr($path, 1));
                         $path = Storage::disk('s3')->url($aws_path);
                     } catch (\Exception $e) {
-                        return response()->json(["status" => "error", "message" => "AWS Error - " . $e->getMessage()]);
+                        return response()->json(['status' => 'error', 'message' => 'AWS Error - '.$e->getMessage()]);
                     }
                 }
 
@@ -288,7 +335,7 @@ class AIWriterController extends Controller
                 $total_used_tokens += 1;
                 $needChars = 6000 - 1;
                 echo $output;
-                ob_flush();
+                //ob_flush();
                 flush();
                 usleep(500);
             }
@@ -297,20 +344,20 @@ class AIWriterController extends Controller
             if ($rss_image) {
 
                 $contents = file_get_contents($rss_image);
-                $nameOfImage = 'rss-' . Str::random(12) . ".jpg";
+                $nameOfImage = 'rss-'.Str::random(12).'.jpg';
 
                 //save file on local storage or aws s3
                 Storage::disk('public')->put($nameOfImage, $contents);
-                $path = '/uploads/' . $nameOfImage;
+                $path = '/uploads/'.$nameOfImage;
                 $uploadedFile = new File(substr($path, 1));
 
-                if (SettingTwo::first()->ai_image_storage == "s3") {
+                if (SettingTwo::first()->ai_image_storage == 's3') {
                     try {
                         $aws_path = Storage::disk('s3')->put('', $uploadedFile);
                         unlink(substr($path, 1));
                         $path = Storage::disk('s3')->url($aws_path);
                     } catch (\Exception $e) {
-                        return response()->json(["status" => "error", "message" => "AWS Error - " . $e->getMessage()]);
+                        return response()->json(['status' => 'error', 'message' => 'AWS Error - '.$e->getMessage()]);
                     }
                 }
 
@@ -318,8 +365,8 @@ class AIWriterController extends Controller
 
                 $total_used_tokens += 1;
                 $needChars = 6000 - 1;
-                echo  $output;
-                ob_flush();
+                echo $output;
+                //ob_flush();
                 flush();
                 usleep(500);
             }
@@ -328,40 +375,31 @@ class AIWriterController extends Controller
                 if ($settings->openai_default_model == 'text-davinci-003') {
                     if (isset($response->choices[0]->text)) {
                         $message = $response->choices[0]->text;
-                        $messageFix = str_replace(["\r\n", "\r", "\n"], "<br/>", $message);
+                        $messageFix = str_replace(["\r\n", "\r", "\n"], '<br/>', $message);
                         $output .= $messageFix;
                         $responsedText .= $message;
                         $total_used_tokens += countWords($messageFix);
 
-                        $string_length = Str::length($messageFix);
-                        $needChars = 6000 - $string_length;
-                        $random_text = Str::random($needChars);
-
-
-                        // echo 'data: ' . $messageFix . '/**' . $random_text . "\n\n";
+                        echo PHP_EOL;
                         echo $messageFix;
-                        ob_flush();
+                        //ob_flush();
                         flush();
-                        usleep(500);
+                        usleep(50000); //500
                     }
                 } else {
-                    
+
                     if (isset($response['choices'][0]['delta']['content'])) {
                         $message = $response['choices'][0]['delta']['content'];
-                        $messageFix = str_replace(["\r\n", "\r", "\n"], "<br/>", $message);
+                        $messageFix = str_replace(["\r\n", "\r", "\n"], '<br/>', $message);
                         $output .= $messageFix;
                         $responsedText .= $message;
                         $total_used_tokens += countWords($messageFix);
 
-                        $string_length = Str::length($messageFix);
-                        $needChars = 6000 - $string_length;
-                        // $random_text = Str::random($needChars);
-
-                        // echo 'data: ' . $messageFix . '/**' . $random_text . "\n\n";
+                        echo PHP_EOL;
                         echo $messageFix;
-                        ob_flush();
+                        //ob_flush();
                         flush();
-                        usleep(500);
+                        usleep(50000); //500
                     }
                 }
 
@@ -380,11 +418,12 @@ class AIWriterController extends Controller
 
             $user = Auth::user();
 
-            userCreditDecreaseForWord($user, $total_used_tokens);
+            userCreditDecreaseForWord($user, $total_used_tokens, $this->settings->openai_default_model);
 
             // echo 'data: {"status": "DONE"}';
             echo "\n\n";
-            ob_flush();
+            echo 'data: [DONE]';
+            //ob_flush();
             flush();
             usleep(50000);
         }, 200, [
@@ -401,53 +440,63 @@ class AIWriterController extends Controller
      *     description="Load images based on the specified parameters.",
      *     tags={"AI Writer"},
      *     security={{ "passport": {} }},
+     *
      *     @OA\Parameter(
      *         name="post_type",
      *         in="query",
      *         required=true,
      *         description="Type of post",
+     *
      *         @OA\Schema(
      *             type="string",
      *             enum={"ai_image_generator"},
      *             example="ai_image_generator"
      *         )
      *     ),
+     *
      *     @OA\Parameter(
      *         name="offset",
      *         in="query",
      *         required=false,
      *         description="Offset for lazy loading",
+     *
      *         @OA\Schema(
      *             type="integer",
      *             example=0
      *         )
      *     ),
+     *
      *     @OA\Response(
      *         response=200,
      *         description="Successful response",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="images", type="array", description="Array of images", @OA\Items(type="string")),
      *             @OA\Property(property="hasMore", type="boolean", description="Indicates whether there are more images")
      *         )
      *     ),
+     *
      *     @OA\Response(
      *         response=404,
      *         description="Post not found",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="error", type="string", description="Error message")
      *         )
      *     )
      * )
-    */
+     */
     public function lazyLoadImage(Request $request)
     {
         $offset = $request->get('offset', 0);
         $post_type = $request->get('post_type');
         $post = OpenAIGenerator::where('slug', $post_type)->first();
 
-        if (!$post) {
+        if (! $post) {
             return response()->json([
-                'error' => 'Post not found',
+                'error' => __('Post not found'),
             ], 404);
         }
 
@@ -465,19 +514,22 @@ class AIWriterController extends Controller
         ]);
     }
 
-
     /**
      * @OA\Post(
      *     path="/api/aiwriter/generate/save",
      *     summary="Low Generate Save",
      *     description="Save the generated response and update user information.",
      *     tags={"AI Writer"},
+     *
      *     @OA\RequestBody(
      *         required=true,
+     *
      *         @OA\MediaType(
      *             mediaType="application/json",
+     *
      *             @OA\Schema(
      *                 type="object",
+     *
      *                 @OA\Property(
      *                     property="message_id",
      *                     description="ID of the message",
@@ -493,17 +545,23 @@ class AIWriterController extends Controller
      *             ),
      *         ),
      *     ),
+     *
      *     @OA\Response(
      *         response=200,
      *         description="Successful response",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="status", type="string", example="Data saved successfully."),
      *         ),
      *     ),
+     *
      *     @OA\Response(
      *         response=500,
      *         description="Error response",
+     *
      *         @OA\JsonContent(
+     *
      *             @OA\Property(property="error", type="string", example="Error saving data."),
      *         ),
      *     ),
@@ -524,12 +582,10 @@ class AIWriterController extends Controller
 
         $user = Auth::user();
 
-        userCreditDecreaseForWord($user, $total_user_tokens);
+        userCreditDecreaseForWord($user, $total_user_tokens, $this->settings->openai_default_model);
 
         return response()->json(['status' => 'Data saved successfully.']);
     }
-
-
 
     /**
      * Gets all AI Generators related to text
@@ -541,56 +597,57 @@ class AIWriterController extends Controller
      *      security={{ "passport": {} }},
      *      summary="Gets all AI Generators related to text",
      *      description="Gets all AI Generators related to text. Controls user access to premium generators.",
+     *
      *      @OA\Response(
      *          response=200,
      *          description="Successful operation",
+     *
      *          @OA\JsonContent(
      *              type="object",
+     *
      *              @OA\Property(property="data", type="array", @OA\Items(type="object")),
      *          ),
      *      ),
+     *
      *      @OA\Response(
      *          response=401,
      *          description="Unauthorized: User not authenticated",
      *      ),
      *  )
-    */
+     */
     public function getOpenAIWriterList(Request $request)
     {
         // Check if user can access the AI Writer premium types
-        $userId=Auth::user()->id;
-        $planId = "";
+        $userId = Auth::user()->id;
+        $planId = '';
 
         // Get current active subscription
-        $activeSub = getCurrentActiveSubscription($userId); 
-        if($activeSub != null){
+        $activeSub = getCurrentActiveSubscription($userId);
+        if ($activeSub != null) {
             $planId = $activeSub->plan_id;
-        }else{
+        } else {
             $activeSub = getCurrentActiveSubscriptionYokkasa($userId);
-            if($activeSub != null) {
+            if ($activeSub != null) {
                 $planId = $activeSub->plan_id;
             }
         }
 
-        if($planId != ""){
+        if ($planId != '') {
             $plan = PaymentPlans::where([['id', '=', $planId]])->first();
 
-            if($plan->plan_type == "All" || $plan->plan_type == "all" || $plan->plan_type == "premium" || $plan->plan_type == "Premium"){
+            if ($plan->plan_type == 'All' || $plan->plan_type == 'all' || $plan->plan_type == 'premium' || $plan->plan_type == 'Premium') {
                 $aiList = OpenAIGenerator::where([['type', '=', 'text']])->get();
+
                 return response()->json($aiList, 200);
             }
         }
 
- 
         $aiList = OpenAIGenerator::where([['type', '=', 'text'], ['premium', '=', false]])->get();
+
         return response()->json($aiList, 200);
     }
 
-
-
-
-
-  /**
+    /**
      * Gets favorite openai list
      *
      * @OA\Get(
@@ -600,27 +657,31 @@ class AIWriterController extends Controller
      *      summary="Gets favorite openai list",
      *      description="Returns favorite openai id list of current user.",
      *      security={{ "passport": {} }},
+     *
      *      @OA\Response(
      *          response=200,
      *          description="Successful operation",
+     *
      *          @OA\JsonContent(
      *              type="object",
      *          ),
      *      ),
+     *
      *      @OA\Response(
      *          response=401,
      *          description="Unauthenticated",
      *      ),
      * )
-    */
-    public function favoriteOpenaiList(Request $request) {
+     */
+    public function favoriteOpenaiList(Request $request)
+    {
 
-        $userId=Auth::user()->id;
+        $userId = Auth::user()->id;
         $favoriteList = UserFavorite::where([['user_id', '=', $userId]])->pluck('openai_id')->toArray();
+
         return response()->json($favoriteList, 200);
 
     }
-
 
     /**
      * Add favorite openai list
@@ -632,23 +693,28 @@ class AIWriterController extends Controller
      *      summary="Adds openai to favorite openai list",
      *      description="Returns favorite openai id list of current user.",
      *      security={{ "passport": {} }},
+     *
      *      @OA\Parameter(
      *         name="openai_id",
      *         in="query",
      *         required=true,
      *         description="OpenAI ID",
+     *
      *         @OA\Schema(
      *             type="integer",
      *             example=0
      *         )
      *     ),
+     *
      *      @OA\Response(
      *          response=200,
      *          description="Successful operation",
+     *
      *          @OA\JsonContent(
      *              type="object",
      *          ),
      *      ),
+     *
      *      @OA\Response(
      *          response=401,
      *          description="Unauthenticated",
@@ -658,15 +724,20 @@ class AIWriterController extends Controller
      *          description="Precondition Failed",
      *      ),
      * )
-    */
-    public function addToFavoriteOpenaiList(Request $request) {
+     */
+    public function addToFavoriteOpenaiList(Request $request)
+    {
 
-        if($request->openai_id == null) return response()->json(['error' => 'OpenAI ID is required'], 412);
+        if ($request->openai_id == null) {
+            return response()->json(['error' => __('OpenAI ID is required')], 412);
+        }
 
         $openAi = OpenAIGenerator::where([['id', '=', $request->openai_id]])->first();
-        if($openAi == null) return response()->json(['error' => 'OpenAI not found'], 412);
+        if ($openAi == null) {
+            return response()->json(['error' => __('OpenAI not found')], 412);
+        }
 
-        $userId=Auth::user()->id;
+        $userId = Auth::user()->id;
 
         $favorite = new UserFavorite();
         $favorite->user_id = $userId;
@@ -674,10 +745,10 @@ class AIWriterController extends Controller
         $favorite->save();
 
         $favoriteList = UserFavorite::where([['user_id', '=', $userId]])->pluck('openai_id')->toArray();
+
         return response()->json($favoriteList, 200);
 
     }
-
 
     /**
      * Remove from favorite openai list
@@ -689,23 +760,28 @@ class AIWriterController extends Controller
      *      summary="Removes openai from favorite openai list",
      *      description="Returns favorite openai id list of current user.",
      *      security={{ "passport": {} }},
+     *
      *      @OA\Parameter(
      *         name="openai_id",
      *         in="query",
      *         required=true,
      *         description="OpenAI ID",
+     *
      *         @OA\Schema(
      *             type="integer",
      *             example=0
      *         )
      *     ),
+     *
      *      @OA\Response(
      *          response=200,
      *          description="Successful operation",
+     *
      *          @OA\JsonContent(
      *              type="object",
      *          ),
      *      ),
+     *
      *      @OA\Response(
      *          response=401,
      *          description="Unauthenticated",
@@ -719,36 +795,31 @@ class AIWriterController extends Controller
      *          description="Precondition Failed",
      *      ),
      * )
-    */
-    public function removeFromFavoriteOpenaiList(Request $request) {
+     */
+    public function removeFromFavoriteOpenaiList(Request $request)
+    {
 
-        if($request->openai_id == null) return response()->json(['error' => 'OpenAI ID is required'], 412);
+        if ($request->openai_id == null) {
+            return response()->json(['error' => __('OpenAI ID is required')], 412);
+        }
 
         $openAi = OpenAIGenerator::where([['id', '=', $request->openai_id]])->first();
-        if($openAi == null) return response()->json(['error' => 'OpenAI not found'], 412);
+        if ($openAi == null) {
+            return response()->json(['error' => __('OpenAI not found')], 412);
+        }
 
-        $userId=Auth::user()->id;
+        $userId = Auth::user()->id;
 
         $isFavorite = UserFavorite::where([['user_id', '=', $userId], ['openai_id', '=', $openAi->id]])->first();
-        if($isFavorite == null) return response()->json(['error' => 'OpenAI is not in your favorite list'], 404);
+        if ($isFavorite == null) {
+            return response()->json(['error' => __('OpenAI is not in your favorite list')], 404);
+        }
 
         $isFavorite->delete();
 
         $favoriteList = UserFavorite::where([['user_id', '=', $userId]])->pluck('openai_id')->toArray();
+
         return response()->json($favoriteList, 200);
 
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
 }

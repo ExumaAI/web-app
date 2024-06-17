@@ -210,7 +210,7 @@ class TransferService
             $paymentProof->proof_image = $filename;
             $paymentProof->save();
             $request->file('proof_image')->move(public_path('proofs'), $filename);
-
+			\App\Models\Usage::getSingle()->updateSalesCount($total);
             createActivity($user->id, __('initiated a subscription approval-awaiting bank transaction.'), $plan->name . ' '. __('Plan'), null);
 
         } catch (\Exception $th) {
@@ -290,7 +290,7 @@ class TransferService
             $order->tax_rate = $gateway->tax;
             $order->tax_value = taxToVal($plan->price, $gateway->tax);
             $order->save();
-
+			\App\Models\Usage::getSingle()->updateSalesCount($total);
             createActivity($user->id, __('initiated a prepaid pack approval-awaiting bank transaction.'), $plan->name . ' '. __('Plan'), null);
 
         } catch (\Exception $th) {
@@ -355,7 +355,7 @@ class TransferService
             return redirect()->route('dashboard.user.index')->with(['message' => __('Your subscription is cancelled succesfully.'), 'type' => 'success']);        
         }
 
-        return back()->with(['message' => 'Could not find active subscription. Nothing changed!', 'type' => 'error']);
+        return back()->with(['message' => __('Could not find active subscription. Nothing changed!'), 'type' => 'error']);
     }
     public static function checkIfTrial()
     {

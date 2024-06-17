@@ -8,8 +8,8 @@ use App\Jobs\SendTeamInviteEmail;
 use App\Models\EmailTemplates;
 use App\Models\Extension;
 use Illuminate\Http\Request;
+use App\Models\User;
 
-# rauf abbas refactor
 class EmailTemplatesController extends Controller
 {
     public function index()
@@ -60,7 +60,7 @@ class EmailTemplatesController extends Controller
         return redirect()
             ->route('dashboard.email-templates.index')
             ->with([
-                'message' => 'Updated Successfully', 'type' => 'success'
+                'message' => __('Updated Successfully'), 'type' => 'success'
             ]);
     }
 
@@ -77,13 +77,13 @@ class EmailTemplatesController extends Controller
 
         if ($template->getAttribute('system')) {
             return back()->with([
-                'message' => 'Deleted Successfully', 'type' => 'danger'
+                'message' => __('Deleted Successfully'), 'type' => 'danger'
             ]);
         }
 
         $template->delete();
 
-        return back()->with(['message' => 'Deleted Successfully', 'type' => 'success']);
+        return back()->with(['message' => __('Deleted Successfully'), 'type' => 'success']);
     }
 
     public function sendView(int $id)
@@ -137,7 +137,7 @@ class EmailTemplatesController extends Controller
         }
 
         return back()->with([
-            'message' => 'Emails are being sent',
+            'message' => __('Emails are being sent'),
             'type' => 'success'
         ]);
     }

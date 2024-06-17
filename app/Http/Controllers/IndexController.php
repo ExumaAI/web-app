@@ -33,18 +33,16 @@ class IndexController extends Controller
     {
         $filters = OpenaiGeneratorFilter::all();
         $templates = OpenAIGenerator::all();
-        $plansSubscription = PaymentPlans::where('type', 'subscription')->get();
-        $plansSubscriptionMonthly = PaymentPlans::where([['type', '=', 'subscription'], ['frequency', '=', 'monthly']])->get();
-		
+        $plansSubscription = PaymentPlans::where('type', 'subscription')->get()->sortBy('price');
+        $plansSubscriptionMonthly = PaymentPlans::where([['type', '=', 'subscription'], ['frequency', '=', 'monthly']])->get()->sortBy('price');
 		$plansSubscriptionLifetime = PaymentPlans::where('type', '=', 'subscription')
 		->where(function ($query) {
 			$query->where('frequency', '=', 'lifetime_yearly')
 				->orWhere('frequency', '=', 'lifetime_monthly');
 		})
-		->get();
-		
-        $plansSubscriptionAnnual = PaymentPlans::where([['type', '=', 'subscription'], ['frequency', '=', 'yearly']])->get();
-        $plansPrepaid = PaymentPlans::where('type', 'prepaid')->get();
+		->get()->sortBy('price');
+        $plansSubscriptionAnnual = PaymentPlans::where([['type', '=', 'subscription'], ['frequency', '=', 'yearly']])->get()->sortBy('price');
+        $plansPrepaid = PaymentPlans::where('type', 'prepaid')->get()->sortBy('price');
         $faq = Faq::all();
         $tools = FrontendTools::all();
         $futures = FrontendFuture::all();
@@ -57,9 +55,12 @@ class IndexController extends Controller
         $posts = Blog::where('status', 1)->orderBy('id', 'desc')->paginate(FrontendSectionsStatusses::first()->blog_posts_per_page ?? 3);
 
         $setting = Setting::first();
+
         if ($setting->frontend_additional_url != null){
             return Redirect::to($setting->frontend_additional_url);
         }
+
+        $currency = currency()->symbol;
 
         return view('index', compact(
             'templates',
@@ -78,7 +79,8 @@ class IndexController extends Controller
             'plansSubscriptionMonthly',
 			'plansSubscriptionLifetime',
             'plansSubscriptionAnnual',
-            'posts'
+            'posts',
+            'currency'
         ));
     }
 
@@ -89,7 +91,7 @@ class IndexController extends Controller
             $client = new Client();
 
             try {
-                $response = $client->request('GET', "https://portal.liquid-themes.com/api/license/".$liquid_license_domain_key);
+                $response = $client->request('GET', "https://portal.liquid-themes.com/api/license/" . $liquid_license_domain_key);
             } catch (\Exception $e) {
                 return response()->json(["status" => "error", "message" => $e->getMessage()]);
             }

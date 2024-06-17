@@ -1,13 +1,13 @@
 <?php return array (
-  'barryvdh/laravel-debugbar' => 
+  'akaunting/laravel-setting' => 
   array (
     'providers' => 
     array (
-      0 => 'Barryvdh\\Debugbar\\ServiceProvider',
+      0 => 'Akaunting\\Setting\\Provider',
     ),
     'aliases' => 
     array (
-      'Debugbar' => 'Barryvdh\\Debugbar\\Facades\\Debugbar',
+      'Setting' => 'Akaunting\\Setting\\Facade',
     ),
   ),
   'barryvdh/laravel-dompdf' => 
@@ -20,6 +20,13 @@
     array (
       'Pdf' => 'Barryvdh\\DomPDF\\Facade\\Pdf',
       'PDF' => 'Barryvdh\\DomPDF\\Facade\\Pdf',
+    ),
+  ),
+  'blade-ui-kit/blade-icons' => 
+  array (
+    'providers' => 
+    array (
+      0 => 'BladeUI\\Icons\\BladeIconsServiceProvider',
     ),
   ),
   'darkaonline/l5-swagger' => 
@@ -44,11 +51,22 @@
       'GoogleTranslate' => 'Datlechin\\GoogleTranslate\\Facades\\GoogleTranslate',
     ),
   ),
-  'laravel/breeze' => 
+  'gehrisandro/tailwind-merge-laravel' => 
   array (
     'providers' => 
     array (
-      0 => 'Laravel\\Breeze\\BreezeServiceProvider',
+      0 => 'TailwindMerge\\Laravel\\TailwindMergeServiceProvider',
+    ),
+  ),
+  'igaster/laravel-theme' => 
+  array (
+    'providers' => 
+    array (
+      0 => 'Igaster\\LaravelTheme\\themeServiceProvider',
+    ),
+    'aliases' => 
+    array (
+      'Theme' => 'Igaster\\LaravelTheme\\Facades\\Theme',
     ),
   ),
   'laravel/cashier' => 
@@ -63,13 +81,6 @@
     'providers' => 
     array (
       0 => 'Laravel\\Passport\\PassportServiceProvider',
-    ),
-  ),
-  'laravel/sail' => 
-  array (
-    'providers' => 
-    array (
-      0 => 'Laravel\\Sail\\SailServiceProvider',
     ),
   ),
   'laravel/sanctum' => 
@@ -133,13 +144,6 @@
       0 => 'Carbon\\Laravel\\ServiceProvider',
     ),
   ),
-  'nunomaduro/collision' => 
-  array (
-    'providers' => 
-    array (
-      0 => 'NunoMaduro\\Collision\\Adapters\\Laravel\\CollisionServiceProvider',
-    ),
-  ),
   'nunomaduro/termwind' => 
   array (
     'providers' => 
@@ -161,11 +165,29 @@
       0 => 'pcinaglia\\laraupdater\\LaraUpdaterServiceProvider',
     ),
   ),
+  'pragmarx/google2fa-laravel' => 
+  array (
+    'providers' => 
+    array (
+      0 => 'PragmaRX\\Google2FALaravel\\ServiceProvider',
+    ),
+    'aliases' => 
+    array (
+      'Google2FA' => 'PragmaRX\\Google2FALaravel\\Facade',
+    ),
+  ),
   'rachidlaasri/laravel-installer' => 
   array (
     'providers' => 
     array (
       0 => 'RachidLaasri\\LaravelInstaller\\Providers\\LaravelInstallerServiceProvider',
+    ),
+  ),
+  'ryangjchandler/blade-tabler-icons' => 
+  array (
+    'providers' => 
+    array (
+      0 => 'RyanChandler\\TablerIcons\\BladeTablerIconsServiceProvider',
     ),
   ),
   'spatie/laravel-health' => 
@@ -179,15 +201,11 @@
       'Health' => 'Spatie\\Health\\Facades\\Health',
     ),
   ),
-  'spatie/laravel-ignition' => 
+  'spatie/laravel-sitemap' => 
   array (
     'providers' => 
     array (
-      0 => 'Spatie\\LaravelIgnition\\IgnitionServiceProvider',
-    ),
-    'aliases' => 
-    array (
-      'Flare' => 'Spatie\\LaravelIgnition\\Facades\\Flare',
+      0 => 'Spatie\\Sitemap\\SitemapServiceProvider',
     ),
   ),
   'srmklive/paypal' => 

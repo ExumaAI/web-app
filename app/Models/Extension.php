@@ -7,8 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Extension extends Model
 {
-    use HasFactory;
-
     protected $table = 'extensions';
+
     protected $guarded = [];
 }

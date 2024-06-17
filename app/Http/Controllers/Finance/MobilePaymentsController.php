@@ -47,31 +47,31 @@ class MobilePaymentsController extends Controller {
 
 
             if($request->plan_id == 0 || $request->plan_id == "" || $request->plan_id == null){
-                return back()->with(['message' => 'Please select a plan.', 'type' => 'error']);
+                return back()->with(['message' => __('Please select a plan.'), 'type' => 'error']);
             }
 
             if($request->plan_name_label == ""){
-                return back()->with(['message' => 'Please enter a plan name.', 'type' => 'error']);
+                return back()->with(['message' => __('Please enter a plan name.'), 'type' => 'error']);
             }
 
             if($request->plan_type_label == ""){
-                return back()->with(['message' => 'Please enter a plan type.', 'type' => 'error']);
+                return back()->with(['message' => __('Please enter a plan type.'), 'type' => 'error']);
             }
 
             if($request->revenuecat_package_id == ""){
-                return back()->with(['message' => 'Please enter a RevenueCat Package ID.', 'type' => 'error']);
+                return back()->with(['message' => __('Please enter a RevenueCat Package ID.'), 'type' => 'error']);
             }
 
             if($request->revenuecat_entitlement_id == ""){
-                return back()->with(['message' => 'Please enter a RevenueCat Entitlement ID.', 'type' => 'error']);
+                return back()->with(['message' => __('Please enter a RevenueCat Entitlement ID.'), 'type' => 'error']);
             }
 
             if($request->revenuecat_google_id == ""){
-                return back()->with(['message' => 'Please enter a RevenueCat Google Product ID.', 'type' => 'error']);
+                return back()->with(['message' => __('Please enter a RevenueCat Google Product ID.'), 'type' => 'error']);
             }
 
             if($request->revenuecat_apple_id == ""){
-                return back()->with(['message' => 'Please enter a RevenueCat Apple Product ID.', 'type' => 'error']);
+                return back()->with(['message' => __('Please enter a RevenueCat Apple Product ID.'), 'type' => 'error']);
             }
             
             $plan_id = $request->plan_id;
@@ -134,7 +134,7 @@ class MobilePaymentsController extends Controller {
             }
 
 
-            return back()->with(['message' => 'Plan updated successfully.', 'type' => 'success']);
+            return back()->with(['message' => __('Plan updated successfully.'), 'type' => 'success']);
         }
 
 

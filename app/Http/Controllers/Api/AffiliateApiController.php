@@ -154,8 +154,8 @@ class AffiliateApiController extends Controller {
     */
     public function requestWithdrawal(Request $request) {
 
-        if($request->affiliate_bank_account == null) return response()->json(['error' => 'Bank Account missing.'], 412);  
-        if($request->amount == null) return response()->json(['error' => 'Amount missing.'], 412);  
+        if($request->affiliate_bank_account == null) return response()->json(['error' => __('Bank Account missing.')], 412);  
+        if($request->amount == null) return response()->json(['error' => __('Amount missing.')], 412);  
 
         $user = Auth::user();
         $list = $user->affiliates;
@@ -180,7 +180,7 @@ class AffiliateApiController extends Controller {
             createActivity($user->id, 'Sent', 'Affiliate Withdraw Request', null);
             return response()->json(['message' => 'Affiliate Withdrawal Requested'], 200);
         } else {
-            return response()->json(['error' => 'Not enough earnings'], 412);
+            return response()->json(['error' => __('Not enough earnings')], 412);
         }
 
     }

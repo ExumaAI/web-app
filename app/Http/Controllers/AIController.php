@@ -3,54 +3,63 @@
 namespace App\Http\Controllers;
 
 use App\Helpers\Classes\Helper;
+use App\Models\Company;
 use App\Models\OpenAIGenerator;
-use GuzzleHttp\Client;
+use App\Models\Product;
 use App\Models\Setting;
 use App\Models\SettingTwo;
 use App\Models\UserOpenai;
-use App\Models\RateLimit;
 use App\Models\UserOpenaiChat;
+use App\Models\Usage;
+use App\Services\Ai\Anthropic;
 use App\Services\VectorService;
+use Exception;
+use GuzzleHttp\Client;
+use GuzzleHttp\Psr7\Stream;
+use Illuminate\Http\Client\RequestException;
+use Illuminate\Http\File;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Http\File;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use OpenAI;
-use OpenAI\Laravel\Facades\OpenAI as FacadesOpenAI;
 use Mcamara\LaravelLocalization\Facades\LaravelLocalization;
-use Carbon\Carbon;
-
-use Exception;
-use Illuminate\Http\Client\RequestException;
+use OpenAI;
+use Illuminate\Support\Facades\Cache;
+use OpenAI\Laravel\Facades\OpenAI as FacadesOpenAI;
 
 class AIController extends Controller
 {
     protected $client;
+
     protected $settings;
+
     protected $settings_two;
+
     const STABLEDIFFUSION = 'stablediffusion';
+
     const STORAGE_S3 = 's3';
+
+    const CLOUDFLARE_R2 = 'r2';
+
     const STORAGE_LOCAL = 'public';
 
     public function __construct()
     {
+		$this->middleware(function (Request $request, $next) {
+			Helper::setOpenAiKey();
+            return $next($request);
+        });
         //Settings
         $this->settings = Setting::first();
         $this->settings_two = SettingTwo::first();
-        // Fetch the Site Settings object with openai_api_secret
-        $apiKeys = explode(',', $this->settings->openai_api_secret);
-        $apiKey = $apiKeys[array_rand($apiKeys)];
-        config(['openai.api_key' => $apiKey]);
         set_time_limit(120);
     }
 
     public function buildOutput(Request $request)
     {
         $user = Auth::user();
-
 
         if ($request->post_type != 'ai_image_generator' && $user->remaining_words <= 0 && $user->remaining_words != -1) {
             return response()->json(['errors' => 'You have no remaining words. Please upgrade your plan.'], 400);
@@ -60,9 +69,9 @@ class AIController extends Controller
         $post_type = $request->post_type;
 
         //SETTINGS
-        $number_of_results = $request->number_of_results;
-        $maximum_length = $request->maximum_length;
-        $creativity = $request->creativity;
+        $number_of_results = $request->number_of_results ?? 1;
+        $maximum_length = $request->maximum_length ?? $this->settings->openai_max_input_length;
+        $creativity = $request->creativity ?? $this->settings->openai_default_creativity;
 
         $language = $request->language;
         try {
@@ -72,16 +81,27 @@ class AIController extends Controller
                 $language = LaravelLocalization::getSupportedLocales()[$language[0]]['name'];
                 $language .= " $ek";
             } else {
-                $language  = $request->language;
+                $language = $request->language;
             }
         } catch (\Throwable $th) {
-            $language  = $request->language;
+            $language = $request->language;
             Log::error($language);
         }
 
-
         $negative_prompt = $request->negative_prompt;
         $tone_of_voice = $request->tone_of_voice;
+		if($request->tone_of_voice_custom){
+			$tone_of_voice = $request->tone_of_voice_custom;
+		}
+		if(!$tone_of_voice){
+			$tone_of_voice = $this->settings->openai_default_tone_of_voice;
+		}
+
+		//POST GENERATOR
+		if ($post_type == 'post_generator') {
+			$description = $request->description;
+			$prompt = "Write a post about $description. Maximum $maximum_length words. Creativity is $creativity between 0 and 1. Language is $language. Generate $number_of_results different posts. Tone of voice must be $tone_of_voice";
+		}
 
         //POST TITLE GENERATOR
         if ($post_type == 'post_title_generator') {
@@ -100,6 +120,9 @@ class AIController extends Controller
         if ($post_type == 'summarize_text') {
             $text_to_summary = $request->text_to_summary;
             $tone_of_voice = $request->tone_of_voice;
+			if($request->tone_of_voice_custom){
+				$tone_of_voice = $request->tone_of_voice_custom;
+			}
 
             $prompt = "Summarize the following text: $text_to_summary in $language using a tone of voice that is $tone_of_voice. The summary should be no longer than $maximum_length words and set the creativity to $creativity in terms of creativity. Generate $number_of_results different summaries.";
         }
@@ -162,7 +185,6 @@ class AIController extends Controller
 
             $prompt = "Write blog post conclusion about title: $title. And the description is $description.Maximum $maximum_length words. Creativity is $creativity between 0 and 1. Language is $language. Generate $number_of_results different blog conclusions. Tone of voice must be $tone_of_voice";
         }
-
 
         //FACEBOOK ADS
         if ($post_type == 'facebook_ads') {
@@ -331,9 +353,8 @@ class AIController extends Controller
             $content_rewrite = $request->content_rewrite;
             $rewrite_mode = $request->rewrite_mode;
 
-            $prompt = "Must Rewrite content with $rewrite_mode mode. Result language is $language \nContent: $content_rewrite.";
+            $prompt = "Original Content: $content_rewrite.\n\n\nMust Rewrite content with $rewrite_mode mode differently with original content. Result language is $language \n";
         }
-
 
         if ($post_type == 'ai_image_generator') {
             $imageParam = $request->all();
@@ -346,26 +367,133 @@ class AIController extends Controller
             // $number_of_images = (int)$request->image_number_of_images;
         }
 
+        if ($post_type == 'ai_video') {
+            $videoParam = $request->all();
+        }
+
         if ($post_type == 'ai_code_generator') {
             $description = $request->description;
             $code_language = $request->code_language;
             $prompt = "Write a code about $description, in $code_language";
         }
 
-        $post = OpenAIGenerator::where('slug', $post_type)->first();
+		$post = OpenAIGenerator::where('slug', $post_type)->first();
 
         if ($post->custom_template == 1) {
             $custom_template = OpenAIGenerator::find($request->openai_id);
             $prompt = $custom_template->prompt;
             foreach (json_decode($custom_template->questions) as $question) {
-                $question_name = '**' . $question->name . '**';
+                $question_name = '**'.$question->name.'**';
                 $prompt = str_replace($question_name, $request[$question->name], $prompt);
             }
 
             $prompt .= " in $language language. Number of results should be $number_of_results. And the maximum length of $maximum_length characters";
         }
 
-        if ($post->type == 'text') {
+		if ($post->type == 'youtube') {
+            $language = $request->language;
+            $youtube_action = $request->youtube_action;
+			if ($youtube_action == 'blog') {
+				$prompt = "You are blog writer. Turn the given transcript text into a blog post in and translate to {$language} language. Group the content and create a subheading (with HTML-h2) for each group (without HTML body or head tags or backticks ```html). Maximum $maximum_length words. Creativity is $creativity between 0 and 1. Generate $number_of_results different articles. Tone of voice must be $tone_of_voice. Content:";
+			} elseif ($youtube_action == 'short') {
+				$prompt = "You are transcript editor. Make sense of the given content and explain the main idea. Your result must be in {$language} language. Creativity is $creativity between 0 and 1. Generate $number_of_results different articles. Tone of voice must be $tone_of_voice. Content:";
+			} elseif ($youtube_action == 'list') {
+				$prompt = "You are transcript editor. Make sense of the given content and make a list main ideas. Your result must be in {$language} language. Creativity is $creativity between 0 and 1. Generate $number_of_results different articles. Tone of voice must be $tone_of_voice. Content:";
+			} elseif ($youtube_action == 'tldr') {
+				$prompt = "You are transcript editor. Make short TLDR. Your result must be in {$language} language. Creativity is $creativity between 0 and 1. Generate $number_of_results different articles. Tone of voice must be $tone_of_voice. Content:";
+			} elseif ($youtube_action == 'prons_cons') {
+				$prompt = "You are transcript editor. Make short pros and cons. Your result must be in {$language} language. Creativity is $creativity between 0 and 1. Generate $number_of_results different articles. Tone of voice must be $tone_of_voice. Content:";
+			}
+
+			$api_url = 'https://magicai-yt-video-post-api.vercel.app/api/transcript'; // Endpoint URL
+            $response = Http::post($api_url, [
+                'video_url' => $request->url,
+                'language' => 'en',
+            ]);
+            if ($response->failed()) {
+                return response()->json([
+                    'message' => [$response->body()],
+                ], 419);
+            } else {
+                $response_code = $response->status();
+                $response_body = $response->json();
+                if ($response_code === 200) {
+                    $data = $response_body['result'];
+                    foreach ($data as $transcript) {
+                        $prompt .= $transcript['text'].'<br>';
+                    }
+					$prompt .= ". \n";
+                } else {
+                    return response()->json([
+                        'message' => [$response_body['error']],
+                    ], 419);
+                }
+            }
+        }
+
+		if ($post->type == 'rss') {
+			$language = $request->language;
+            $prompt = "write blog post about {$request->title}. Group the content and create a subheading (with HTML-h2) for each group (without HTML body or head tags or backticks ```html).";
+			$prompt .= "Your result must be in $language language. Number of results should be $number_of_results. And the maximum length of $maximum_length characters. Tone of voice must be $tone_of_voice. Creativity is $creativity between 0 and 1.";
+		}
+
+
+        // check if there is a company input included in the request
+        if ($request->company) {
+            $company = Company::find($request->company);
+            $product = Product::find($request->product);
+            if ($company) {
+				if(!isset($prompt)){
+					$prompt = '';
+				}
+				$type = $product->type == 0 ? 'Service' : 'Product';
+                $prompt .= ".\n Focus on my company and {$type}'s information: \n";
+                // Company information
+                if ($company->name) {
+                    $prompt .= "The company's name is {$company->name}. ";
+                }
+                // explode industry
+                $industry = explode(',', $company->industry);
+                $count = count($industry);
+                if ($count > 0) {
+                    $prompt .= 'The company is in the ';
+                    foreach ($industry as $index => $ind) {
+                        $prompt .= $ind;
+                        if ($index < $count - 1) {
+                            $prompt .= ' and ';
+                        }
+                    }
+                }
+
+                if ($company->website) {
+                    $prompt .= ". The company's website is {$company->website}. ";
+                }
+
+                if ($company->target_audience) {
+                    $prompt .= "The company's target audience is: {$company->target_audience}. ";
+                }
+
+                if ($company->tagline) {
+                    $prompt .= "The company's tagline is {$company->tagline}. ";
+                }
+
+                if ($company->description) {
+                    $prompt .= "The company's description is {$company->description}. ";
+                }
+                if ($product) {
+                    // Product information
+                    if ($product->key_features) {
+                        $prompt .= "The {$product->type}'s key features are {$product->key_features}. ";
+                    }
+
+                    if ($product->name) {
+                        $prompt .= "The {$product->type}'s name is {$product->name}. \n";
+                    }
+                }
+            }
+        }
+
+        if ($post->type == 'text' || $post->type == 'rss' || $post->type == 'youtube') {
             return $this->textOutput($prompt, $post, $creativity, $maximum_length, $number_of_results, $user);
         }
 
@@ -377,60 +505,14 @@ class AIController extends Controller
             return $this->imageOutput($imageParam, $post, $user);
         }
 
+        if ($post->type == 'video') {
+            return $this->videoOutput($videoParam, $post, $user);
+        }
+
         if ($post->type == 'audio') {
             $file = $request->file('file');
+
             return $this->audioOutput($file, $post, $user);
-        }
-
-        if ($post->type == 'youtube') {
-            $language = $request->language;
-            $youtube_action = $request->youtube_action;
-
-            $api_url = 'https://magicai-yt-video-post-api.vercel.app/api/transcript'; // Endpoint URL
-
-            $response = Http::post($api_url, [
-                'video_url' => $request->url,
-                'language' => 'en',
-            ]);
-
-            if ($response->failed()) {
-                return response()->json([
-                    'message' => [$response->body()],
-                ], 419);
-            } else {
-                $response_code = $response->status();
-                $response_body = $response->json();
-
-                if ($youtube_action == 'blog') {
-                    $prompt = "You are blog writer. Turn the given transcript text into a blog post in and translate to {$language} language. Group the content and create a subheading (witth HTML-h2) for each group. Content:";
-                } elseif ($youtube_action == 'short') {
-                    $prompt = "You are transcript editor. Make sense of the given content and explain the main idea. Your result should be in {$language} language. Content:";
-                } elseif ($youtube_action == 'list') {
-                    $prompt = "You are transcript editor. Make sense of the given content and make a list main ideas. Your result should be in {$language} language. Content:";
-                } elseif ($youtube_action == 'tldr') {
-                    $prompt = "You are transcript editor. Make short TLDR. Your result should be in {$language} language. Content:";
-                } elseif ($youtube_action == 'prons_cons') {
-                    $prompt = "You are transcript editor. Make short pros and cons. Your result should be in {$language} language. Content:";
-                }
-
-                if ($response_code === 200) {
-                    $data = $response_body['result'];
-                    foreach ($data as $transcript) {
-                        $prompt .= $transcript['text'] . '<br>';
-                    }
-                } else {
-                    return response()->json([
-                        'message' => [$response_body['error']],
-                    ], 419);
-                }
-            }
-
-            return $this->textOutput($prompt, $post, $creativity, $maximum_length, $number_of_results, $user);
-        }
-
-        if ($post->type == 'rss') {
-            $prompt = "write blog post about {$request->title}. Group the content and create a subheading (with HTML-h2) for each group.";
-            return $this->textOutput($prompt, $post, $creativity, $maximum_length, $number_of_results, $user);
         }
     }
 
@@ -452,42 +534,41 @@ class AIController extends Controller
         return response()->stream(function () use ($prompt, $message_id, $settings, $creativity, $maximum_length, $number_of_results, $youtube_url, $rss_image) {
 
             try {
-				if ($settings->openai_default_model == 'text-davinci-003') {
-					 $stream = FacadesOpenAI::completions()->createStreamed([
-                        'model' => 'text-davinci-003',
+                if ($settings->openai_default_model == 'text-davinci-003') {
+                    $stream = FacadesOpenAI::completions()->createStreamed([
+                        'model' => $settings->openai_default_model,
                         'prompt' => $prompt,
-                        'temperature' => (int)$creativity,
-                        'max_tokens' => (int)$maximum_length,
-                        'n' => (int)$number_of_results
+                        'temperature' => (int) $creativity,
+                        'max_tokens' => (int) $maximum_length,
+                        'n' => (int) $number_of_results,
                     ]);
-                   
-				} else {
-					if ((int)$number_of_results > 1) {
-                        $prompt = $prompt . ' number of results should be ' . (int)$number_of_results;
+                } else {
+                    if ((int) $number_of_results > 1) {
+                        $prompt = $prompt.' number of results should be '.(int) $number_of_results;
                     }
                     $stream = FacadesOpenAI::chat()->createStreamed([
-                        'model' => $this->settings->openai_default_model,
+                        'model' => $settings->openai_default_model,
                         'messages' => [
-                            ['role' => 'user', 'content' => $prompt]
+                            ['role' => 'user', 'content' => $prompt],
                         ],
                     ]);
-				}
+                }
             } catch (\Exception $exception) {
-                $messageError = 'Error from API call. Please try again. If error persists again please contact system administrator with this message ' . $exception->getMessage();
+                $messageError = 'Error from API call. Please try again. If error persists again please contact system administrator with this message '.$exception->getMessage();
                 echo "data: $messageError";
                 echo "\n\n";
-                ob_flush();
+                //ob_flush();
                 flush();
                 echo 'data: [DONE]';
                 echo "\n\n";
-                ob_flush();
+                //ob_flush();
                 flush();
                 usleep(50000);
             }
 
             $total_used_tokens = 0;
-            $output = "";
-            $responsedText = "";
+            $output = '';
+            $responsedText = '';
 
             // Youtube Thumbnail
             if ($youtube_url) {
@@ -505,16 +586,16 @@ class AIController extends Controller
 
                 //save file on local storage or aws s3
                 Storage::disk('public')->put($nameOfImage, $contents);
-                $path = '/uploads/' . $nameOfImage;
+                $path = '/uploads/'.$nameOfImage;
                 $uploadedFile = new File(substr($path, 1));
 
-                if (SettingTwo::first()->ai_image_storage == "s3") {
+                if (SettingTwo::first()->ai_image_storage == 's3') {
                     try {
                         $aws_path = Storage::disk('s3')->put('', $uploadedFile);
                         unlink(substr($path, 1));
                         $path = Storage::disk('s3')->url($aws_path);
                     } catch (\Exception $e) {
-                        return response()->json(["status" => "error", "message" => "AWS Error - " . $e->getMessage()]);
+                        return response()->json(['status' => 'error', 'message' => 'AWS Error - '.$e->getMessage()]);
                     }
                 }
 
@@ -523,8 +604,8 @@ class AIController extends Controller
                 $total_used_tokens += 1;
                 $needChars = 6000 - 1;
                 $random_text = Str::random($needChars);
-                echo 'data: ' . $output . '/**' . $random_text . "\n\n";
-                ob_flush();
+                echo 'data: '.$output.'/**'.$random_text."\n\n";
+                //ob_flush();
                 flush();
                 usleep(500);
             }
@@ -533,20 +614,20 @@ class AIController extends Controller
             if ($rss_image) {
 
                 $contents = file_get_contents($rss_image);
-                $nameOfImage = 'rss-' . Str::random(12) . ".jpg";
+                $nameOfImage = 'rss-'.Str::random(12).'.jpg';
 
                 //save file on local storage or aws s3
                 Storage::disk('public')->put($nameOfImage, $contents);
-                $path = '/uploads/' . $nameOfImage;
+                $path = '/uploads/'.$nameOfImage;
                 $uploadedFile = new File(substr($path, 1));
 
-                if (SettingTwo::first()->ai_image_storage == "s3") {
+                if (SettingTwo::first()->ai_image_storage == 's3') {
                     try {
                         $aws_path = Storage::disk('s3')->put('', $uploadedFile);
                         unlink(substr($path, 1));
                         $path = Storage::disk('s3')->url($aws_path);
                     } catch (\Exception $e) {
-                        return response()->json(["status" => "error", "message" => "AWS Error - " . $e->getMessage()]);
+                        return response()->json(['status' => 'error', 'message' => 'AWS Error - '.$e->getMessage()]);
                     }
                 }
 
@@ -555,17 +636,17 @@ class AIController extends Controller
                 $total_used_tokens += 1;
                 $needChars = 6000 - 1;
                 $random_text = Str::random($needChars);
-                echo 'data: ' . $output . '/**' . $random_text . "\n\n";
-                ob_flush();
+                echo 'data: '.$output.'/**'.$random_text."\n\n";
+                //ob_flush();
                 flush();
                 usleep(500);
             }
 
             foreach ($stream as $response) {
                 if ($settings->openai_default_model == 'text-davinci-003') {
-					if (isset($response->choices[0]->text)) {
+                    if (isset($response->choices[0]->text)) {
                         $message = $response->choices[0]->text;
-                        $messageFix = str_replace(["\r\n", "\r", "\n"], "<br/>", $message);
+                        $messageFix = str_replace(["\r\n", "\r", "\n"], '<br/>', $message);
                         $output .= $messageFix;
                         $responsedText .= $message;
                         $total_used_tokens += countWords($messageFix);
@@ -573,15 +654,15 @@ class AIController extends Controller
                         $string_length = Str::length($messageFix);
                         $needChars = 6000 - $string_length;
                         $random_text = Str::random($needChars);
-                        echo 'data: ' . $messageFix . '/**' . $random_text . "\n\n";
-                        ob_flush();
+                        echo 'data: '.$messageFix.'/**'.$random_text."\n\n";
+                        //ob_flush();
                         flush();
                         usleep(500);
                     }
                 } else {
                     if (isset($response['choices'][0]['delta']['content'])) {
                         $message = $response['choices'][0]['delta']['content'];
-                        $messageFix = str_replace(["\r\n", "\r", "\n"], "<br/>", $message);
+                        $messageFix = str_replace(["\r\n", "\r", "\n"], '<br/>', $message);
                         $output .= $messageFix;
                         $responsedText .= $message;
                         $total_used_tokens += countWords($messageFix);
@@ -590,8 +671,8 @@ class AIController extends Controller
                         $needChars = 6000 - $string_length;
                         $random_text = Str::random($needChars);
 
-                        echo 'data: ' . $messageFix . '/**' . $random_text . "\n\n";
-                        ob_flush();
+                        echo 'data: '.$messageFix.'/**'.$random_text."\n\n";
+                        //ob_flush();
                         flush();
                         usleep(500);
                     }
@@ -612,12 +693,11 @@ class AIController extends Controller
 
             $user = Auth::user();
 
-            userCreditDecreaseForWord($user, $total_used_tokens);
-
+            userCreditDecreaseForWord($user, $total_used_tokens, $settings->openai_default_model);
 
             echo 'data: [DONE]';
             echo "\n\n";
-            ob_flush();
+            //ob_flush();
             flush();
             usleep(50000);
         }, 200, [
@@ -631,16 +711,17 @@ class AIController extends Controller
     {
         $user = Auth::user();
 
-        if ($user->remaining_words <= 0  and $user->remaining_words != -1) {
-            $data = array(
+        if ($user->remaining_words <= 0 and $user->remaining_words != -1) {
+            $data = [
                 'errors' => ['You have no credits left. Please consider upgrading your plan.'],
-            );
+            ];
+
             return response()->json($data, 419);
         }
         $entry = new UserOpenai();
         $entry->team_id = $user->team_id;
         $entry->title = request('title') ?: __('New Workbook');
-        $entry->slug = str()->random(7) . str($user->fullName())->slug() . '-workbook';
+        $entry->slug = str()->random(7).str($user->fullName())->slug().'-workbook';
         $entry->user_id = Auth::id();
         $entry->openai_id = $post->id;
         $entry->input = $prompt;
@@ -654,12 +735,7 @@ class AIController extends Controller
         $message_id = $entry->id;
         $workbook = $entry;
         $inputPrompt = $prompt;
-
-        if (view()->exists('panel.admin.custom.user.openai.documents_workbook_textarea')) {
-            $html = view('panel.admin.custom.user.openai.documents_workbook_textarea', compact('workbook'))->render();
-        } else {
-            $html = view('panel.user.openai.documents_workbook_textarea', compact('workbook'))->render();
-        }
+        $html = view('panel.user.openai.documents_workbook_textarea', compact('workbook'))->render();
 
         return response()->json(compact('message_id', 'html', 'creativity', 'maximum_length', 'number_of_results', 'inputPrompt'));
     }
@@ -670,7 +746,7 @@ class AIController extends Controller
             $response = FacadesOpenAI::completions()->create([
                 'model' => $this->settings->openai_default_model,
                 'prompt' => $prompt,
-                'max_tokens' => (int)$this->settings->openai_max_output_length,
+                'max_tokens' => (int) $this->settings->openai_max_output_length,
             ]);
         } else {
             $response = FacadesOpenAI::chat()->create([
@@ -686,7 +762,7 @@ class AIController extends Controller
         $entry = new UserOpenai();
         $entry->team_id = $user->team_id;
         $entry->title = request('title') ?: __('New Workbook');
-        $entry->slug = Str::random(7) . Str::slug($user->fullName()) . '-workbook';
+        $entry->slug = Str::random(7).Str::slug($user->fullName()).'-workbook';
         $entry->user_id = Auth::id();
         $entry->openai_id = $post->id;
         $entry->input = $prompt;
@@ -707,17 +783,33 @@ class AIController extends Controller
 
         $user = Auth::user();
 
-        userCreditDecreaseForWord($user, $total_used_tokens);
+        userCreditDecreaseForWord($user, $total_used_tokens, $this->settings->openai_default_model);
 
         return $this->finalizeOutput($post, $entry);
     }
 
     public function chatImageOutput(Request $request)
     {
+        $user = Auth::user();
+        // check daily limit
+        $chkLmt = Helper::checkImageDailyLimit();
+        if ($chkLmt->getStatusCode() === 429) {
+            return $chkLmt;
+        }
+        // check remainings
+        $chkImg = Helper::checkRemainingImages($user);
+        if ($chkImg->getStatusCode() === 429) {
+            return $chkImg;
+        }
+
         $prompt = $request->input('prompt');
         $history = $request->input('chatHistory');
 
-        $apiKeys = explode(',', Setting::first()?->openai_api_secret);
+        if ($this->settings?->user_api_option) {
+            $apiKeys = explode(',', auth()->user()?->api_keys);
+        } else {
+            $apiKeys = explode(',', $this->settings?->openai_api_secret);
+        }
         $openaiKey = $apiKeys[array_rand($apiKeys)];
 
         $client = OpenAI::factory()
@@ -726,26 +818,30 @@ class AIController extends Controller
             ->make();
 
         $completion = $client->chat()->create([
-            'model' => "gpt-3.5-turbo",
+            'model' => 'gpt-3.5-turbo',
             'messages' => [[
                 'role' => 'user',
-                'content' => "Write what does user want to draw at the last moment of chat history. \n\n\nChat History: $history \n\n\n\n Result is 'Draw an image of ... "
-            ]]
+                'content' => "Write what does user want to draw at the last moment of chat history. \n\n\nChat History: $history \n\n\n\n Result is 'Draw an image of ... ",
+            ]],
         ]);
 
-        $path = "";
+        $path = '';
         $settings = Setting::first();
         // Fetch the Site Settings object with openai_api_secret
-        $apiKeys = explode(',', $settings->openai_api_secret);
+        if ($this->settings?->user_api_option) {
+            $apiKeys = explode(',', auth()->user()?->api_keys);
+        } else {
+            $apiKeys = explode(',', $this->settings?->openai_api_secret);
+        }
         $apiKey = $apiKeys[array_rand($apiKeys)];
         config(['openai.api_key' => $apiKey]);
         set_time_limit(120);
 
-        $nameOfImage = Str::random(12) . ".png";
+        $nameOfImage = Str::random(12).'.png';
         $response = FacadesOpenAI::images()->create([
-            'model' => "dall-e-3",
+            'model' => 'dall-e-3',
             'prompt' => $completion->choices[0]->message->content,
-            'size' => "1024x1024",
+            'size' => '1024x1024',
             'response_format' => 'b64_json',
         ]);
         $image_url = $response['data'][0]['b64_json'];
@@ -753,434 +849,643 @@ class AIController extends Controller
 
         //save file on local storage or aws s3
         Storage::disk('public')->put($nameOfImage, $contents);
-        $path = '/uploads/' . $nameOfImage;
+        $path = '/uploads/'.$nameOfImage;
         $uploadedFile = new File(substr($path, 1));
 
-        if (SettingTwo::first()->ai_image_storage == "s3") {
+        if (SettingTwo::first()->ai_image_storage == 's3') {
             try {
                 $aws_path = Storage::disk('s3')->put('', $uploadedFile);
                 unlink(substr($path, 1));
                 $path = Storage::disk('s3')->url($aws_path);
             } catch (\Exception $e) {
-                return response()->json(["status" => "error", "message" => "AWS Error - " . $e->getMessage()]);
+                return response()->json(['status' => 'error', 'message' => 'AWS Error - '.$e->getMessage()]);
             }
         }
-
+		
+		userCreditDecreaseForImage($user, 1, 'dall-e-3');
         return response()->json(['path' => $path]);
     }
 
     public function imageOutput($param, $post, $user)
     {
-        if ($this->settings_two->daily_limit_enabled) {
-            if (Helper::appIsDemo()) {
-                $msg = __('You have reached the maximum number of image generation allowed on the demo.');
-            } else {
-                $msg = __('You have reached the maximum number of image generation allowed.');
-            }
-            $ipAddress = isset($_SERVER['HTTP_CF_CONNECTING_IP']) ? $_SERVER['HTTP_CF_CONNECTING_IP'] : request()->ip();
-            $db_ip_address = RateLimit::where('ip_address', $ipAddress)->where('type', 'image')->first();
-            if ($db_ip_address) {
-                if (now()->diffInDays(Carbon::parse($db_ip_address->last_attempt_at)->format('Y-m-d')) > 0) {
-                    $db_ip_address->attempts = 0;
+		$lockKey = 'generate_image_lock';
+
+		// Attempt to acquire lock
+		if (!Cache::lock($lockKey, 10)->get()) {
+			// Failed to acquire lock, another process is already running
+			return response()->json(['message' => 'Image generation in progress. Please try again later.'], 409);
+		}
+	
+		try {
+			$user = Auth::user();
+			// check daily limit
+			$chkLmt = Helper::checkImageDailyLimit();
+			if ($chkLmt->getStatusCode() === 429) {
+				return $chkLmt;
+			}
+			// check remainings
+			$chkImg = Helper::checkRemainingImages($user);
+			if ($chkImg->getStatusCode() === 429) {
+				return $chkImg;
+			}
+
+			if ($this->settings?->user_api_option) {
+				$apiKeys = explode(',', auth()->user()?->api_keys);
+			} else {
+				$apiKeys = explode(',', $this->settings?->openai_api_secret);
+			}
+			$apiKey = $apiKeys[array_rand($apiKeys)];
+			config(['openai.api_key' => $apiKey]);
+			set_time_limit(120);
+
+			//save generated image datas
+			$entries = [];
+			$prompt = '';
+			$image_generator = $param['image_generator'];
+			$number_of_images = (int) $param['image_number_of_images'];
+			$mood = $param['image_mood'];
+
+			if ($image_generator != self::STABLEDIFFUSION) {
+				$size = $param['size'];
+				$description = $param['description'];
+				$prompt = "$description";
+				$style = $param['image_style'];
+				$lighting = $param['image_lighting'];
+				// $image_model = $param['image_model'];
+
+				if ($style != null) {
+					$prompt .= ' '.$style.' style.';
+				}
+				if ($lighting != null) {
+					$prompt .= ' '.$lighting.' lighting.';
+				}
+				if ($mood != null) {
+					$prompt .= ' '.$mood.' mood.';
+				}
+			} else {
+				$stable_type = $param['type'];
+				$prompt = $param['stable_description'];
+				$negative_prompt = $param['negative_prompt'];
+				$style_preset = $param['style_preset'];
+				$sampler = $param['sampler'];
+				$clip_guidance_preset = $param['clip_guidance_preset'];
+				$image_resolution = $param['image_resolution'];
+				$init_image = $param['image_src'] ?? null;
+			}
+
+			$image_storage = $this->settings_two->ai_image_storage;
+
+			
+			for ($i = 0; $i < $number_of_images; $i++) {
+				$image_model = '';
+				if ($image_generator != self::STABLEDIFFUSION) {
+					//send prompt to openai
+					if ($prompt == null) {
+						return response()->json(['status' => 'error', 'message' => 'You must provide a prompt']);
+					}
+					if ($this->settings_two->dalle == 'dalle2') {
+						$model = 'dall-e-2';
+						$demosize = '256x256'; // smallest size for demo
+					} elseif ($this->settings_two->dalle == 'dalle3') {
+						$model = 'dall-e-3';
+						$demosize = '1024x1024'; // smallest size for demo
+					} else {
+						$model = 'dall-e-2';
+						$demosize = '256x256'; // smallest size for demo
+					}
+					$quality = $param['quality'];
+					$image_model = $model;
+					$response = FacadesOpenAI::images()->create([
+						'model' => $model,
+						'prompt' => $prompt,
+						'size' => Helper::appIsDemo() ? $demosize : $size,
+						'response_format' => 'b64_json',
+						'quality' => Helper::appIsDemo() ? 'standard' : $quality,
+						'n' => 1,
+					]);
+					$image_url = $response['data'][0]['b64_json'];
+					$contents = base64_decode($image_url);
+					$nameprompt = mb_substr($prompt, 0, 15);
+					$nameprompt = explode(' ', $nameprompt)[0];
+
+					$nameOfImage = Str::random(12).'-DALL-E-'.Str::slug($nameprompt).'.png';
+
+                    if ($image_storage == self::CLOUDFLARE_R2) {
+                        Storage::disk('r2')->put($nameOfImage, $contents);
+                        $path = Storage::disk('r2')->url($nameOfImage);
+                    } else {
+                        //save file on local storage or aws s3
+                        Storage::disk('public')->put($nameOfImage, $contents);
+                        $path = 'uploads/' . $nameOfImage;
+                    }
+				} else {
+					//send prompt to stablediffusion
+					$settings = SettingTwo::first();
+					$stablediffusionKeys = explode(',', $settings->stable_diffusion_api_key);
+					$stablediffusionKey = $stablediffusionKeys[array_rand($stablediffusionKeys)];
+					if ($prompt == null) {
+						return response()->json(['status' => 'error', 'message' => 'You must provide a prompt']);
+					}
+					if ($stablediffusionKey == '') {
+						return response()->json(['status' => 'error', 'message' => 'You must provide a StableDiffusion API Key.']);
+					}
+					$width = intval(explode('x', $image_resolution)[0]);
+					$height = intval(explode('x', $image_resolution)[1]);
+
+                    // Stablediffusion engine
+                    $engine = $this->settings_two->stablediffusion_default_model;
+					$image_model = $engine;
+                    $sd3Payload = [];
+                    if(
+                        ($engine == 'sd3' || $engine == 'sd3-turbo') &&
+                        ($stable_type == 'text-to-image' || $stable_type == 'image-to-image')
+                    ) {
+                        $client = new Client([
+                            'base_uri' => 'https://api.stability.ai/v2beta/stable-image/generate/',
+                            'headers' => [
+                                'content-type' => 'multipart/form-data',
+                                'Authorization' => 'Bearer '.$stablediffusionKey,
+                                'accept' => 'application/json'
+                            ],
+                        ]);
+
+                    } else {
+                        $client = new Client([
+                            'base_uri' => 'https://api.stability.ai/v1/generation/',
+                            'headers' => [
+                                'content-type' => ($stable_type == 'upscale' || $stable_type == 'image-to-image') ? 'multipart/form-data' : 'application/json',
+                                'Authorization' => 'Bearer '. $stablediffusionKey,
+                                'accept' => 'application/json'
+                            ],
+                        ]);
+                    }
+
+					// Content Type
+					$content_type = 'json';
+
+					$payload = [
+						'cfg_scale' => 7,
+						'clip_guidance_preset' => $clip_guidance_preset ?? 'NONE',
+						'samples' => 1,
+						'steps' => 50,
+					];
+
+					if ($sampler) {
+						$payload['sampler'] = $sampler;
+					}
+
+					if ($style_preset) {
+						$payload['style_preset'] = $style_preset;
+					}
+
+					switch ($stable_type) {
+						case 'multi-prompt':
+							$stable_url = 'text-to-image';
+							$payload['width'] = $width;
+							$payload['height'] = $height;
+							$arr = [];
+							foreach ($prompt as $p) {
+								$arr[] = [
+									'text' => $p.($mood == null ? '' : (' '.$mood.' mood.')),
+									'weight' => 1,
+								];
+							}
+							$prompt = $arr;
+							break;
+						case 'upscale':
+							$stable_url = 'image-to-image/upscale';
+							$engine = 'esrgan-v1-x2plus';
+							$payload = [];
+							$payload['image'] = $init_image->get();
+							$prompt = [
+								[
+									'text' => $prompt.'-'.Str::random(16),
+									'weight' => 1,
+								],
+							];
+							$content_type = 'multipart';
+							break;
+						case 'image-to-image':
+							$stable_url = $stable_type;
+							$payload['init_image'] = $init_image->get();
+
+                            $sd3Payload = [
+                                [
+                                    'name' => 'prompt',
+                                    "contents" => $prompt
+                                ],
+                                [
+                                    'name' => 'mode',
+                                    'contents' => 'image-to-image'
+                                ],
+                                [
+                                    'name' => 'strength',
+                                    'contents' => 0
+                                ],
+                                [
+                                    'name' => 'image',
+                                    'contents' => $init_image->get(),
+                                    "filename" => $init_image->getClientOriginalName()
+                                ]
+                            ];
+							$prompt = [
+								[
+									'text' => $prompt.($mood == null ? '' : (' '.$mood.' mood.')),
+									'weight' => 1,
+								],
+							];
+
+							$content_type = 'multipart';
+							break;
+						default:
+							$stable_url = $stable_type;
+							$payload['width'] = $width;
+							$payload['height'] = $height;
+                            $sd3Payload = [
+                                [
+                                    'name' => 'prompt',
+                                    "contents" => $prompt
+                                ],
+                                [
+                                    'name' => 'file',
+                                    'contents' => 'no'
+                                ],
+                                [
+                                    'name' => 'output_format',
+                                    'contents' => 'png'
+                                ]
+                            ];
+							$prompt = [
+								[
+									'text' => $prompt.($mood == null ? '' : (' '.$mood.' mood.')),
+									'weight' => 1,
+								],
+							];
+							break;
+					}
+
+					if ($negative_prompt) {
+						$prompt[] = ['text' => $negative_prompt, 'weight' => -1];
+					}
+
+					if ($stable_type != 'upscale') {
+						$payload['text_prompts'] = $prompt;
+					}
+
+					if ($content_type == 'multipart') {
+						$multipart = [];
+						foreach ($payload as $key => $value) {
+							if (! is_array($value)) {
+								$multipart[] = ['name' => $key, 'contents' => $value];
+
+								continue;
+							}
+
+							foreach ($value as $multiKey => $multiValue) {
+								$multiName = $key.'['.$multiKey.']'.(is_array($multiValue) ? '['.key($multiValue).']' : '').'';
+								$multipart[] = ['name' => $multiName, 'contents' => (is_array($multiValue) ? reset($multiValue) : $multiValue)];
+							}
+ 						}
+						$payload = $multipart;
+					}
+
+					try {
+                        if(
+                            ($engine == 'sd3' || $engine == 'sd3-turbo') &&
+                            ($stable_type == 'text-to-image' || $stable_type == 'image-to-image')
+                        ) {
+                            $response = $client->post("$engine", [
+                                "headers" => [
+                                    "accept" => "application/json",
+                                ],
+                                "multipart" => $sd3Payload
+                            ]);
+                        } else {
+                            $response = $client->post("$engine/$stable_url", [
+                                $content_type => $payload,
+                            ]);
+                        }
+
+
+					} catch (Exception $e) {
+
+						if ($e->hasResponse()) {
+							$response = $e->getResponse();
+							$statusCode = $response->getStatusCode();
+							// Custom handling for specific status codes here...
+
+							if ($statusCode == 403) {
+								// Handle content moderation error
+								$errorMessage = $response->getBody()->getContents();
+								$errorData = json_decode($errorMessage, true);
+
+								return response()->json([
+									'status' => 'error',
+									'message' => $errorData['errors'],
+									'name' => $errorData['name']
+								], 403);
+							}
+							if ($statusCode == '404') {
+								// Handle a not found error
+							} elseif ($statusCode == '500') {
+								// Handle a server error
+							}
+							$errorMessage = $response->getBody()->getContents();
+							$errorData = json_decode($errorMessage, true);
+							return response()->json(['status' => 'error', 'message' => $errorData['errors']]);
+						}
+
+						return response()->json(['status' => 'error', 'message' => $e->getMessage()]);
+					}
+
+					$body = $response->getBody();
+
+
+                    if ($response->getStatusCode() == 200) {
+						$nameprompt = mb_substr($prompt[0]['text'], 0, 15);
+						$nameprompt = explode(' ', $nameprompt)[0];
+
+						$nameOfImage = Str::random(12).'-DALL-E-'.$nameprompt.'.png';
+
+                        if(
+                            ($engine == 'sd3' || $engine == 'sd3-turbo') &&
+                            ($stable_type == 'text-to-image' || $stable_type == 'image-to-image')
+                        ) {
+                            $contents = base64_decode(json_decode($body)->image);
+                        }else {
+                            $contents = base64_decode(json_decode($body)->artifacts[0]->base64);
+                        }
+					} else {
+						$message = '';
+						if ($body->status == 'error') {
+							$message = $body->message;
+						} else {
+							$message = 'Failed, Try Again';
+						}
+
+						return response()->json(['status' => 'error', 'message' => $message]);
+					}
+
+                    if ($image_storage == self::CLOUDFLARE_R2) {
+                        Storage::disk('r2')->put($nameOfImage, $contents);
+                        $path = Storage::disk('r2')->url($nameOfImage);
+                    } else {
+                        //save file on local storage or aws s3
+                        Storage::disk('public')->put($nameOfImage, $contents);
+                        $path = 'uploads/' . $nameOfImage;
+                    }
+				}
+				if ($image_storage == self::STORAGE_S3) {
+					try {
+						$uploadedFile = new File($path);
+						$aws_path = Storage::disk('s3')->put('', $uploadedFile);
+						unlink($path);
+						$path = Storage::disk('s3')->url($aws_path);
+					} catch (\Exception $e) {
+						return response()->json(['status' => 'error', 'message' => 'AWS Error - '.$e->getMessage()]);
+					}
+				}
+
+                if ($image_storage == self::STORAGE_S3 || $image_storage == self::CLOUDFLARE_R2) {
+                    $filePath = $path;
+                } elseif ($image_storage == self::STORAGE_LOCAL) {
+                    $filePath = '/' . $path;
                 }
-            } else {
-                $db_ip_address = new RateLimit(['ip_address' => $ipAddress]);
+
+				$entry = new UserOpenai();
+				$entry->team_id = $user->team_id;
+				$entry->title = request('title') ?: __('New Image');
+				$entry->slug = Str::random(7).Str::slug($user->fullName()).'-workbsook';
+				$entry->user_id = Auth::id();
+				$entry->openai_id = $post->id;
+				$entry->input = $prompt;
+				if ($image_generator == self::STABLEDIFFUSION) {
+					$entry->input = $prompt[0]['text'];
+				} else {
+					$entry->input = $prompt;
+				}
+				// $entry->input = $prompt[0]['text'];
+				$entry->response = $image_generator == 'stablediffusion' ? 'SD' : 'DE';
+				$entry->output = url($filePath);
+
+
+				$entry->hash = Str::random(256);
+				$entry->credits = 1;
+				$entry->words = 0;
+				$entry->storage = $image_storage == self::STORAGE_S3 ? UserOpenai::STORAGE_AWS : UserOpenai::STORAGE_LOCAL;
+				$entry->payload = request()->all();
+				$entry->save();
+				$entry->output = ThumbImage($filePath);
+
+				//push each generated image to an array
+				array_push($entries, $entry);
+				userCreditDecreaseForImage($user, 1, $image_model);
+			}
+
+			// Release the lock
+			Cache::lock($lockKey)->release();
+			return response()->json(['status' => 'success', 'images' => $entries, 'image_storage' => $image_storage]);
+		} finally {
+			// Always release the lock
+			Cache::lock($lockKey)->forceRelease();
+		}
+	}
+
+    public function videoOutput($param, $post, $user)
+    {
+        $user = Auth::user();
+        // check daily limit
+        $chkLmt = Helper::checkImageDailyLimit();
+        if ($chkLmt->getStatusCode() === 429) {
+            return $chkLmt;
+        }
+        // check remainings
+        $chkImg = Helper::checkRemainingImages($user);
+        if ($chkImg->getStatusCode() === 429) {
+            return $chkImg;
+        }
+
+        set_time_limit(120);
+
+        $init_image = file_get_contents($param['image_src']);
+        Log::info($init_image);
+
+        $nameOfImage = Str::random(12).'.png';
+        Log::info($nameOfImage);
+        Storage::disk('public')->put($nameOfImage, $init_image);
+        $path = '/uploads/'.$nameOfImage;
+        $uploadedFile = new File(substr($path, 1));
+
+        if (SettingTwo::first()->ai_image_storage == 's3') {
+            try {
+                $aws_path = Storage::disk('s3')->put('', $uploadedFile);
+                unlink(substr($path, 1));
+                $path = Storage::disk('s3')->url($aws_path);
+            } catch (\Exception $e) {
+                return response()->json(['status' => 'error', 'message' => 'AWS Error - '.$e->getMessage()]);
             }
-
-            if ($db_ip_address->attempts >= $this->settings_two->allowed_images_count) {
-                $data = [
-                    'errors' => [$msg],
-                ];
-                return response()->json($data, 429);
-            } else {
-                $db_ip_address->attempts++;
-                $db_ip_address->last_attempt_at = now();
-                $db_ip_address->save();
-            }
         }
 
-        //save generated image datas
-        $entries = [];
-
-        if ($user->remaining_images <= 0  and $user->remaining_images != -1) {
-            $data = array(
-                'errors' => ['You have no credits left. Please consider upgrading your plan.'],
-            );
-            return response()->json($data, 419);
-        }
-
-        $prompt = '';
-        $image_generator = $param['image_generator'];
-        $number_of_images = (int)$param['image_number_of_images'];
-        $mood = $param['image_mood'];
-
-        if ($image_generator != self::STABLEDIFFUSION) {
-            $size = $param['size'];
-            $description = $param['description'];
-            $prompt = "$description";
-            $style = $param['image_style'];
-            $lighting = $param['image_lighting'];
-            // $image_model = $param['image_model'];
-
-            if ($style != null)
-                $prompt .= ' ' . $style . ' style.';
-            if ($lighting != null)
-                $prompt .= ' ' . $lighting . ' lighting.';
-            if ($mood != null)
-                $prompt .= ' ' . $mood . ' mood.';
-        } else {
-            $stable_type =  $param['type'];
-            $prompt = $param['stable_description'];
-            $negative_prompt = $param['negative_prompt'];
-            $style_preset = $param['style_preset'];
-            $sampler = $param['sampler'];
-            $clip_guidance_preset = $param['clip_guidance_preset'];
-            $image_resolution = $param['image_resolution'];
-            $init_image = $param['image_src'] ?? null;
-        }
+        $seed = $param['seed'];
+        $cfg_scale = $param['cfg_scale'];
+        $motion_bucket_id = $param['motion_bucket_id'];
 
         $image_storage = $this->settings_two->ai_image_storage;
 
-        for ($i = 0; $i < $number_of_images; $i++) {
-            if ($image_generator != self::STABLEDIFFUSION) {
-                //send prompt to openai
-                if ($prompt == null) return response()->json(["status" => "error", "message" => "You must provide a prompt"]);
-                if ($this->settings_two->dalle == 'dalle2') {
-                    $model = 'dall-e-2';
-                    $demosize = "256x256"; # smallest size for demo
-                } else if ($this->settings_two->dalle == 'dalle3') {
-                    $model = 'dall-e-3';
-                    $demosize = "1024x1024"; # smallest size for demo
-                } else {
-                    $model = 'dall-e-2';
-                    $demosize = "256x256"; # smallest size for demo
-                }
-                $quality = $param['quality'];
-                $response = FacadesOpenAI::images()->create([
-                    'model' => $model,
-                    'prompt' => $prompt,
-                    'size' => Helper::appIsDemo() ? $demosize : $size,
-                    'response_format' => 'b64_json',
-                    'quality' => Helper::appIsDemo() ? 'standard' : $quality,
-                    'n' => 1
-                ]);
-                $image_url = $response['data'][0]['b64_json'];
-                $contents = base64_decode($image_url);
+        //send prompt to stablediffusion
+        $settings = SettingTwo::first();
+        $stablediffusionKeys = explode(',', $settings->stable_diffusion_api_key);
+        $stablediffusionKey = $stablediffusionKeys[array_rand($stablediffusionKeys)];
+        if ($stablediffusionKey == '') {
+            return response()->json(['status' => 'error', 'message' => 'You must provide a StableDiffusion API Key.']);
+        }
 
-                $nameprompt = mb_substr($prompt, 0, 15);
-                $nameprompt = explode(' ', $nameprompt)[0];
+        $client = new Client([
+            'base_uri' => 'https://api.stability.ai/v2beta/',
+            'headers' => [
+                'content-type' => 'multipart/form-data',
+                'Authorization' => 'Bearer '.$stablediffusionKey,
+            ],
+        ]);
 
-                $nameOfImage = Str::random(12) . '-DALL-E-' . Str::slug($nameprompt) . '.png';
+        $payload = [
+            'image' => $init_image,
+            'cfg_scale' => $cfg_scale,
+            'seed' => $seed,
+            'motion_bucket_id' => $motion_bucket_id,
+        ];
 
-                //save file on local storage or aws s3
-                Storage::disk('public')->put($nameOfImage, $contents);
-                $path = 'uploads/' . $nameOfImage;
+        $multipart = [];
+        foreach ($payload as $key => $value) {
+            if ($key == 'image') {
+                $multipart[] = ['name' => $key, 'contents' => $value, 'filename' => 'image.png'];
             } else {
-                //send prompt to stablediffusion
-                $settings = SettingTwo::first();
-                $stablediffusionKeys = explode(',', $settings->stable_diffusion_api_key);
-                $stablediffusionKey = $stablediffusionKeys[array_rand($stablediffusionKeys)];
-                if ($prompt == null)
-                    return response()->json(["status" => "error", "message" => "You must provide a prompt"]);
-                if ($stablediffusionKey == "")
-                    return response()->json(["status" => "error", "message" => "You must provide a StableDiffusion API Key."]);
-                $width = intval(explode('x', $image_resolution)[0]);
-                $height = intval(explode('x', $image_resolution)[1]);
-                $client = new Client([
-                    'base_uri' => 'https://api.stability.ai/v1/generation/',
-                    'headers' => [
-                        'content-type' => ($stable_type == 'upscale' || $stable_type == 'image-to-image') ? 'multipart/form-data' : 'application/json',
-                        'Authorization' => "Bearer " . $stablediffusionKey
-                    ]
-                ]);
-
-                // Stablediffusion engine
-                $engine = $this->settings_two->stablediffusion_default_model;
-                // Content Type
-                $content_type = "json";
-
-                $payload = [
-                    'cfg_scale' => 7,
-                    'clip_guidance_preset' => $clip_guidance_preset ?? 'NONE',
-                    'samples' => 1,
-                    'steps' => 50
-                ];
-
-                if ($sampler)
-                    $payload['sampler'] = $sampler;
-
-                if ($style_preset)
-                    $payload['style_preset'] = $style_preset;
-
-                switch ($stable_type) {
-                    case "multi-prompt":
-                        $stable_url = "text-to-image";
-                        $payload['width'] = $width;
-                        $payload['height'] = $height;
-                        $arr = [];
-                        foreach ($prompt as $p) {
-                            $arr[] =  array(
-                                "text" => $p . ($mood == null ? '' : (' ' . $mood . ' mood.')),
-                                "weight" => 1
-                            );
-                        }
-                        $prompt = $arr;
-                        break;
-                    case "upscale":
-                        $stable_url = "image-to-image/upscale";
-                        $engine = "esrgan-v1-x2plus";
-                        $payload = [];
-                        $payload['image'] = $init_image->get();
-                        $prompt = [
-                            array(
-                                "text" => $prompt . "-" . Str::random(16),
-                                "weight" => 1
-                            )
-                        ];
-                        $content_type = "multipart";
-                        break;
-                    case "image-to-image":
-                        $stable_url = $stable_type;
-                        $payload['init_image'] = $init_image->get();
-                        $prompt = [
-                            array(
-                                "text" => $prompt . ($mood == null ? '' : (' ' . $mood . ' mood.')),
-                                "weight" => 1
-                            )
-                        ];
-                        $content_type = "multipart";
-                        break;
-                    default:
-                        $stable_url = $stable_type;
-                        $payload['width'] = $width;
-                        $payload['height'] = $height;
-                        $prompt = [
-                            array(
-                                "text" => $prompt . ($mood == null ? '' : (' ' . $mood . ' mood.')),
-                                "weight" => 1
-                            )
-                        ];
-                        break;
-                }
-
-                if ($negative_prompt)
-                    $prompt[] = array("text" => $negative_prompt, "weight" => -1);
-
-                if ($stable_type != 'upscale')
-                    $payload['text_prompts'] = $prompt;
-
-                if ($content_type == "multipart") {
-                    $multipart = [];
-                    foreach ($payload as $key => $value) {
-                        if (!is_array($value)) {
-                            $multipart[] = ['name' => $key, 'contents' => $value];
-                            continue;
-                        }
-
-                        foreach ($value as $multiKey => $multiValue) {
-                            $multiName = $key . '[' . $multiKey . ']' . (is_array($multiValue) ? '[' . key($multiValue) . ']' : '') . '';
-                            $multipart[] = ['name' => $multiName, 'contents' => (is_array($multiValue) ? reset($multiValue) : $multiValue)];
-                        }
-                    }
-                    $payload = $multipart;
-                }
-
-                try {
-                    $response = $client->post("$engine/$stable_url", [
-                        $content_type => $payload
-                    ]);
-                } catch (RequestException $e) {
-                    if ($e->hasResponse()) {
-                        $response = $e->getResponse();
-                        $statusCode = $response->getStatusCode();
-                        // Custom handling for specific status codes here...
-
-                        if ($statusCode == '404') {
-                            // Handle a not found error
-                        } elseif ($statusCode == '500') {
-                            // Handle a server error
-                        }
-
-                        $errorMessage = $response->getBody()->getContents();
-                        return response()->json(["status" => "error", "message" => json_decode($errorMessage)->message]);
-                        // Log the error message or handle it as required
-                    }
-                    return response()->json(["status" => "error", "message" => $e->getMessage()]);
-                } catch (Exception $e) {
-                    if ($e->hasResponse()) {
-                        $response = $e->getResponse();
-                        $statusCode = $response->getStatusCode();
-                        // Custom handling for specific status codes here...
-
-                        if ($statusCode == '404') {
-                            // Handle a not found error
-                        } elseif ($statusCode == '500') {
-                            // Handle a server error
-                        }
-
-                        $errorMessage = $response->getBody()->getContents();
-                        return response()->json(["status" => "error", "message" => json_decode($errorMessage)->message]);
-                        // Log the error message or handle it as required
-                    }
-                    return response()->json(["status" => "error", "message" => $e->getMessage()]);
-                }
-                $body = $response->getBody();
-                if ($response->getStatusCode() == 200) {
-
-                    $nameprompt = mb_substr($prompt[0]['text'], 0, 15);
-                    $nameprompt = explode(' ', $nameprompt)[0];
-
-                    $nameOfImage = Str::random(12) . '-DALL-E-' . $nameprompt . '.png';
-
-                    $contents = base64_decode(json_decode($body)->artifacts[0]->base64);
-                } else {
-                    $message = '';
-                    if ($body->status == "error")
-                        $message = $body->message;
-                    else
-                        $message = "Failed, Try Again";
-                    return response()->json(["status" => "error", "message" => $message]);
-                }
-
-                Storage::disk('public')->put($nameOfImage, $contents);
-                $path = 'uploads/' . $nameOfImage;
-            }
-
-            if ($image_storage == self::STORAGE_S3) {
-                try {
-                    $uploadedFile = new File($path);
-                    $aws_path = Storage::disk('s3')->put('', $uploadedFile);
-                    unlink($path);
-                    $path = Storage::disk('s3')->url($aws_path);
-                } catch (\Exception $e) {
-                    return response()->json(["status" => "error", "message" => "AWS Error - " . $e->getMessage()]);
-                }
-            }
-
-            $entry = new UserOpenai();
-            $entry->team_id = $user->team_id;
-            $entry->title = request('title') ?: __('New Image');
-            $entry->slug = Str::random(7) . Str::slug($user->fullName()) . '-workbsook';
-            $entry->user_id = Auth::id();
-            $entry->openai_id = $post->id;
-            $entry->input = $prompt;
-            if ($image_generator == self::STABLEDIFFUSION) {
-                $entry->input = $prompt[0]['text'];
-            } else {
-                $entry->input = $prompt;
-            }
-            // $entry->input = $prompt[0]['text'];
-            $entry->response = $image_generator == "stablediffusion" ? "SD" : "DE";
-            $entry->output = $image_storage == self::STORAGE_S3 ? $path : '/' . $path;
-            $entry->hash = Str::random(256);
-            $entry->credits = 1;
-            $entry->words = 0;
-            $entry->storage = $image_storage == self::STORAGE_S3 ? UserOpenai::STORAGE_AWS : UserOpenai::STORAGE_LOCAL;
-            $entry->payload = request()->all();
-            $entry->save();
-
-            //push each generated image to an array
-            array_push($entries, $entry);
-
-            $team = $user->getAttribute('team');
-
-            if ($team) {
-                $teamManager = $user->teamManager;
-
-                if ($teamManager->remaining_images - 1 == -1) {
-
-                    $teamManager->remaining_images = 0;
-                    $teamManager->save();
-
-                    $member = $user->teamMember;
-
-                    if ($member) {
-                        if (!$member->allow_unlimited_credits) {
-                            $member->remaining_words -= 1;
-                        }
-
-                        $member->used_image_credit += 1;
-
-                        $member->save();
-                    }
-
-                    $userOpenai = UserOpenai::where('user_id', Auth::id())->where('openai_id', $post->id)->orderBy('created_at', 'desc')->get();
-                    $openai = OpenAIGenerator::find($post->id);
-                    return response()->json(["status" => "success", "images" => $entries, "image_storage" => $image_storage]);
-                }
-            } else {
-                if ($user->remaining_images - 1 == -1) {
-
-                    $user->remaining_images = 0;
-                    $user->save();
-
-                    $userOpenai = UserOpenai::where('user_id', Auth::id())->where('openai_id', $post->id)->orderBy('created_at', 'desc')->get();
-                    $openai = OpenAIGenerator::find($post->id);
-                    return response()->json(["status" => "success", "images" => $entries, "image_storage" => $image_storage]);
-                }
-            }
-
-            $team = $user->getAttribute('team');
-
-            if ($team) {
-                $teamManager = $user->teamManager;
-
-                if ($teamManager) {
-                    if ($teamManager->remaining_images == 1) {
-                        $teamManager->remaining_images = 0;
-                        $teamManager->save();
-                    }
-
-                    if ($teamManager->remaining_images != -1 and $teamManager->remaining_images != 1 and $teamManager->remaining_images != 0) {
-                        $teamManager->remaining_images -= 1;
-                        $teamManager->save();
-                    }
-
-                    if ($teamManager->remaining_images < -1) {
-                        $teamManager->remaining_images = 0;
-                        $teamManager->save();
-                    }
-                }
-
-                $member = $user->teamMember;
-
-                if ($member) {
-                    if (!$member->allow_unlimited_credits) {
-                        if ($member->remaining_words != -1) {
-                            $member->remaining_words -= 1;
-                        }
-
-                        if ($member->remaining_words < -1) {
-                            $member->remaining_words = 0;
-                        }
-                    }
-
-                    $member->used_image_credit += 1;
-
-                    $member->save();
-                }
-            } else {
-                if ($user->remaining_images == 1) {
-                    $user->remaining_images = 0;
-                    $user->save();
-                }
-
-                if ($user->remaining_images != -1 and $user->remaining_images != 1 and $user->remaining_images != 0) {
-                    $user->remaining_images -= 1;
-                    $user->save();
-                }
-
-                if ($user->remaining_images < -1) {
-                    $user->remaining_images = 0;
-                    $user->save();
-                }
-            }
-
-            if ($user->remaining_images == 0) {
-                return response()->json(["status" => "success", "images" => $entries, "image_storage" => $image_storage]);
+                $multipart[] = ['name' => $key, 'contents' => $value];
             }
         }
-        return response()->json(["status" => "success", "images" => $entries, "image_storage" => $image_storage]);
+        $payload = $multipart;
+
+        try {
+            $response = $client->post('image-to-video', [
+                'multipart' => $payload,
+            ]);
+        } catch (RequestException $e) {
+            if ($e->hasResponse()) {
+                $response = $e->getResponse();
+                $statusCode = $response->getStatusCode();
+                // Custom handling for specific status codes here...
+
+                if ($statusCode == '404') {
+                    // Handle a not found error
+                } elseif ($statusCode == '500') {
+                    // Handle a server error
+                }
+
+                $errorMessage = $response->getBody()->getContents();
+
+                return response()->json(['status' => 'error', 'message' => json_decode($errorMessage)->message]);
+                // Log the error message or handle it as required
+            }
+
+            return response()->json(['status' => 'error', 'message' => $e->getMessage()]);
+        } catch (Exception $e) {
+            if ($e->hasResponse()) {
+                $response = $e->getResponse();
+                $statusCode = $response->getStatusCode();
+                // Custom handling for specific status codes here...
+
+                if ($statusCode == '404') {
+                    // Handle a not found error
+                } elseif ($statusCode == '500') {
+                    // Handle a server error
+                }
+
+                $errorMessage = $response->getBody()->getContents();
+
+                return response()->json(['status' => 'error', 'message' => $e->getMessage()]);
+                // Log the error message or handle it as required
+            }
+
+            return response()->json(['status' => 'error', 'message' => $e->getMessage()]);
+        }
+        $body = $response->getBody();
+        if ($response->getStatusCode() == 200) {
+            return response()->json(['status' => 'success', 'id' => json_decode($body)->id, 'sourceUrl' => $path]);
+        } else {
+            $message = '';
+            if ($body->status == 'error') {
+                $message = $body->message;
+            } else {
+                $message = 'Failed, Try Again';
+            }
+
+            return response()->json(['status' => 'error', 'message' => $message]);
+        }
+    }
+
+    public function checkVideoProgress(Request $request)
+    {
+        $resultId = $request->id;
+        $user = Auth::user();
+
+        $client = new Client();
+        $settings = SettingTwo::first();
+        $stablediffusionKeys = explode(',', $settings->stable_diffusion_api_key);
+        $stablediffusionKey = $stablediffusionKeys[array_rand($stablediffusionKeys)];
+
+        $client = new Client([
+            'base_uri' => 'https://api.stability.ai/v2alpha/generation/image-to-video/result/'.$resultId,
+            'headers' => [
+                'Accept' => 'video/*',
+                'Authorization' => 'Bearer '.$stablediffusionKey,
+            ],
+        ]);
+
+        try {
+            $response = $client->request('GET');
+            if ($response->getStatusCode() == 200) {
+                $fileContents = $response->getBody()->getContents();
+                $nameOfImage = 'image-to-video-'.Str::random(12).'.mp4';
+                Storage::disk('public')->put($nameOfImage, $fileContents);
+                $path = 'uploads/'.$nameOfImage;
+
+                $image_storage = $this->settings_two->ai_image_storage;
+                if ($image_storage == self::STORAGE_S3) {
+                    try {
+                        $uploadedFile = new File($path);
+                        $aws_path = Storage::disk('s3')->put('', $uploadedFile);
+                        unlink($path);
+                        $path = Storage::disk('s3')->url($aws_path);
+                    } catch (\Exception $e) {
+                        return response()->json(['status' => 'error', 'message' => 'AWS Error - '.$e->getMessage()]);
+                    }
+                }
+
+                $entry = new UserOpenai();
+                $entry->team_id = $user->team_id;
+                $entry->title = __('New Video');
+                $entry->slug = Str::random(7).Str::slug($user->fullName()).'-workbsook';
+                $entry->user_id = Auth::id();
+                $entry->openai_id = OpenAIGenerator::where('slug', 'ai_video')->first()->id;
+                $entry->input = $request->url;
+                $entry->response = 'VIDEO';
+                $entry->output = $image_storage == self::STORAGE_S3 ? $path : '/'.$path;
+                $entry->hash = Str::random(256);
+                $entry->credits = 5;
+                $entry->words = 0;
+                $entry->storage = $image_storage == self::STORAGE_S3 ? UserOpenai::STORAGE_AWS : UserOpenai::STORAGE_LOCAL;
+                $entry->payload = request()->all();
+                $entry->save();
+
+				userCreditDecreaseForImage($user, 5, 'image-to-video');
+
+                return response()->json(['status' => 'success', 'status' => 'finished', 'url' => $path, 'video' => $entry]);
+            } elseif ($response->getStatusCode() == 202) {
+                return response()->json(['status' => 'success', 'status' => 'in-progress']);
+            }
+        } catch (Exception $e) {
+            return response()->json(['status' => 'error', 'message' => $e->getMessage()]);
+        }
     }
 
     public function audioOutput($file, $post, $user)
@@ -1188,34 +1493,35 @@ class AIController extends Controller
 
         $path = 'upload/audio/';
 
-        $file_name = Str::random(4) . '-' . Str::slug($user->fullName()) . '-audio.' . $file->getClientOriginalExtension();
+        $file_name = Str::random(4).'-'.Str::slug($user->fullName()).'-audio.'.$file->getClientOriginalExtension();
 
         //Audio Extension Control
         $imageTypes = ['mp3', 'mp4', 'mpeg', 'mpga', 'm4a', 'wav', 'webm'];
-        if (!in_array(Str::lower($file->getClientOriginalExtension()), $imageTypes)) {
-            $data = array(
+        if (! in_array(Str::lower($file->getClientOriginalExtension()), $imageTypes)) {
+            $data = [
                 'errors' => ['Invalid extension, accepted extensions are mp3, mp4, mpeg, mpga, m4a, wav, and webm.'],
-            );
+            ];
+
             return response()->json($data, 419);
         }
 
         $file->move($path, $file_name);
 
         $response = FacadesOpenAI::audio()->transcribe([
-            'file' => fopen($path . $file_name, 'r'),
+            'file' => fopen($path.$file_name, 'r'),
             'model' => 'whisper-1',
             'response_format' => 'verbose_json',
         ]);
 
-        $text  = $response->text;
+        $text = $response->text;
 
         $entry = new UserOpenai();
         $entry->team_id = $user->team_id;
         $entry->title = request('title') ?: __('New Workbook');
-        $entry->slug = Str::random(7) . Str::slug($user->fullName()) . '-speech-to-text-workbook';
+        $entry->slug = Str::random(7).Str::slug($user->fullName()).'-speech-to-text-workbook';
         $entry->user_id = Auth::id();
         $entry->openai_id = $post->id;
-        $entry->input = $path . $file_name;
+        $entry->input = $path.$file_name;
         $entry->response = json_encode($response->toArray());
         $entry->output = $text;
         $entry->hash = Str::random(256);
@@ -1223,18 +1529,17 @@ class AIController extends Controller
         $entry->words = countWords($text);
         $entry->save();
 
-
         $team = $user->getAttribute('team');
 
-
-        userCreditDecreaseForWord($user, countWords($text));
+        userCreditDecreaseForWord($user, countWords($text), 'whisper-1');
 
         //Workbook add-on
         $workbook = $entry;
 
         $userOpenai = UserOpenai::where('user_id', Auth::id())->where('openai_id', $post->id)->orderBy('created_at', 'desc')->get();
         $openai = OpenAIGenerator::find($post->id);
-        $html2 = view('panel.user.openai.generator_components.generator_sidebar_table', compact('userOpenai', 'openai'))->render();
+        $html2 = view('panel.user.openai.components.generator_sidebar_table', compact('userOpenai', 'openai'))->render();
+
         return response()->json(compact('html2'));
     }
 
@@ -1242,22 +1547,19 @@ class AIController extends Controller
     {
         //Workbook add-on
         $workbook = $entry;
-        if (view()->exists('panel.admin.custom.user.openai.documents_workbook_textarea')) {
-            $html = view('panel.admin.custom.user.openai.documents_workbook_textarea', compact('workbook'))->render();
-        } else {
-            $html = view('panel.user.openai.documents_workbook_textarea', compact('workbook'))->render();
-        }
+        $html = view('panel.user.openai.documents_workbook_textarea', compact('workbook'))->render();
         $userOpenai = UserOpenai::where('user_id', Auth::id())->where('openai_id', $post->id)->orderBy('created_at', 'desc')->get();
         $openai = OpenAIGenerator::find($post->id);
-        $html2 = view('panel.user.openai.generator_components.generator_sidebar_table', compact('userOpenai', 'openai'))->render();
+        $html2 = view('panel.user.openai.components.generator_sidebar_table', compact('userOpenai', 'openai'))->render();
+
         return response()->json(compact('html', 'html2'));
     }
 
     public function messageTitleSave(Request $request)
     {
-        if (!$request['message_id'] || ! $request['title']) {
+        if (! $request['message_id'] || ! $request['title']) {
             return response()->json([
-                'message' => trans('TItle is required')
+                'message' => trans('TItle is required'),
             ]);
         }
 
@@ -1266,268 +1568,65 @@ class AIController extends Controller
         $entry->save();
 
         return response()->json([
-            'message' => trans('Title update')
+            'message' => trans('Title updated'),
         ]);
     }
 
     public function lowGenerateSave(Request $request)
     {
+		$user = Auth::user();
         $response = $request->response;
         $total_user_tokens = countWords($response);
 
         $entry = UserOpenai::find($request->message_id);
-        if (request('title')) {
-            $entry->title = request('title');
-        }
+		if($entry == null){
+			$entry = new UserOpenai();
+			$entry->user_id = $user->id;
+			$entry->input =  $response;
+			$entry->hash = str()->random(256);
+			$entry->team_id = $user->team_id;
+			$entry->slug = str()->random(7).str($user->fullName())->slug().'-workbook';
+			$entry->openai_id = $request->openai_id ?? 1;
+		}
+		$entry->title = request('title') ?: __('New Workbook');
         $entry->credits = $total_user_tokens;
         $entry->words = $total_user_tokens;
         $entry->response = $response;
         $entry->output = $response;
         $entry->save();
-
-        $user = Auth::user();
-
-        userCreditDecreaseForWord($user, $total_user_tokens);
-    }
-
-    public function stream(Request $request)
-    {
-        $apiKeys = explode(',', Setting::first()?->openai_api_secret);
-        $openaiKey = $apiKeys[array_rand($apiKeys)];
-
-        $openai_model = Setting::first()?->openai_default_model;
-
-        $client = OpenAI::factory()
-            ->withApiKey($openaiKey)
-            ->make();
-
-        session_start();
-        header("Content-type: text/event-stream");
-        header("Cache-Control: no-cache");
-        ob_end_flush();
-        $result = $client->chat()->createStreamed([
-            'model' => $openai_model,
-            'messages' => [[
-                'role' => 'user',
-                'content' => $request->get('message'),
-            ]],
-            'stream' => true,
-        ]);
-
-        foreach ($result as $response) {
-            echo "event: data\n";
-            echo "data: " . json_encode(['message' => $response->choices[0]->delta->content]) . "\n\n";
-            flush();
-        }
-
-        echo "event: stop\n";
-        echo "data: stopped\n\n";
-    }
-
-    public function chatStream(Request $request)
-    {
-        $apiKeys = explode(',', Setting::first()?->openai_api_secret);
-        $openaiKey = $apiKeys[array_rand($apiKeys)];
-
-        $openai_model = Setting::first()?->openai_default_model;
-        $settings2 = SettingTwo::first();
-
-        $client = OpenAI::factory()
-            ->withApiKey($openaiKey)
-            ->withHttpClient(new \GuzzleHttp\Client())
-            ->make();
-
-        session_start();
-        header("Content-type: text/event-stream");
-        header("Cache-Control: no-cache");
-        ob_end_flush();
-
-        $vectorService = new VectorService();
-
-        //Add previous chat history to the prompt
-        $prompt = $request->get('message');
-        $realtime = $request->get('realtime');
-        $categoryId = $request->get('category');
-        $realtimePrompt = $prompt;
-        $extra_prompt = $vectorService->getMostSimilarText($prompt, $request->chat_id);
-
-        $type = $request->get('type');
-        // $images = json_decode($request->get('images'), true);
-        $list = UserOpenaiChat::where('user_id', Auth::id())->where('openai_chat_category_id', $categoryId)->orderBy('updated_at', 'desc');
-
-        $list = $list->get();
-        $chat = $list->first();
-        $category = $chat->category;
-        $prefix = "";
-        if ($category->prompt_prefix != null)
-            $prefix = "$category->prompt_prefix you will now play a character and respond as that character (You will never break character). Your name is $category->human_name but do not introduce by yourself as well as greetings.";
-
-        $messages = [[
-            "role" => "assistant",
-            "content" => $prefix
-        ]];
-
-        $lastThreeMessage = null;
-        if ($chat != null) {
-            $lastThreeMessageQuery = $chat->messages()->whereNot('input', null)->orderBy('created_at', 'desc')->take(2);
-            $lastThreeMessage = $lastThreeMessageQuery->get()->reverse();
-        }
-
-        if ($category->chat_completions == null) {
-            $category->chat_completions = "[]";
-        }
-
-        foreach ($lastThreeMessage as $entry) {
-            if ($entry->output == null) {
-                $entry->output = "";
-            }
-            array_push($messages, array(
-                "role" => "user",
-                "content" => $entry->input
-            ));
-            array_push($messages, array(
-                "role" => "assistant",
-                "content" => $entry->output
-            ));
-
-            $messages = array_merge($messages, json_decode($category->chat_completions, true));
-        }
-        if ($extra_prompt == "") {
-            if ($realtime == 1 && $settings2->serper_api_key != null) {
-                $clientt = new \GuzzleHttp\Client();
-                $headers = [
-                    'X-API-KEY' => $settings2->serper_api_key,
-                    'Content-Type' => 'application/json'
-                ];
-                $body = [
-                    'q' => $realtimePrompt,
-                ];
-                $response = $clientt->post('https://google.serper.dev/search', [
-                    'headers' => $headers,
-                    'json' => $body,
-                ]);
-                $toGPT = $response->getBody()->getContents();
-                $final_prompt =
-                    "Prompt: " . $realtimePrompt .
-                    '\n\nWeb search json results: '
-                    . json_encode($toGPT) .
-                    '\n\nInstructions: Based on the Prompt generate a proper response with help of Web search results(if the Web search results in the same context). Only if the prompt require links: (make curated list of links and descriptions using only the <a target="_blank">, write links with using <a target="_blank"> with mrgin Top of <a> tag is 5px and start order as number and write link first and then write description). Must not write links if its not necessary. Must not mention anything about the prompt text.';
-                // unset($history); 
-                array_push($messages, array(
-                    "role" => "user",
-                    "content" => $final_prompt
-                ));
-            } else {
-                array_push($messages, array(
-                    "role" => "user",
-                    "content" => $prompt
-                ));
-            }
-        } else {
-            array_push($messages, array(
-                "role" => "user",
-                "content" => "'this file' means file content. Must not reference previous chats if user asking about pdf. Must reference file content if only user is asking about file content. Else just response as an assistant shortly and professionaly without must not referencing file content. \n\n\n\n\nUser qusetion: $prompt \n\n\n\n\n Document Content: \n $extra_prompt"
-            ));
-        }
-        //send request to openai
-
-        try {
-            if ($type == 'chat') {
-                $result = $client->chat()->createStreamed([
-                    'model' => $openai_model,
-                    'messages' => $messages
-                ]);
-                foreach ($result as $response) {
-                    echo "event: data\n";
-                    echo "data: " . json_encode(['message' => $response->choices[0]->delta->content]) . "\n\n";
-                    flush();
-                }
-            } else if ($type == 'vision') {
-                $images = json_decode($request->get('images'), true);
-
-                $gclient = new Client();
-
-                $apiKeys = explode(',', $this->settings->openai_api_secret);
-                $openaiApiKey = $apiKeys[array_rand($apiKeys)];
-                $url = 'https://api.openai.com/v1/chat/completions';
-
-                $response = $gclient->post(
-                    $url,
-                    [
-                        'headers' => [
-                            'Authorization' => 'Bearer ' . $openaiApiKey,
-                        ],
-                        'json' => [
-                            'model' => 'gpt-4-vision-preview',
-                            'messages' => [
-                                [
-                                    'role' => 'user',
-                                    'content' => array_merge(
-                                        [
-                                            [
-                                                'type' => 'text',
-                                                'text' => $prompt,
-                                            ]
-                                        ],
-                                        collect($images)->map(function ($item) {
-                                            if (Str::startsWith($item, 'http')) {
-                                                $imageData = file_get_contents($item);
-                                            } else {
-                                                $imageData = file_get_contents(substr($item, 1, strlen($item) - 1));
-                                            }
-                                            $base64Image = base64_encode($imageData);
-                                            return [
-                                                'type' => 'image_url',
-                                                'image_url' => [
-                                                    'url' => "data:image/png;base64," . $base64Image
-                                                ]
-                                            ];
-                                        })->toArray()
-                                    )
-                                ],
-                            ],
-                            'max_tokens' => 2000,
-                            'stream' => true
-                        ],
-                    ],
-                );
-
-                foreach (explode("\n", $response->getBody()->getContents()) as $chunk) {
-                    if (strlen($chunk) > 5 && $chunk != "data: [DONE]" && isset(json_decode(substr($chunk, 6, strlen($chunk) - 6))->choices[0]->delta->content)) {
-                        echo "event: data\n";
-                        echo "data: " . json_encode(['message' => json_decode(substr($chunk, 6, strlen($chunk) - 6))->choices[0]->delta->content]) . "\n\n";
-                        flush();
-                    }
-                }
-            }
-
-            echo "event: stop\n";
-            echo "data: stopped\n\n";
-        } catch (Exception $e) {
-            error_log($e->getMessage());
-            Log::error($e->getMessage());
-        }
+        userCreditDecreaseForWord($user, $total_user_tokens, $this->settings->openai_default_model);
     }
 
     public function lazyLoadImage(Request $request)
     {
+        $items_per_page = 5;
         $offset = $request->get('offset', 0);
-        // var_dump($offset)
         $post_type = $request->get('post_type');
         $post = OpenAIGenerator::where('slug', $post_type)->first();
 
-        $limit = 5;
-        $images = UserOpenai::where('user_id', Auth::id())
-            ->where('openai_id', $post->id)
-            ->orderBy('created_at', 'desc')
-            ->skip($offset)
-            ->take($limit)
-            ->get();
-        // $images = Image::skip($offset)->take($limit)->get();
+		$all_images = UserOpenai::where('user_id', Auth::id())
+            ->where('openai_id', $post->id);
+
+		$all_images_count = $all_images->count();
+		$current_images_list = $all_images->orderBy('created_at', 'desc')
+			->skip($offset)
+			->take($items_per_page)
+			->get();
+			$thumbnails = [];
+		foreach ($current_images_list as $image) {
+			// Generate thumbnail URL using your existing method
+			$thumbnailUrl = ThumbImage($image->output);
+			// Append the image object with thumbnail URL to the array
+			$imageWithThumbnail = $image->toArray(); // Convert the image object to an array
+			$imageWithThumbnail['thumbnail'] = $thumbnailUrl; // Add thumbnail URL to the array
+			$thumbnails[] = $imageWithThumbnail; // Append the modified array to the thumbnails array
+		}
 
         return response()->json([
-            'images' => $images,
-            'hasMore' => $images->count() === $limit,
+            'images' => $thumbnails,
+			'count_current' => $current_images_list->count() + $offset,
+			'count_remaining' => $all_images_count - ($current_images_list->count() + $offset),
+			'count_all' => $all_images_count,
         ]);
     }
 
@@ -1538,55 +1637,77 @@ class AIController extends Controller
         $content = $request->get('content');
         $prompt = $request->prompt;
 
-        if ($content == null || $content == "") {
-            return response()->json(["result" => ""]);
+        if ($content == null || $content == '') {
+            return response()->json(['result' => '']);
         }
 
         if ($user->remaining_words <= 0 && $user->remaining_words != -1) {
             return response()->json(['errors' => 'You have no remaining words. Please upgrade your plan.'], 400);
         }
 
-        $apiKeys = explode(',', Setting::first()?->openai_api_secret);
-
-        $openaiKey = $apiKeys[array_rand($apiKeys)];
-
-        $client = OpenAI::factory()
-            ->withApiKey($openaiKey)
-            ->withHttpClient(new \GuzzleHttp\Client())
-            ->make();
-
-        $completion = $client->chat()->create([
-            'model' => "gpt-3.5-turbo",
-            'messages' => [[
-                'role' => 'user',
-                'content' => "$prompt\n\n$content"
-            ]]
-        ]);
+        Helper::setOpenAiKey();
+		$chat_bot = $this->settings?->openai_default_model ?? 'gpt-3.5-turbo';
+		$detect = FacadesOpenAI::chat()->create([
+			'model' => $chat_bot,
+			'messages' => [
+				[
+					'role' => 'system',
+					'content' => 'You are a helpful language detection assistant. Must detect the content language and return it only az language code. For example: "en_US"',
+				],
+				[
+					'role' => 'user',
+					'content' => "$prompt\n\nContent: \"$content\"",
+				]
+			],
+		]);
+		$languageCode = $detect->choices[0]->message->content;
+		$completion = FacadesOpenAI::chat()->create([
+			'model' => $chat_bot,
+			'messages' => [
+				[
+					'role' => 'system',
+					'content' => 'You are a helpful assistant. You must response only with answer. Response language must be: '.$languageCode,
+				],
+				[
+					'role' => 'user',
+					'content' => "$prompt\n\nContent: \"$content\"",
+				]
+			],
+		]);
 
         $content = $completion->choices[0]->message->content;
 
-        userCreditDecreaseForWord($user, countWords($content));
+        userCreditDecreaseForWord($user, countWords($content), $chat_bot);
 
-        return response()->json(["result" => $completion->choices[0]->message->content]);
+        return response()->json(['result' => $completion->choices[0]->message->content]);
     }
 
     public function reWrite()
     {
-        $openai = OpenAIGenerator::whereSlug("ai_rewriter")->firstOrFail();
-        $settings = Setting::first();
-        $settings2 = SettingTwo::first();
-        // Fetch the Site Settings object with openai_api_secret
-        $apiKeys = explode(',', $settings->openai_api_secret);
-        $apiKey = $apiKeys[array_rand($apiKeys)];
-
-        $len = strlen($apiKey);
-        $parts[] = substr($apiKey, 0, $l[] = rand(1, $len - 5));
-        $parts[] = substr($apiKey, $l[0], $l[] = rand(1, $len - $l[0] - 3));
-        $parts[] = substr($apiKey, array_sum($l));
-        $apikeyPart1 = base64_encode($parts[0]);
-        $apikeyPart2 = base64_encode($parts[1]);
-        $apikeyPart3 = base64_encode($parts[2]);
+        $openai = OpenAIGenerator::whereSlug('ai_rewriter')->firstOrFail();
         $apiUrl = base64_encode('https://api.openai.com/v1/chat/completions');
+		if ($this->settings_two->openai_default_stream_server == 'backend') {
+			$apikeyPart1 = base64_encode(rand(1, 100));
+			$apikeyPart2 = base64_encode(rand(1, 100));
+			$apikeyPart3 = base64_encode(rand(1, 100));
+		}else{
+			$settings = Setting::first();
+			// Fetch the Site Settings object with openai_api_secret
+			if ($this->settings?->user_api_option) {
+				$apiKeys = explode(',', auth()->user()?->api_keys);
+			} else {
+				$apiKeys = explode(',', $this->settings?->openai_api_secret);
+			}
+			$apiKey = $apiKeys[array_rand($apiKeys)];
+
+			$len = strlen($apiKey);
+			$parts[] = substr($apiKey, 0, $l[] = rand(1, $len - 5));
+			$parts[] = substr($apiKey, $l[0], $l[] = rand(1, $len - $l[0] - 3));
+			$parts[] = substr($apiKey, array_sum($l));
+			$apikeyPart1 = base64_encode($parts[0]);
+			$apikeyPart2 = base64_encode($parts[1]);
+			$apikeyPart3 = base64_encode($parts[2]);
+		}
         return view('panel.user.openai.rewriter.index', compact(
             'apikeyPart1',
             'apikeyPart2',

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Events\UsersActivityEvent;
 use App\Helpers\Classes\Helper;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
@@ -21,7 +22,7 @@ use Laravel\Socialite\Facades\Socialite;
 
 class AuthenticationController extends Controller
 {
-    public function githubCallback()
+    public function githubCallback(Request $request)
     {
         $githubUser = Socialite::driver('github')->user();
         $settings = Setting::first();
@@ -53,10 +54,16 @@ class AuthenticationController extends Controller
 
         Auth::login($user);
 
+        $ip = $request->ip();
+
+        $connection = $request->header('User-Agent');
+
+        event(new UsersActivityEvent($user->email, $user->type, $ip, $connection));
+
         return redirect('/dashboard/user');
     }
 
-    public function googleCallback()
+    public function googleCallback(Request $request)
     {
         $googleUser = Socialite::driver('google')->user();
         $checkUser = User::where('email', $googleUser->getEmail())->exists();
@@ -92,20 +99,26 @@ class AuthenticationController extends Controller
 
         Auth::login($user);
 
+        $ip = $request->ip();
+
+        $connection = $request->header('User-Agent');
+
+        event(new UsersActivityEvent($user->email, $user->type, $ip, $connection));
+
         return redirect('/dashboard/user');
     }
 
-    public function facebookCallback()
+    public function facebookCallback(Request $request)
     {
         $facebookUser = Socialite::driver('facebook')->user();
-        if($facebookUser->getEmail()){
+        if ($facebookUser->getEmail()) {
             $checkUser = User::where('email', $facebookUser->getEmail())->exists();
             $settings = Setting::first();
-    
+
             $nameParts = explode(' ', $facebookUser->getName());
             $name = $nameParts[0] ?? '';
             $surname = $nameParts[1] ?? '';
-    
+
             if ($checkUser) {
                 $user = User::where('email', $facebookUser->getEmail())->first();
                 $user->facebook_token = $facebookUser->token;
@@ -127,11 +140,17 @@ class AuthenticationController extends Controller
                     'affiliate_code' => Str::upper(Str::random(12)),
                 ]);
             }
-    
+
             Auth::login($user);
+
+            $ip = $request->ip();
+
+            $connection = $request->header('User-Agent');
+
+            event(new UsersActivityEvent($user->email, $user->type, $ip, $connection));
         }
         return redirect('/dashboard/user');
-        
+
     }
 
 
@@ -140,6 +159,14 @@ class AuthenticationController extends Controller
         $request->authenticate();
 
         $request->session()->regenerate();
+
+        $user = Auth::user();
+
+        $ip = $request->ip();
+
+        $connection = $request->header('User-Agent');
+
+        event(new UsersActivityEvent($user->email, $user->type, $ip, $connection));
 
         return redirect()->intended(RouteServiceProvider::HOME);
     }
@@ -224,6 +251,11 @@ class AuthenticationController extends Controller
         $settings = Setting::first();
         if ($settings->login_without_confirmation == 1) {
             Auth::login($user);
+
+            $ip = $request->ip();
+            $connection = $request->header('User-Agent');
+
+            event(new UsersActivityEvent($user->email, $user->type, $ip, $connection));
         } else {
             $data = array(
                 'errors' => ['We have sent you an email for account confirmation. Please confirm your account to continue.'],
@@ -231,7 +263,6 @@ class AuthenticationController extends Controller
             );
             return response()->json($data, 401);
         }
-
 
         return response()
             ->json([

@@ -2,6 +2,9 @@
 
 namespace App\Providers;
 
+
+use App\Events\UsersActivityEvent;
+use App\Listeners\UsersActivityListener;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
@@ -79,6 +82,13 @@ class EventServiceProvider extends ServiceProvider
         ],
 		PaystackLifetimeEvent::class => [
             PaystackLifetimeListener::class,
+        ],
+        # This should not be deleted, the extension tip is required
+        \App\Events\AffiliateEvent::class => [
+            \App\Listeners\AffiliateListener::class,
+        ],
+		UsersActivityEvent::class => [
+            UsersActivityListener::class,
         ],
     ];
 

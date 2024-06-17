@@ -66,7 +66,8 @@ class PaymentProcessController extends Controller
         abort(404);
     }
     public function startSubscriptionCheckoutProcess(Request $request, $gateway= null, $referral = null){
-        if($gateway !== "freeservice" && $request->isMethod('post')){
+        if($gateway !== "freeservice" && $request->isMethod('post'))
+        {
             $gateways = Gateways::where('is_active', 1)->pluck('code')->toArray();
             $request->validate([
                 'planID' => 'required',
@@ -137,10 +138,12 @@ class PaymentProcessController extends Controller
         return view("panel.user.finance.succesful");
     }
     # webhook control area
-    public function handleWebhook(Request $request, $gateway){
+    public function handleWebhook(Request $request, $gateway)
+    {
         # [stripe,paypal,yokassa,iyzico,paystack,twocheckout]
         try {
-            if($request->isMethod('post')){ # accept the post method for all
+            if($request->isMethod('post'))
+            { # accept the post method for all
                 if($gateway == "simulate"){
                     return GatewaySelector::selectGateway($gateway)::simulateWebhookEvent($request);
                 }
@@ -151,6 +154,9 @@ class PaymentProcessController extends Controller
                     return GatewaySelector::selectGateway('paypal')::simulateWebhookEvent($request);
                 }
                 elseif($gateway == "twocheckout"){
+                    return GatewaySelector::selectGateway($gateway)::handleWebhook($request);
+                }
+                elseif($gateway == "razorpay"){
                     return GatewaySelector::selectGateway($gateway)::handleWebhook($request);
                 }
                 else{
@@ -185,31 +191,32 @@ class PaymentProcessController extends Controller
                     createActivity($order->user->id, __('Bank transaction status updated to:')." ". __($status), $order->plan->name . ' '. __('Plan'), null);
                 break;
             case 'Approved':      
-                
                     if($order->type == "subscription"){ 
-                        $subs = Subscriptions::where("stripe_id", $order->order_id)->firstOrFail();
-                        $subs->stripe_status = "bank_approved";
-    
-                        switch ($order->plan->frequency) {
-                            case 'monthly':
-                                $subs->ends_at = \Carbon\Carbon::now()->addMonths(1);
-                                break;
-                            case 'yearly':
-                                $subs->ends_at = \Carbon\Carbon::now()->addYears(1);
-                                break;
-                            case 'lifetime_monthly':
-                                $subs->ends_at = \Carbon\Carbon::now()->addMonths(1); #ends each month but auto renewing without payment reqs
-                                $subs->auto_renewal = 1;
-                                break;
-                            case 'lifetime_yearly':
-                                $subs->ends_at = \Carbon\Carbon::now()->addYears(1); #ends each year but auto renewing without payment reqs
-                                $subs->auto_renewal = 1;
-                                break;
-                            default:
-                                $subs->ends_at = \Carbon\Carbon::now()->addMonths(1);
-                                break;
-                        }
-                        $subs->save(); 
+                        $subs = Subscriptions::where("stripe_id", $order->order_id)->first();
+						if ($subs) {
+							$subs->stripe_status = "bank_approved";
+		
+							switch ($order->plan->frequency) {
+								case 'monthly':
+									$subs->ends_at = \Carbon\Carbon::now()->addMonths(1);
+									break;
+								case 'yearly':
+									$subs->ends_at = \Carbon\Carbon::now()->addYears(1);
+									break;
+								case 'lifetime_monthly':
+									$subs->ends_at = \Carbon\Carbon::now()->addMonths(1); #ends each month but auto renewing without payment reqs
+									$subs->auto_renewal = 1;
+									break;
+								case 'lifetime_yearly':
+									$subs->ends_at = \Carbon\Carbon::now()->addYears(1); #ends each year but auto renewing without payment reqs
+									$subs->auto_renewal = 1;
+									break;
+								default:
+									$subs->ends_at = \Carbon\Carbon::now()->addMonths(1);
+									break;
+							}
+							$subs->save(); 
+						}
                     }
                     $order->plan->total_words == -1? ($order->user->remaining_words = -1) : ($order->user->remaining_words += $order->plan->total_words);
                     $order->plan->total_images == -1? ($order->user->remaining_images = -1) : ($order->user->remaining_images += $order->plan->total_images);
@@ -218,9 +225,11 @@ class PaymentProcessController extends Controller
                     createActivity($order->user->id, __('Purchased with approved bank transaction'), $order->plan->name. ' '. __('Plan'), null);
                 break;
             case 'Rejected':
-                    $subs = Subscriptions::where("stripe_id", $order->order_id)->firstOrFail();
-                    $subs->stripe_status = "bank_rejected";
-                    $subs->save();   
+                    $subs = Subscriptions::where("stripe_id", $order->order_id)->first();
+					if ($subs) {
+						$subs->stripe_status = "bank_rejected";
+                    	$subs->save();   
+					}
                     # sent mail if required here later
                     createActivity($order->user->id, __('Bank transaction status updated to:')." ". __($status), $order->plan->name . ' '. __('Plan'), null);
                 break;
@@ -353,7 +362,7 @@ class PaymentProcessController extends Controller
             
             // Delete Plan
             $plan->delete();
-            return back()->with(['message' => 'All subscriptions related to this plan has been cancelled. Plan is deleted.', 'type' => 'success']);
+            return back()->with(['message' => __('All subscriptions related to this plan has been cancelled. Plan is deleted.'), 'type' => 'success']);
         }else{
             return back()->with(['message' => 'Couldn\'t find plan.', 'type' => 'error']);
         }
@@ -391,7 +400,7 @@ class PaymentProcessController extends Controller
             }
         }else{
             Log::error(self::$GATEWAY_CODE."-> saveGatewayProducts(): Could not find any active gateways!");
-            return back()->with(['message' => 'Please enable at least one gateway.', 'type' => 'error']);
+            return back()->with(['message' => __('Please enable at least one gateway.'), 'type' => 'error']);
         }
     }
     public static function checkForOngoingPayments()

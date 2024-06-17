@@ -100,12 +100,12 @@ class UserSupportApiController extends Controller {
     */
     public function ticket(Request $request, String $ticket_id) {
 
-        if($ticket_id == null) return response()->json(['error' => 'Ticket ID missing.'], 412);
+        if($ticket_id == null) return response()->json(['error' => __('Ticket ID missing.')], 412);
 
         $ticket = UserSupport::where('ticket_id', $ticket_id)->firstOrFail();
 
         if(Auth::user()->type != 'admin' && $ticket->user_id != Auth::id()){
-            return response()->json(['error' => 'Unauthorized request.'], 403);
+            return response()->json(['error' => __('Unauthorized request.')], 403);
         }
 
         $perPage = $request->input('per_page', 10);
@@ -160,12 +160,12 @@ class UserSupportApiController extends Controller {
     */
     public function ticketLastMessage(Request $request, String $ticket_id) {
 
-        if($ticket_id == null) return response()->json(['error' => 'Ticket ID missing.'], 412);
+        if($ticket_id == null) return response()->json(['error' => __('Ticket ID missing.')], 412);
 
         $ticket = UserSupport::where('ticket_id', $ticket_id)->firstOrFail();
 
         if(Auth::user()->type != 'admin' && $ticket->user_id != Auth::id()){
-            return response()->json(['error' => 'Unauthorized request.'], 403);
+            return response()->json(['error' => __('Unauthorized request.')], 403);
         }
 
         $messages = UserSupportMessage::where([["user_support_id", "=", $ticket->id]])->orderBy('created_at', 'desc')->first();
@@ -237,10 +237,10 @@ class UserSupportApiController extends Controller {
     */
     public function newTicket(Request $request) {
 
-        if($request->priority == null) return response()->json(['error' => 'Priority missing.'], 412);
-        if($request->category == null) return response()->json(['error' => 'Category missing.'], 412);
-        if($request->subject == null) return response()->json(['error' => 'Subject missing.'], 412);
-        if($request->message == null) return response()->json(['error' => 'Message missing.'], 412);
+        if($request->priority == null) return response()->json(['error' => __('Priority missing.')], 412);
+        if($request->category == null) return response()->json(['error' => __('Category missing.')], 412);
+        if($request->subject == null) return response()->json(['error' => __('Subject missing.')], 412);
+        if($request->message == null) return response()->json(['error' => __('Message missing.')], 412);
 
         $support = new UserSupport();
         $support->ticket_id = Str::upper(Str::random(10));
@@ -310,8 +310,8 @@ class UserSupportApiController extends Controller {
     */
     public function sendMessage(Request $request) {
 
-        if($request->ticket_id == null) return response()->json(['error' => 'Ticket ID missing.'], 412);
-        if($request->message == null) return response()->json(['error' => 'Message missing.'], 412);
+        if($request->ticket_id == null) return response()->json(['error' => __('Ticket ID missing.')], 412);
+        if($request->message == null) return response()->json(['error' => __('Message missing.')], 412);
 
 
         $user = Auth::user();
@@ -387,10 +387,10 @@ class UserSupportApiController extends Controller {
     */
     public function ticketUser(Request $request, String $ticket_id) {
 
-        if($ticket_id == null) return response()->json(['error' => 'Ticket ID missing.'], 412);
+        if($ticket_id == null) return response()->json(['error' => __('Ticket ID missing.')], 412);
 
         if(Auth::user()->type != 'admin'){
-            return response()->json(['error' => 'Unauthorized request.'], 403);
+            return response()->json(['error' => __('Unauthorized request.')], 403);
         }
 
         $ticket = UserSupport::where('ticket_id', $ticket_id)->firstOrFail();

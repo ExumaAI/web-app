@@ -8,8 +8,6 @@ use Mews\Purifier\Casts\CleanHtml;
 
 class Faq extends Model
 {
-    use HasFactory;
-
     protected $table = 'faq';
 
     protected $casts = [

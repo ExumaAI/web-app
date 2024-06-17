@@ -27,10 +27,6 @@ class TabsTrigger extends Component
      */
     public function render(): View|Closure|string
     {
-        if(view()->exists('components.custom.tabs-trigger')){
-            return view('components.custom.tabs-trigger');
-        }else{
-            return view('components.tabs-trigger');
-        }
+        return view('components.tabs-trigger');
     }
 }

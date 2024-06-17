@@ -75,13 +75,6 @@ return [
         'class' => App\Services\PaymentGateways\IyzicoService::class,
     ],
 
-    'twocheckout' => [             
-        'class' => App\Services\PaymentGateways\TwocheckoutService::class,
-    ],
-
-    'walletmaxpay' => [             
-        'class' => App\Services\PaymentGateways\WalletmaxpayService::class,
-    ],
 
     'razorpay' => [
         'class' => App\Services\PaymentGateways\RazorpayService::class,
@@ -94,7 +87,7 @@ return [
     'freeservice' => [
         'class' => App\Services\PaymentGateways\FreeService::class,
     ],
-    
+
     'revenuecat' => [
         'class' => App\Services\PaymentGateways\RevenueCatService::class,
     ],
@@ -107,4 +100,11 @@ return [
         'class' => App\Services\PaymentGateways\CoingateService::class,
     ],
 
+    'paddle' => [
+        'class' => App\Services\PaymentGateways\PaddleService::class,
+    ],
+
+    'cryptomus' => [
+        'class' => App\Services\PaymentGateways\CryptomusService::class,
+    ],
 ];

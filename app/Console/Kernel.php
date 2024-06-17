@@ -28,17 +28,11 @@ class Kernel extends ConsoleKernel
 
         $schedule->command("app:check-coingate-command")->everyFiveMinutes();
 
+        $schedule->command("app:check-razorpay-command")->everyFiveMinutes();
+
         $schedule->command("subscription:check-end")->everyFiveMinutes();
 
-        $schedule->call(function () {
-            $activeSub_yokassa = YokassaSubscriptions::where('subscription_status', 'active')->orWhere('subscription_status', 'yokassa_approved')->get();
-            foreach($activeSub_yokassa as $activeSub) {
-                $data_now = Carbon::now();
-                $data_end_sub = $activeSub->next_pay_at;
-                if($data_now->gt($data_end_sub)) $result = GatewaySelector::selectGateway('yokassa')::handleSubscribePay($activeSub->id);
-            }
-        })->daily();
-        
+        $schedule->command('app:check-yookassa-command')->daily();
     }
     // $schedule->command(RunHealthChecksCommand::class)->everyFiveMinutes();
     /**

@@ -5,16 +5,14 @@ namespace App\Listeners;
 use App\Events\StripeWebhookEvent;
 use App\Models\PaymentPlans;
 use App\Models\Setting;
-use Laravel\Cashier\Subscription as Subscriptions;
 use App\Models\User;
 use App\Models\UserOrder;
 use App\Models\WebhookHistory;
+use Carbon\Carbon;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
-use Carbon\Carbon;
-
+use Laravel\Cashier\Subscription as Subscriptions;
 use Throwable;
 
 class YokassaWebhookListener implements ShouldQueue
@@ -28,7 +26,7 @@ class YokassaWebhookListener implements ShouldQueue
     }
 
     use InteractsWithQueue;
- 
+
     public $afterCommit = true;
 
     // /**
@@ -37,14 +35,14 @@ class YokassaWebhookListener implements ShouldQueue
     //  * @var string|null
     //  */
     // public $connection = 'sqs';
- 
+
     /**
      * The name of the queue the job should be sent to.
      *
      * @var string|null
      */
     public $queue = 'stripelisteners';
- 
+
     /**
      * The time (seconds) before the job should be processed.
      *
@@ -52,14 +50,12 @@ class YokassaWebhookListener implements ShouldQueue
      */
     public $delay = 5; //60
 
-
-
     /**
      * Handle the event.
      */
     public function handle(StripeWebhookEvent $event): void
     {
-        try{
+        try {
             Log::info(json_encode($event->payload));
 
             $settings = Setting::first();
@@ -70,19 +66,19 @@ class YokassaWebhookListener implements ShouldQueue
 
             $event_type = $incomingJson->type;
             // $resource_id = $incomingJson->data->object->lines->data[0]->price->id; //Price id
-            if($event_type == 'invoice.paid'){
+            if ($event_type == 'invoice.paid') {
                 $resource_id = $incomingJson->data->object->subscription; // Subscription id
                 $resource_type = $incomingJson->data->object->lines->data[0]->type; // Subscription / prepaid
                 $summary = $incomingJson->data->object->lines->data[0]->description;
                 $resource_state = $incomingJson->data->object->status;
 
-            }else if($event_type == 'customer.subscription.deleted'){
+            } elseif ($event_type == 'customer.subscription.deleted') {
                 $resource_id = $incomingJson->data->object->items->data[0]->subscription; // Subscription id
                 $resource_type = $incomingJson->data->object->object; // Subscription / prepaid
                 $summary = $incomingJson->data->object->cancellation_details->reason;
                 $resource_state = 'cancelled'; // $incomingJson->data->object->items->status;
             }
-            
+
             // save incoming data
 
             $newData = new WebhookHistory();
@@ -94,7 +90,7 @@ class YokassaWebhookListener implements ShouldQueue
             $newData->summary = $summary;
             $newData->resource_id = $resource_id;
             $newData->resource_state = $resource_state;
-            if($event_type == 'invoice.paid'){
+            if ($event_type == 'invoice.paid') {
                 $newData->parent_payment = $incomingJson->data->object->payment_intent;
                 $newData->amount_total = $incomingJson->data->object->lines->data[0]->amount;
                 $newData->amount_currency = $incomingJson->data->object->lines->data[0]->currency;
@@ -105,39 +101,39 @@ class YokassaWebhookListener implements ShouldQueue
 
             // // switch/check event type
 
-            if($event_type == 'customer.subscription.deleted'){
+            if ($event_type == 'customer.subscription.deleted') {
                 // $resource_id is subscription id in this event.
                 $currentSubscription = Subscriptions::where('stripe_id', $resource_id)->first();
-                if($currentSubscription->stripe_status != "cancelled"){
-                    $currentSubscription->stripe_status = "cancelled";
+                if ($currentSubscription->stripe_status != 'cancelled') {
+                    $currentSubscription->stripe_status = 'cancelled';
                     $currentSubscription->ends_at = Carbon::now();
                     $currentSubscription->save();
                     $newData->status = 'checked';
                     $newData->save();
                 }
 
-            }else if($event_type == 'invoice.paid'){
+            } elseif ($event_type == 'invoice.paid') {
                 // $resource_id is subscription id in this event.
                 $activeSub = Subscriptions::where('stripe_id', $resource_id)->first();
-                if(isset($activeSub->plan_id) == true) { // Plan may be deleted and null at database.
+                if (isset($activeSub->plan_id) == true) { // Plan may be deleted and null at database.
 
                     // Get plan
                     $plan = PaymentPlans::where('id', $activeSub->plan_id)->first();
 
-                    if($plan != null){
+                    if ($plan != null) {
                         // Check status from gateway first
-                        $currentStripeStatus = StripeController::getSubscriptionStatus($activeSub->user_id); 
-                        
-                        if($currentStripeStatus == true){ // active or trial at stripe side
+                        $currentStripeStatus = StripeController::getSubscriptionStatus($activeSub->user_id);
+
+                        if ($currentStripeStatus == true) { // active or trial at stripe side
 
                             // check for duplication
                             $duplicate = false;
                             // check for first payment in subscription
-                            if(Carbon::parse($activeSub->created_at)->diffInMinutes(Carbon::parse($incomingJson->created)) < 5 ){
+                            if (Carbon::parse($activeSub->created_at)->diffInMinutes(Carbon::parse($incomingJson->created)) < 5) {
                                 $duplicate = true;
                             }
 
-                            if($duplicate == false){
+                            if ($duplicate == false) {
                                 // if it is trial then convert it to active
                                 // if it is active and/or converted to active add plan word/image amount to the user
                                 // if($activeSub->stripe_status == 'trialing'){} // it may be cancelled so in any case its going to be active
@@ -150,14 +146,14 @@ class YokassaWebhookListener implements ShouldQueue
                                 $payment->user_id = $activeSub->user_id;
                                 $payment->payment_type = 'Stripe Recurring Payment';
                                 $payment->price = $plan->price;
-                                $payment->affiliate_earnings = ($plan->price*$settings->affiliate_commission_percentage)/100;
+                                $payment->affiliate_earnings = ($plan->price * $settings->affiliate_commission_percentage) / 100;
                                 $payment->status = 'Success';
                                 $payment->country = $user->country ?? 'Unknown';
                                 $payment->save();
 
                                 $user = User::where('id', $activeSub->user_id)->first();
-                                $plan->total_words == -1? ($user->remaining_words = -1) : ($user->remaining_words += $plan->total_words);
-                                $plan->total_images == -1? ($user->remaining_images = -1) : ($user->remaining_images += $plan->total_images);
+                                $plan->total_words == -1 ? ($user->remaining_words = -1) : ($user->remaining_words += $plan->total_words);
+                                $plan->total_images == -1 ? ($user->remaining_images = -1) : ($user->remaining_images += $plan->total_images);
 
                                 $user->save();
 
@@ -167,9 +163,9 @@ class YokassaWebhookListener implements ShouldQueue
                         }
                     }
 
-                }else{ // plan id is null at subscription database table.
-                    if($activeSub->stripe_status != "cancelled"){
-                        $activeSub->stripe_status = "cancelled";
+                } else { // plan id is null at subscription database table.
+                    if ($activeSub->stripe_status != 'cancelled') {
+                        $activeSub->stripe_status = 'cancelled';
                         $activeSub->ends_at = Carbon::now();
                         $activeSub->save();
                         $newData->status = 'checked';
@@ -177,19 +173,14 @@ class YokassaWebhookListener implements ShouldQueue
                     }
                     Log::error('Payment on a deleted plan. Please check: '.$resource_id.' with incoming webhook : '.json_encode($incomingJson));
                 }
-                
 
             }
-
 
             // save new order if required
             // on cancel we do not delete anything. just check if subs cancelled
 
-
-
-        }catch(\Exception $ex){
+        } catch (\Exception $ex) {
             Log::error("YokassaWebhookListener::handle()\n".$ex->getMessage());
-            error_log("YokassaWebhookListener::handle()\n".$ex->getMessage());
         }
     }
 
@@ -199,7 +190,7 @@ class YokassaWebhookListener implements ShouldQueue
     public function failed(StripeWebhookEvent $event, Throwable $exception): void
     {
         // $space = "*************************************************************************************************************";
-        $space = "*****";
+        $space = '*****';
         $msg = '\n'.$space.'\n'.$space;
         $msg = $msg.json_encode($event->payload);
         $msg = $msg.'\n'.$space.'\n';

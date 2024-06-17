@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\AITokenType;
 use App\Http\Controllers\Finance\PaymentProcessController;
 use App\Models\Activity;
 use App\Models\Gateways;
@@ -20,11 +21,15 @@ use App\Models\UserOrder;
 use Illuminate\Support\Facades\Log;
 use App\Models\PaymentPlans;
 use App\Models\PaymentProof;
+use App\Models\Usage;
+use Illuminate\Support\Facades\Storage;
+use App\Models\AiModel;
+use App\Models\Token;
 
-function userCreditDecreaseForWord(User $user, $decreaseCredit)
+function userCreditDecreaseForWord(User $user, $total_used_tokens, $model = 'gpt-3.5-turbo')
 {
+	$decreaseCredit = (AIModel::where('key', $model)->first()->wordToken()->cost_per_token ?? 1) * $total_used_tokens;
     $team = $user->getAttribute('team');
-
     if ($team) {
         $teamManager = $user->teamManager;
 
@@ -81,6 +86,73 @@ function userCreditDecreaseForWord(User $user, $decreaseCredit)
 
         $user->save();
     }
+	Usage::getSingle()->updateWordCounts($decreaseCredit);
+}
+
+function userCreditDecreaseForImage(User $user, $totalUsedTokens, $model = 'dall-e-3')
+{
+	$decreaseCredit = (AIModel::where('key', $model)->first()->imageToken()->cost_per_token ?? 1) * $totalUsedTokens;
+    $team = $user->getAttribute('team');
+    if ($team) {
+        $teamManager = $user->teamManager;
+
+		$decresedManager = $teamManager->remaining_images - $decreaseCredit;
+        if ($teamManager) {
+
+            if ($teamManager->remaining_images != -1 && $decresedManager < -1) {
+                $teamManager->remaining_images = 0;
+            }
+
+            if ($teamManager->remaining_images != -1 && $decresedManager >= 0) {
+                $teamManager->remaining_images -= $decreaseCredit;
+            }
+
+            if ($teamManager->remaining_images < -1) {
+                $teamManager->remaining_images = 0;
+            }
+
+            $teamManager->save();
+        }
+
+        $member = $user->teamMember;
+		$decreasedMember = $member->remaining_images - $decreaseCredit;
+        if ($member) {
+            if (! $member->allow_unlimited_credits) {
+                if ($member->remaining_images != -1 && $decreasedMember < -1) {
+                    $member->remaining_images = 0;
+                }
+
+                if ($member->remaining_images != -1 && $decreasedMember >= 0) {
+                    $member->remaining_images -= $decreaseCredit;
+                }
+
+                if ($member->remaining_images < -1) {
+                    $member->remaining_images = 0;
+                }
+            }
+
+            $member->used_word_credit += $decreaseCredit;
+
+            $member->save();
+        }
+    }else {
+		$decreased = $user->remaining_images - $decreaseCredit;
+
+        if ($user->remaining_images != -1 &&  $decreased < -1) {
+            $user->remaining_images = 0;
+        }
+
+        if ($user->remaining_images != -1 && $decreased >= 0) {
+            $user->remaining_images -= $decreaseCredit;
+        }
+
+        if ($user->remaining_images < -1) {
+            $user->remaining_images = 0;
+        }
+
+        $user->save();
+    }
+	Usage::getSingle()->updateImageCounts($decreaseCredit);
 }
 function getImageUrlByOrderId($orderId)
 {
@@ -141,6 +213,11 @@ function getCurrentActiveSubscription($userid = null){
     return $activeSub;
 }
 
+function formatPrice($price) {
+    return $price == intval($price) ? number_format($price, 0) : number_format($price, 2);
+}
+
+
 function getCurrentActiveSubscriptionYokkasa($userid = null){
     $userID = $userid?? auth()->user()->id;
 
@@ -159,7 +236,7 @@ function getTokenPlans(){
     return PaymentPlans::where('type','prepaid')->where('active', 1)->get();
 }
 function getSubsPlans(){
-    // return PaymentPlans::where('type','subscription')->where('active', 1)->get(); 
+    // return PaymentPlans::where('type','subscription')->where('active', 1)->get();
     return PaymentPlans::where('type', 'subscription')
         ->where('active', 1)
         ->where(function ($query) {
@@ -255,6 +332,7 @@ function displayCurrPlan($symbol , $price, $discountedprice = null){
 
 function activeRoute(...$route_name): string
 {
+
     $exceptListSlugs = [
         'ai_pdf', 'ai_vision', 'ai_chat_image', 'ai_code_generator', 'ai_youtube', 'ai_rss'
     ];
@@ -271,23 +349,114 @@ function activeRoute(...$route_name): string
 
 function activeRouteBulk(...$route_names)
 {
-//    $current_route = Route::currentRouteName();
-//
-//    if (in_array($current_route, $route_names))
-//    {
-//        return 'active';
-//    }
-
     return request()->routeIs(...$route_names) ? 'active' : '';
 }
 
 function activeRouteBulkShow(...$route_names){
-//    $current_route = Route::currentRouteName();
-//    if (in_array($current_route, $route_names)){
-//        return 'show';
-//    }
-
     return request()->routeIs(...$route_names) ? 'show' : '';
+}
+
+if (!function_exists('custom_theme_url')) {
+    function custom_theme_url($url, $slash = false) {
+        if (strpos($url, 'assets') !== false) {
+            return theme_url($url);
+        }
+		if($slash){
+			return '/' . $url;
+		}
+        return $url;
+    }
+}
+
+if (!function_exists('get_theme')) {
+    function get_theme() {
+		$theme = \Theme::get();
+		if(!$theme){
+			$theme = 'default';
+		}
+        return $theme;
+    }
+}
+// hsl_to_hex
+if (!function_exists('hsl_to_hex')) {
+    function hsl_to_hex($h, $s, $l) {
+        $h /= 360;
+        $s /= 100;
+        $l /= 100;
+
+        if ($s === 0) {
+            $r = $g = $b = $l;
+        } else {
+            $hTemp = function ($p, $q, $t) {
+                if ($t < 0) $t += 1;
+                if ($t > 1) $t -= 1;
+                if ($t < 1 / 6) return $p + ($q - $p) * 6 * $t;
+                if ($t < 1 / 2) return $q;
+                if ($t < 2 / 3) return $p + ($q - $p) * (2 / 3 - $t) * 6;
+                return $p;
+            };
+
+            $q = $l < 0.5 ? $l * (1 + $s) : $l + $s - $l * $s;
+            $p = 2 * $l - $q;
+            $r = $hTemp($p, $q, $h + 1 / 3);
+            $g = $hTemp($p, $q, $h);
+            $b = $hTemp($p, $q, $h - 1 / 3);
+        }
+
+        $r = round($r * 255);
+        $g = round($g * 255);
+        $b = round($b * 255);
+
+        $hex = sprintf("#%02x%02x%02x", $r, $g, $b);
+
+        return $hex;
+    }
+}
+// hex_to_hsl
+if (!function_exists('hex_to_hsl')) {
+    function hex_to_hsl($hex) {
+        // Remove '#' if present
+        $hex = str_replace('#', '', $hex);
+
+        // Convert hex to RGB
+        $r = hexdec(substr($hex, 0, 2)) / 255;
+        $g = hexdec(substr($hex, 2, 2)) / 255;
+        $b = hexdec(substr($hex, 4, 2)) / 255;
+
+        // Find the maximum and minimum values
+        $max = max($r, $g, $b);
+        $min = min($r, $g, $b);
+
+        // Calculate the lightness
+        $l = ($max + $min) / 2;
+
+        if ($max === $min) {
+            $h = $s = 0; // achromatic
+        } else {
+            $d = $max - $min;
+            $s = $l > 0.5 ? $d / (2 - $max - $min) : $d / ($max + $min);
+
+            switch ($max) {
+                case $r:
+                    $h = ($g - $b) / $d + ($g < $b ? 6 : 0);
+                    break;
+                case $g:
+                    $h = ($b - $r) / $d + 2;
+                    break;
+                case $b:
+                    $h = ($r - $g) / $d + 4;
+                    break;
+            }
+            $h /= 6;
+        }
+
+        // Convert to percentage
+		$h = round($h * 360);
+		$s = round($s * 100);
+		$l = round($l * 100);
+
+		return "$h, $s%, $l%";
+    }
 }
 
 
@@ -308,23 +477,9 @@ function percentageChange($old, $new, int $precision = 1){
     }
     $change = round((($new - $old) / $old) * 100, $precision);
 
-    if ($change < 0 ){
-        return '<span class="inline-flex items-center leading-none !ms-2 text-[var(--tblr-red)] text-[10px] bg-[rgba(var(--tblr-red-rgb),0.15)] px-[5px] py-[3px] rounded-[3px]">
-            <svg class="mr-1 -scale-100" width="7" height="4" viewBox="0 0 7 4" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                <path d="M0 3.2768C0 3.32591 0.0245541 3.38116 0.061384 3.41799L0.368304 3.72491C0.405134 3.76174 0.46038 3.78629 0.509487 3.78629C0.558594 3.78629 0.61384 3.76174 0.65067 3.72491L3.06306 1.31252L5.47545 3.72491C5.51228 3.76174 5.56752 3.78629 5.61663 3.78629C5.67188 3.78629 5.72098 3.76174 5.75781 3.72491L6.06473 3.41799C6.10156 3.38116 6.12612 3.32591 6.12612 3.2768C6.12612 3.2277 6.10156 3.17245 6.06473 3.13562L3.20424 0.275129C3.16741 0.238299 3.11217 0.213745 3.06306 0.213745C3.01395 0.213745 2.95871 0.238299 2.92188 0.275129L0.061384 3.13562C0.0245541 3.17245 0 3.2277 0 3.2768Z"/>
-            </svg>
-            '.$change.'%
-        </span>';
-    }else{
-        return '<span class="inline-flex items-center leading-none !ms-2 text-[var(--tblr-green)] text-[10px] bg-[rgba(var(--tblr-green-rgb),0.15)] px-[5px] py-[3px] rounded-[3px]">
-                    <svg class="mr-1" width="7" height="4" viewBox="0 0 7 4" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M0 3.2768C0 3.32591 0.0245541 3.38116 0.061384 3.41799L0.368304 3.72491C0.405134 3.76174 0.46038 3.78629 0.509487 3.78629C0.558594 3.78629 0.61384 3.76174 0.65067 3.72491L3.06306 1.31252L5.47545 3.72491C5.51228 3.76174 5.56752 3.78629 5.61663 3.78629C5.67188 3.78629 5.72098 3.76174 5.75781 3.72491L6.06473 3.41799C6.10156 3.38116 6.12612 3.32591 6.12612 3.2768C6.12612 3.2277 6.10156 3.17245 6.06473 3.13562L3.20424 0.275129C3.16741 0.238299 3.11217 0.213745 3.06306 0.213745C3.01395 0.213745 2.95871 0.238299 2.92188 0.275129L0.061384 3.13562C0.0245541 3.17245 0 3.2277 0 3.2768Z"/>
-                    </svg>
-                    '.$change.'%
-                </span>';
-    }
-
-
+	// Limiting the percentage change to be between 0 and 100
+    $change = max(0, min(100, $change));
+	return $change;
 }
 
 function percentageChangeSign($old, $new, int $precision = 2){
@@ -334,14 +489,16 @@ function percentageChangeSign($old, $new, int $precision = 2){
     }else{
         return 'minus';
     }
-
 }
 
 
-function currency(){
+function currency()
+{
     $setting = \App\Models\Setting::first();
+
     $curr = \App\Models\Currency::where('id', $setting->default_currency)->first();
-    if(in_array($curr->code, config('currency.needs_code_with_symbol'))){
+    if(in_array($curr->code, config('currency.needs_code_with_symbol')))
+    {
         $curr->symbol = $curr->code . " " . $curr->symbol;
     }
     return $curr;
@@ -390,6 +547,12 @@ function getSubscriptionDaysLeft()
 //Templates favorited
 function isFavorited($template_id){
     $isFav = \App\Models\UserFavorite::where('user_id', Auth::id())->where('openai_id', $template_id)->exists();
+    return $isFav;
+}
+
+//Docs favorited
+function isFavoritedDoc($template_id){
+    $isFav = \App\Models\UserDocsFavorite::where('user_id', Auth::id())->where('user_openai_id', $template_id)->exists();
     return $isFav;
 }
 
@@ -474,7 +637,7 @@ function getVoiceNames($hash) {
         "cs-CZ-Standard-A" => "Tereza (". __('Female').")",
         "cs-CZ-Wavenet-A" => "Karolína (". __('Female').")",
         //"da-DK-Neural2-D" => "Neural2 - FEMALE",
-        //"da-DK-Neural2-F" => "Neural2 - MALE",                    
+        //"da-DK-Neural2-F" => "Neural2 - MALE",
         "da-DK-Standard-A" => "Emma (". __('Female').")",
         "da-DK-Standard-A" => "Freja (". __('Female').")",
         "da-DK-Standard-A" => "Ida (". __('Female').")",
@@ -909,7 +1072,8 @@ function currencyShouldDisplayOnRight($currencySymbol) {
     return in_array($currencySymbol, config('currency.currencies_with_right_symbols'));
 }
 
-function getMetaTitle($setting){
+function getMetaTitle($setting, $ext_title = null){
+	$ext_title = $ext_title == null ?  " | " . __('Home') : $ext_title;
     $lang = app()->getLocale();
     $settingTwo = SettingTwo::first();
 
@@ -920,7 +1084,7 @@ function getMetaTitle($setting){
             $title = $setting->meta_title;
         }
         else{
-            $title = $setting->site_name . " | " . __('Home');
+            $title = $setting->site_name . $ext_title;
         }
     }else{
         $meta_title = PrivacyTerms::where('type', 'meta_title')->where('lang', $lang)->first();
@@ -933,7 +1097,7 @@ function getMetaTitle($setting){
                 $title = $setting->meta_title;
             }
             else{
-                $title = $setting->site_name . " | " . __('Home');
+                $title = $setting->site_name . $ext_title;
             }
         }
     }
@@ -998,4 +1162,267 @@ function parseRSS( $feed_url, $limit = 10 ) {
         return $e->getMessage();
     }
 
+}
+
+function isChatBot( $id ) {
+
+    if ( !$id ) {
+        return false;
+    }
+
+    $isChatBot = App\Models\ChatBotHistory::where('user_openai_chat_id', $id)->first();
+
+    if ( $isChatBot ){
+        return true;
+    }
+
+    return false;
+
+}
+
+function ThumbImage($source_file, $max_width = 450, $max_height = 450, $quality = 80){
+    if (setting('image_thumbnail') == 0 || \Illuminate\Support\Str::contains($source_file, 'http')) {
+        return $source_file;
+    }
+
+	$source_file = public_path($source_file);
+    $disk = 'thumbs';
+    $dst_dir = ''; // Since setting the root in the disk configuration, leave this empty
+	if (!Storage::disk($disk)->exists($dst_dir)) {
+        Storage::disk($disk)->makeDirectory($dst_dir, $mode = 7777, true, true);
+    }
+
+	$dst_file_name = basename($source_file);
+    $is_url = filter_var($source_file, FILTER_VALIDATE_URL);
+    if ($is_url) {
+        $url_parts = pathinfo($source_file);
+        $extension = strtolower($url_parts['extension']);
+        $mime_map = [
+            'jpg' => 'image/jpeg',
+            'jpeg' => 'image/jpeg',
+            'png' => 'image/png',
+            'gif' => 'image/gif'
+        ];
+        if (array_key_exists($extension, $mime_map)) {
+            $mime = $mime_map[$extension];
+        } else {
+            $mime = mime_content_type($source_file);
+        }
+		$dst_file_name .= '.' . $extension;
+    }else{
+		// check if file exists
+		if (!file_exists($source_file)) {
+			return $source_file;
+		}
+
+		$imgsize = getimagesize($source_file);
+		$width = $imgsize[0];
+		$height = $imgsize[1];
+		$mime = $imgsize['mime'];
+	}
+    if (Storage::disk($disk)->exists($dst_file_name)) {
+        return Storage::disk($disk)->url($dst_file_name);
+    } else {
+		if ($is_url) {
+			$temp_source_file = tempnam(sys_get_temp_dir(), 'thumb'); // Create temporary file
+			file_put_contents($temp_source_file, file_get_contents($source_file)); // Download file
+			$source_file = $temp_source_file;
+		}
+        $dst_dir = Storage::disk($disk)->path($dst_dir . $dst_file_name);
+        switch($mime){
+            case 'image/gif':
+                $image_create = "imagecreatefromgif";
+                $image = "imagegif";
+                break;
+
+            case 'image/png':
+                $image_create = "imagecreatefrompng";
+                $image = "imagepng";
+				$quality = 7;
+                break;
+
+            case 'image/jpeg':
+                $image_create = "imagecreatefromjpeg";
+                $image = "imagejpeg";
+				$quality = 80;
+                break;
+
+            default:
+                // Handle unsupported file types or invalid MIME types
+                if ($is_url) {
+                    unlink($source_file); // Remove temporary file
+                }
+                return false;
+                break;
+        }
+
+        $dst_img = imagecreatetruecolor($max_width, $max_height);
+        $src_img = $image_create($source_file);
+
+        $width = imagesx($src_img);
+        $height = imagesy($src_img);
+
+        $width_new = $height * $max_width / $max_height;
+        $height_new = $width * $max_height / $max_width;
+
+        //if the new width is greater than the actual width of the image, then the height is too large and the rest cut off, or vice versa
+        if($width_new > $width){
+            //cut point by height
+            $h_point = (($height - $height_new) / 2);
+            //copy image
+            imagecopyresampled($dst_img, $src_img, 0, 0, 0, $h_point, $max_width, $max_height, $width, $height_new);
+        }else{
+            //cut point by width
+            $w_point = (($width - $width_new) / 2);
+            imagecopyresampled($dst_img, $src_img, 0, 0, $w_point, 0, $max_width, $max_height, $width_new, $height);
+        }
+        $image($dst_img, $dst_dir, $quality);
+
+        if ($is_url && file_exists($source_file)) {
+            unlink($source_file); // Remove temporary file
+        }
+
+        if($dst_img)imagedestroy($dst_img);
+        if($src_img)imagedestroy($src_img);
+
+        return Storage::disk($disk)->url($dst_file_name);
+    }
+}
+
+function PurgeThumbImages(){
+	$dst_dir = public_path('uploads/thumbnail/');
+	try {
+		\Illuminate\Support\Facades\File::deleteDirectory($dst_dir);
+	} catch (\Exception $e) {
+		\Log::error($e->getMessage());
+	}
+}
+
+function convertHistoryToGemini($history) {
+    $convertedHistory = [];
+	$system = false;
+    foreach ($history as $item) {
+        $role = $item['role'];
+		switch ($role) {
+			case 'user':
+				$role = 'user';
+				break;
+			case 'assistant':
+				$role = 'model';
+				break;
+			case 'system':
+				$system = true;
+				$role = 'user';
+				break;
+			default:
+				$role = 'user';
+				break;
+		}
+
+        $content = $item['content'];
+
+
+        if (is_string($content)) {
+            $convertedItem = [
+                'parts' => [
+                    [
+                        'text' => $content
+                    ]
+                ],
+                'role' => $role
+            ];
+        }elseif(is_array($content)) {
+            $isImage = (bool) array_filter($content, function($item) {
+                return isset($item['type']) && $item['type'] === 'image_url';
+            });
+
+            if ($isImage) {
+                $convertedItem = [
+                    'parts' => []
+                ];
+
+                foreach ($content as $item) {
+
+                    if ($item['type'] == 'text') {
+                        $convertedItem['parts'][] = [
+                            'text' => $item['text'],
+                        ];
+                    }elseif($item['type'] == 'image_url') {
+                        $convertedItem['parts'][] = [
+                            'inline_data' => [
+                                'mime_type' => extractMimeType($item['image_url']['url']),
+                                'data' => extractBase64ImageData($item['image_url']['url'])
+                            ]
+                        ];
+                    }
+
+                }
+
+            }
+        }
+
+		$convertedHistory[] = $convertedItem;
+
+		if ($system) {
+			// add system back message
+			$convertedItem = [
+				'parts' => [
+					[
+						'text' => 'Yes, sure.'
+					]
+				],
+				'role' => 'model'
+			];
+			$convertedHistory[] = $convertedItem;
+			$system = false;
+		}
+    }
+
+	return adjustHistory($convertedHistory);
+}
+
+function extractMimeType($data) {
+    $pattern = '/^data:(image\/[a-z]+);base64,/';
+    if (preg_match($pattern, $data, $matches)) {
+        return $matches[1]; // MIME türünü döndürür
+    }
+    return null; // Eşleşme bulunamazsa null döndürür
+}
+
+function extractBase64ImageData($dataURI) {
+    // JPEG veya PNG için MIME türlerini destekleyen regex deseni
+    $pattern = '/^data:image\/(?:jpeg|png);base64,/';
+    if (preg_match($pattern, $dataURI, $matches)) {
+        // Regex ile başlık bulunursa, başlığı atıp sadece Base64 verisini döndür
+        return substr($dataURI, strlen($matches[0]));
+    }
+    return null; // Uygun başlık bulunamazsa null döndür
+}
+
+function adjustHistory($history) {
+    $adjustedHistory = [];
+
+    // Iterate through the history
+    foreach ($history as $index => $item) {
+        // Add the current item to the adjusted history
+        $adjustedHistory[] = $item;
+
+        if (isset($history[$index + 1]['role']) and isset($item['role'])) {
+            // Check if the next item exists and has the same role as the current item
+            if (isset($history[$index + 1]) && $history[$index + 1]['role'] === $item['role']) {
+                // If the next item has the same role, add the opposite role message after it
+                $adjustedHistory[] = [
+                    'role' => ($item['role'] === 'user' ? 'model' : 'user'),
+                    'parts' => [
+                        [
+                            'text' => 'This is a placeholder message.'
+                        ]
+                    ]
+                ];
+            }
+        }
+
+    }
+
+    return $adjustedHistory;
 }

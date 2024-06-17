@@ -153,7 +153,7 @@ class BlogController extends Controller
     public function blogDelete($id = null){
         $post = Blog::where('id', $id)->firstOrFail();
         $post->delete();
-        return back()->with(['message' => 'Deleted Successfully', 'type' => 'success']);
+        return back()->with(['message' => __('Deleted Successfully'), 'type' => 'success']);
     }
 
     public function blogAddOrUpdateSave(Request $request){
@@ -184,7 +184,7 @@ class BlogController extends Controller
         }
 
         $post->title = $request->title;
-        $post->content = $request->content;
+        $post->content = $request->get('content');
         $post->feature_image = $feature_image ?? $post->feature_image;
         $post->slug = Str::slug($request->slug);
         $post->seo_title = $request->seo_title;

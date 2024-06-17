@@ -3,28 +3,19 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use App\Models\User;
-use App\Models\OpenaiGeneratorChatCategory;
-use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Str;
 use App\Models\OpenAIGenerator;
 use App\Models\OpenaiGeneratorFilter;
-use App\Models\UserOpenai;
 use App\Models\Setting;
 use App\Models\SettingTwo;
-use App\Models\PaymentPlans;
-use App\Models\UserOpenaiChat;
-use App\Models\UserOpenaiChatMessage;
+use App\Models\User;
+use App\Models\UserOpenai;
+use Illuminate\Http\Request;
 use OpenAI\Laravel\Facades\OpenAI;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
-
 
 class DocumentsApiController extends Controller
 {
-
     protected $settings;
+
     protected $settings_two;
 
     public function __construct()
@@ -33,12 +24,15 @@ class DocumentsApiController extends Controller
         $this->settings = Setting::first();
         $this->settings_two = SettingTwo::first();
         // Fetch the Site Settings object with openai_api_secret
-        $apiKeys = explode(',', $this->settings->openai_api_secret);
+        if ($this->settings?->user_api_option) {
+            $apiKeys = explode(',', auth()->user()?->api_keys);
+        } else {
+            $apiKeys = explode(',', $this->settings?->openai_api_secret);
+        }
         $apiKey = $apiKeys[array_rand($apiKeys)];
         config(['openai.api_key' => $apiKey]);
         set_time_limit(120);
     }
-
 
     /**
      * Get the last 10 recent documents for the authenticated user.
@@ -50,20 +44,24 @@ class DocumentsApiController extends Controller
      *      security={{ "passport": {} }},
      *      summary="Get the last 10 recent documents",
      *      description="Get the last 10 recent documents for the authenticated user, excluding documents of type 'image'.",
+     *
      *      @OA\Response(
      *          response=200,
      *          description="Successful operation",
+     *
      *          @OA\JsonContent(
      *              type="object",
+     *
      *              @OA\Property(property="data", type="array", @OA\Items(type="object")),
      *          ),
      *      ),
+     *
      *      @OA\Response(
      *          response=401,
      *          description="Unauthorized: User not authenticated",
      *      ),
      *  )
-    */
+     */
     public function getRecentDocs(Request $request)
     {
         $documents = $request->user()
@@ -78,8 +76,6 @@ class DocumentsApiController extends Controller
         return response()->json($documents, 200);
     }
 
-
-
     /**
      * Gets all AI Generators
      *
@@ -90,26 +86,30 @@ class DocumentsApiController extends Controller
      *      security={{ "passport": {} }},
      *      summary="Gets all AI Generators",
      *      description="Gets all AI Generators",
+     *
      *      @OA\Response(
      *          response=200,
      *          description="Successful operation",
+     *
      *          @OA\JsonContent(
      *              type="object",
+     *
      *              @OA\Property(property="data", type="array", @OA\Items(type="object")),
      *          ),
      *      ),
+     *
      *      @OA\Response(
      *          response=401,
      *          description="Unauthorized: User not authenticated",
      *      ),
      *  )
-    */
+     */
     public function getOpenAIList(Request $request)
     {
         $aiList = OpenAIGenerator::all();
+
         return response()->json($aiList, 200);
     }
-
 
     /**
      * Gets all AI Filters
@@ -121,27 +121,30 @@ class DocumentsApiController extends Controller
      *      security={{ "passport": {} }},
      *      summary="Gets all AI Filters",
      *      description="Gets all AI Filters",
+     *
      *      @OA\Response(
      *          response=200,
      *          description="Successful operation",
+     *
      *          @OA\JsonContent(
      *              type="object",
+     *
      *              @OA\Property(property="data", type="array", @OA\Items(type="object")),
      *          ),
      *      ),
+     *
      *      @OA\Response(
      *          response=401,
      *          description="Unauthorized: User not authenticated",
      *      ),
      *  )
-    */
+     */
     public function getOpenAIFilters(Request $request)
     {
         $List = OpenaiGeneratorFilter::orderBy('name', 'asc')->get();
+
         return response()->json($List, 200);
     }
-
-
 
     /**
      * Gets documents for the authenticated user.
@@ -153,35 +156,45 @@ class DocumentsApiController extends Controller
      *      security={{ "passport": {} }},
      *      summary="Gets documents",
      *      description="Gets documents for the authenticated user, excluding documents of type 'image'.",
+     *
      *      @OA\Parameter(
      *          name="search",
      *          description="Search string.",
      *          in="query",
      *          required=false,
+     *
      *          @OA\Schema(type="string", default=""),
      *      ),
+     *
      *      @OA\Parameter(
      *          name="filter",
      *          description="Filter string defined in the 'name' column of the 'openai_filters' table.",
      *          in="query",
      *          required=false,
+     *
      *          @OA\Schema(type="string", default="all"),
      *      ),
+     *
      *      @OA\Parameter(
      *          name="sort",
      *          description="Sort string. Values: 'newest', 'oldest', 'az', 'za'",
      *          in="query",
      *          required=false,
+     *
      *          @OA\Schema(type="string", default="newest"),
      *      ),
+     *
      *      @OA\Response(
      *          response=200,
      *          description="Successful operation",
+     *
      *          @OA\JsonContent(
      *              type="object",
+     *
      *              @OA\Property(property="data", type="array", @OA\Items(type="object")),
      *          ),
      *      ),
+     *
      *      @OA\Response(
      *          response=401,
      *          description="Unauthorized: User not authenticated",
@@ -191,53 +204,58 @@ class DocumentsApiController extends Controller
      *          description="Precondition Failed",
      *      ),
      *  )
-    */
+     */
     public function getDocs(Request $request)
     {
-        $filter = "all";
-        $sort = "newest";
-        $search = "";
+        $filter = 'all';
+        $sort = 'newest';
+        $search = '';
 
-        if($request->search != null) $search = $request->search;
-        if($request->filter != null) $filter = $request->filter;
-        if($request->sort != null) {
-            if(in_array($request->sort, ["newest", "oldest", "az", "za"]) == false) return response()->json(["error" => "Invalid sort parameter. Must be one of newest, oldest, az, za"], 412);
+        if ($request->search != null) {
+            $search = $request->search;
+        }
+        if ($request->filter != null) {
+            $filter = $request->filter;
+        }
+        if ($request->sort != null) {
+            if (in_array($request->sort, ['newest', 'oldest', 'az', 'za']) == false) {
+                return response()->json(['error' => __('Invalid sort parameter. Must be one of newest, oldest, az, za')], 412);
+            }
             $sort = $request->sort;
-        } 
+        }
 
         $query = [
-            ['user_openai.user_id', "=", $request->user()->id],
-            ['openai.type', '!=', 'image']
+            ['user_openai.user_id', '=', $request->user()->id],
+            ['openai.type', '!=', 'image'],
         ];
 
-        if($filter != "all" && $filter != "All"){
-            $query[] = ["openai.filters", "LIKE", "%".$filter."%"];
-        }   
-
-        if($search != ""){
-            $query[] = ["output", "LIKE", "%".$search."%"];
+        if ($filter != 'all' && $filter != 'All') {
+            $query[] = ['openai.filters', 'LIKE', '%'.$filter.'%'];
         }
 
-        $sortColumn = "created_at";
-        $sortDirection = "desc";
-
-        if($sort == "oldest"){
-            $sortDirection = "asc";
-        } else if ($sort == "az"){
-            $sortColumn = "openai.title";
-            $sortDirection = "asc";
-        } else if ($sort == "za"){
-            $sortColumn = "openai.title";
-            $sortDirection = "desc";
+        if ($search != '') {
+            $query[] = ['output', 'LIKE', '%'.$search.'%'];
         }
 
-        $documents = UserOpenai::select('user_openai.*', 'openai.title as ai_title', 'openai.image as ai_image', 'openai.color as ai_color') 
-        ->join('openai', 'openai.id', '=', 'user_openai.openai_id') 
-        ->where($query)->orderBy($sortColumn, $sortDirection)->paginate($request->input('per_page', 10));
+        $sortColumn = 'created_at';
+        $sortDirection = 'desc';
+
+        if ($sort == 'oldest') {
+            $sortDirection = 'asc';
+        } elseif ($sort == 'az') {
+            $sortColumn = 'openai.title';
+            $sortDirection = 'asc';
+        } elseif ($sort == 'za') {
+            $sortColumn = 'openai.title';
+            $sortDirection = 'desc';
+        }
+
+        $documents = UserOpenai::select('user_openai.*', 'openai.title as ai_title', 'openai.image as ai_image', 'openai.color as ai_color')
+            ->join('openai', 'openai.id', '=', 'user_openai.openai_id')
+            ->where($query)->orderBy($sortColumn, $sortDirection)->paginate($request->input('per_page', 10));
 
         return response()->json($documents, 200);
     }
-
 
     /**
      * Gets single document
@@ -249,21 +267,27 @@ class DocumentsApiController extends Controller
      *      security={{ "passport": {} }},
      *      summary="Gets single document",
      *      description="Gets document by id, excluding documents of type 'image'.",
+     *
      *      @OA\Parameter(
      *          name="id",
      *          description="ID of the document to get.",
      *          in="path",
      *          required=true,
+     *
      *          @OA\Schema(type="string", default=""),
      *      ),
+     *
      *      @OA\Response(
      *          response=200,
      *          description="Successful operation",
+     *
      *          @OA\JsonContent(
      *              type="object",
+     *
      *              @OA\Property(property="data", type="array", @OA\Items(type="object")),
      *          ),
      *      ),
+     *
      *      @OA\Response(
      *          response=401,
      *          description="Unauthorized: User not authenticated",
@@ -277,21 +301,24 @@ class DocumentsApiController extends Controller
      *          description="Precondition Failed",
      *      ),
      *  )
-    */
+     */
     public function getDoc(Request $request)
     {
-        if($request->id == null) return response()->json(['error' => 'ID is required'], 412);
+        if ($request->id == null) {
+            return response()->json(['error' => __('ID is required')], 412);
+        }
 
-        $document = UserOpenai::select('user_openai.*', 'openai.title as ai_title', 'openai.image as ai_image', 'openai.color as ai_color') 
-        ->join('openai', 'openai.id', '=', 'user_openai.openai_id') 
-        ->where('user_openai.id', $request->id)->first();
+        $document = UserOpenai::select('user_openai.*', 'openai.title as ai_title', 'openai.image as ai_image', 'openai.color as ai_color')
+            ->join('openai', 'openai.id', '=', 'user_openai.openai_id')
+            ->where('user_openai.id', $request->id)->first();
 
-        if($document == null) return response()->json(["error" => "Document not found"], 404);
+        if ($document == null) {
+            return response()->json(['error' => __('Document not found')], 404);
+        }
 
         return response()->json($document, 200);
 
     }
-
 
     /**
      * Updates single document
@@ -303,35 +330,45 @@ class DocumentsApiController extends Controller
      *      security={{ "passport": {} }},
      *      summary="Updates single document",
      *      description="Updates document by id, excluding documents of type 'image'.",
+     *
      *      @OA\Parameter(
      *          name="id",
      *          description="ID of the document to get.",
      *          in="path",
      *          required=true,
+     *
      *          @OA\Schema(type="string", default=""),
      *      ),
+     *
      *      @OA\Parameter(
      *          name="output",
      *          description="Html Output of the document.",
      *          in="query",
      *          required=true,
+     *
      *          @OA\Schema(type="string", default=""),
      *      ),
+     *
      *      @OA\Parameter(
      *          name="title",
      *          description="Title of the document.",
      *          in="query",
      *          required=true,
+     *
      *          @OA\Schema(type="string", default=""),
      *      ),
+     *
      *      @OA\Response(
      *          response=200,
      *          description="Successful operation",
+     *
      *          @OA\JsonContent(
      *              type="object",
+     *
      *              @OA\Property(property="data", type="array", @OA\Items(type="object")),
      *          ),
      *      ),
+     *
      *      @OA\Response(
      *          response=401,
      *          description="Unauthorized: User not authenticated",
@@ -345,18 +382,26 @@ class DocumentsApiController extends Controller
      *          description="Precondition Failed",
      *      ),
      *  )
-    */
+     */
     public function saveDoc(Request $request)
     {
-        if($request->id == null) return response()->json(['error' => 'ID is required'], 412);
-        if($request->output == null) return response()->json(['error' => 'Html Output is required'], 412);
-        if($request->title == null) return response()->json(['error' => 'Title is required'], 412);
+        if ($request->id == null) {
+            return response()->json(['error' => __('ID is required')], 412);
+        }
+        if ($request->output == null) {
+            return response()->json(['error' => __('Html Output is required')], 412);
+        }
+        if ($request->title == null) {
+            return response()->json(['error' => __('Title is required')], 412);
+        }
 
-        $document = UserOpenai::select('user_openai.*', 'openai.title as ai_title', 'openai.image as ai_image', 'openai.color as ai_color') 
-        ->join('openai', 'openai.id', '=', 'user_openai.openai_id') 
-        ->where('user_openai.id', $request->id)->first();
+        $document = UserOpenai::select('user_openai.*', 'openai.title as ai_title', 'openai.image as ai_image', 'openai.color as ai_color')
+            ->join('openai', 'openai.id', '=', 'user_openai.openai_id')
+            ->where('user_openai.id', $request->id)->first();
 
-        if($document == null) return response()->json(["error" => "Document not found"], 404);
+        if ($document == null) {
+            return response()->json(['error' => __('Document not found')], 404);
+        }
 
         $document->output = $request->output;
         $document->title = $request->title;
@@ -365,7 +410,6 @@ class DocumentsApiController extends Controller
         return response()->json($document, 200);
 
     }
-
 
     /**
      * Deletes single document
@@ -377,21 +421,27 @@ class DocumentsApiController extends Controller
      *      security={{ "passport": {} }},
      *      summary="Deletes single document",
      *      description="Deletes document by id, excluding documents of type 'image'.",
+     *
      *      @OA\Parameter(
      *          name="id",
      *          description="ID of the document to delete.",
      *          in="path",
      *          required=true,
+     *
      *          @OA\Schema(type="string", default=""),
      *      ),
+     *
      *      @OA\Response(
      *          response=200,
      *          description="Successful operation",
+     *
      *          @OA\JsonContent(
      *              type="object",
+     *
      *              @OA\Property(property="data", type="array", @OA\Items(type="object")),
      *          ),
      *      ),
+     *
      *      @OA\Response(
      *          response=401,
      *          description="Unauthorized: User not authenticated",
@@ -405,21 +455,24 @@ class DocumentsApiController extends Controller
      *          description="Precondition Failed",
      *      ),
      *  )
-    */
+     */
     public function deleteDoc(Request $request)
     {
-        if($request->id == null) return response()->json(['error' => 'ID is required'], 412);
+        if ($request->id == null) {
+            return response()->json(['error' => __('ID is required')], 412);
+        }
 
-        $document = UserOpenai::select('user_openai.*', 'openai.title as ai_title', 'openai.image as ai_image', 'openai.color as ai_color') 
-        ->join('openai', 'openai.id', '=', 'user_openai.openai_id') 
-        ->where('user_openai.id', $request->id)->first();
+        $document = UserOpenai::select('user_openai.*', 'openai.title as ai_title', 'openai.image as ai_image', 'openai.color as ai_color')
+            ->join('openai', 'openai.id', '=', 'user_openai.openai_id')
+            ->where('user_openai.id', $request->id)->first();
 
-        if($document == null) return response()->json(["error" => "Document not found"], 404);
+        if ($document == null) {
+            return response()->json(['error' => __('Document not found')], 404);
+        }
 
         $document->delete();
 
-        return response()->json(["success" => "Document deleted successfully"], 200);
+        return response()->json(['success' => 'Document deleted successfully'], 200);
 
     }
-
 }
