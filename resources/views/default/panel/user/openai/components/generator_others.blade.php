@@ -7,37 +7,63 @@
     ];
 
     $voice_tones = ['Professional', 'Funny', 'Casual', 'Excited', 'Witty', 'Sarcastic', 'Feminine', 'Masculine', 'Bold', 'Dramatic', 'Grumpy', 'Secretive', 'other'];
+
+    $card_variant = Theme::getSetting('defaultVariations.card.variant', 'outline') === 'outline' ? 'none' : Theme::getSetting('defaultVariations.card.variant', 'solid');
+    $card_size = Theme::getSetting('defaultVariations.card.variant', 'outline') === 'outline' ? 'none' : Theme::getSetting('defaultVariations.card.size', 'md');
+    $card_roundness = Theme::getSetting('defaultVariations.card.roundness', 'default') === 'default' ? 'none' : Theme::getSetting('defaultVariations.card.roundness', 'default');
+
+    if ($openai->type == 'audio') {
+        if ($card_variant === 'none') {
+            $card_variant = 'outline';
+        }
+        if ($card_size === 'none') {
+            $card_size = 'md';
+        }
+        if ($card_roundness === 'none') {
+            $card_roundness = 'lg';
+        }
+    }
 @endphp
 
 <div
-    class="lqd-generator-wrap grid grid-flow-row gap-y-8 lg:grid-flow-col lg:[grid-template-columns:41%_59%]"
+    class="lqd-generator-wrap grid grid-flow-row gap-y-8 lg:grid-flow-col lg:[grid-template-columns:40%_60%] xl:[grid-template-columns:33%_67%]"
     data-generator-type="{{ $openai->type }}"
 >
-    <div class="flex w-full flex-col gap-6 lg:pe-14">
+    <div class="flex w-full flex-col gap-6 lg:pe-10">
         <x-card class="lqd-generator-remaining-credits">
             <h5 class="mb-3 text-xs font-normal">
                 {{ __('Remaining Credits') }}
             </h5>
 
             <x-remaining-credit
-                class="flex-col-reverse text-xs"
+                class="text-xs"
                 style="inline"
             />
         </x-card>
 
         @if ($openai->type != 'image')
-            <x-card
-                class="lqd-generator-options-card"
-                variant="{{ Theme::getSetting('defaultVariations.card.variant', 'outline') === 'outline' ? 'none' : Theme::getSetting('defaultVariations.card.variant', 'solid') }}"
-                size="{{ Theme::getSetting('defaultVariations.card.variant', 'outline') === 'outline' ? 'none' : Theme::getSetting('defaultVariations.card.size', 'md') }}"
-                roundness="{{ Theme::getSetting('defaultVariations.card.roundness', 'default') === 'default' ? 'none' : Theme::getSetting('defaultVariations.card.roundness', 'default') }}"
-            >
+            <x-card class="lqd-generator-options-card relative border-2 border-dashed">
                 <form
                     class="lqd-generator-form flex flex-col gap-5"
                     id="openai_generator_form"
                     onsubmit="return sendOpenaiGeneratorForm();"
                     enctype="multipart/form-data"
                 >
+                    @if ($openai->type === 'audio')
+                        <div class="w-full text-center text-sm">
+                            <x-tabler-volume
+                                class="size-8 mx-auto mb-2"
+                                stroke-width="1.5"
+                            />
+                            <p class="m-0 font-medium">
+                                <span class="opacity-70">
+                                    @lang('Drag and drop an audio file')
+                                </span>
+                                <br>
+                                @lang('or click here to browse your files.')
+                            </p>
+                        </div>
+                    @endif
                     @foreach (json_decode($openai->questions) ?? [] as $question)
                         @if ($question->type == 'text')
                             <x-forms.input
@@ -73,7 +99,10 @@
                             </x-forms.input>
                         @elseif($question->type == 'file')
                             <x-forms.input
+                                class="{{ $openai->type === 'audio' ? 'hidden' : '' }}"
+                                class:label="static text-center text-heading-foreground/40 text-3xs lg:px-10 before:absolute before:top-0 before:start-0 before:w-full before:h-full before:block before:z-2"
                                 id="{{ $question->name }}"
+                                container-class="static"
                                 size="lg"
                                 label="{{ __($question->question) }}"
                                 name="{{ $question->name }}"
@@ -171,7 +200,7 @@
                     @endif
 
                     <x-button
-                        class="w-full"
+                        class="relative z-10 w-full"
                         id="openai_generator_button"
                         size="lg"
                         tag="button"
@@ -186,13 +215,8 @@
     </div>
 
     <x-card
+        class="w-full [&_.tox-edit-area__iframe]:!bg-transparent"
         id="generator_sidebar_table"
-        @class([
-            'w-full [&_.tox-edit-area__iframe]:!bg-transparent',
-            'lg:border-s lg:ps-16' =>
-                Theme::getSetting('defaultVariations.card.variant', 'outline') ===
-                'outline',
-        ])
         variant="{{ Theme::getSetting('defaultVariations.card.variant', 'outline') === 'outline' ? 'none' : Theme::getSetting('defaultVariations.card.variant', 'solid') }}"
         size="{{ Theme::getSetting('defaultVariations.card.variant', 'outline') === 'outline' ? 'none' : Theme::getSetting('defaultVariations.card.size', 'md') }}"
         roundness="{{ Theme::getSetting('defaultVariations.card.roundness', 'default') === 'default' ? 'none' : Theme::getSetting('defaultVariations.card.roundness', 'default') }}"

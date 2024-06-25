@@ -99,9 +99,23 @@ Route::group([
         'uses' => 'ApplicationStatusController@licenseCheck',
     ])->withoutMiddleware('appstatus');
 
+
+
     Route::any(
         'api/webhook/license', 'ApplicationStatusController@webhook'
     )->name('license.webhook')
+        ->middleware('api')
+        ->withoutMiddleware('web')
+        ->withoutMiddleware('appstatus');
+
+    Route::get('subscription', [
+        'as' => 'subscription',
+        'uses' => 'SubscriptionController@index',
+    ])->withoutMiddleware('appstatus');
+
+    Route::any(
+        'api/webhook/subscription/{key}/extension/{slug}', 'SubscriptionController@webhook'
+    )->name('subscription.webhook')
         ->middleware('api')
         ->withoutMiddleware('web')
         ->withoutMiddleware('appstatus');

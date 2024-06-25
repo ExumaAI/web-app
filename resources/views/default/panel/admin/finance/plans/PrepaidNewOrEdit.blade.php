@@ -90,6 +90,17 @@
                     </x-forms.input>
                 </div>
 
+                <x-forms.input
+                    class:container="w-full  mt-4"
+                    id="description"
+                    name="description"
+                    label="{{ __('Plan Description') }}"
+                    size="lg"
+                    placeholder="{{ __('Plan Description') }}"
+                    value="{{ isset($subscription) ? $subscription->description : null }}"
+                    required
+                />
+
                 <div class="mt-4 flex gap-2">
                     <div class="w-1/2 w-full space-y-2">
                         <x-forms.input

@@ -340,7 +340,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 
 	const editors = await tinyMCE.init(tinymceOptions);
 	const editor = editors[0];
-	const value = editor.targetElm.value;
+	const value = editor?.targetElm?.value;
 
 	// targetElm is a textarea
 	if ( editor?.targetElm && !value.startsWith('<') ) {
@@ -404,9 +404,9 @@ document.addEventListener('DOMContentLoaded', async function () {
 
 		const html = `
 			<html ${this.doctype === 'doc'
-					? 'xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"'
-					: ''
-			}>
+		? 'xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"'
+		: ''
+}>
 			<head>
 				<meta charset="utf-8" />
 				<title>${docName}</title>

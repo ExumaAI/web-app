@@ -4,13 +4,8 @@ namespace App\Http\Controllers\Market;
 
 use App\Helpers\Classes\Helper;
 use App\Http\Controllers\Controller;
-use App\Models\Extension;
-use App\Models\SettingTwo;
 use App\Repositories\Contracts\ExtensionRepositoryInterface;
-use Exception;
-use GuzzleHttp\Client;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
 
 class MarketPlaceController extends Controller
 {
@@ -23,22 +18,22 @@ class MarketPlaceController extends Controller
     {
         $items = $this->extensionRepository->extensions();
 
-        // $jsonFile = base_path('addons.json');
-        // $addonsData = File::get($jsonFile);
-        // $addons = json_decode($addonsData);
+        $subscription = $this->extensionRepository->subscription()->json();
 
-        return view('panel.admin.marketplace.index', compact('items'));
+        return view('panel.admin.marketplace.index', compact('items', 'subscription'));
     }
 
     public function extension($slug)
     {
         $item = $this->extensionRepository->find($slug);
 
+        $marketSubscription = $this->extensionRepository->subscription()->json();
+
         if (! $item) {
             return to_route('dashboard.admin.marketplace.index')->with('error', 'Extension not found.');
         }
 
-        return view('panel.admin.marketplace.show', compact('item'));
+        return view('panel.admin.marketplace.show', compact('item', 'marketSubscription'));
     }
 
     public function licensedExtension()
@@ -47,8 +42,7 @@ class MarketPlaceController extends Controller
             $this->extensionRepository->extensions()
         );
 
-
-        return view('panel.admin.marketplace.licensed', compact( 'items'));
+        return view('panel.admin.marketplace.licensed', compact('items'));
     }
 
     public function buyExtension($slug)
@@ -71,7 +65,6 @@ class MarketPlaceController extends Controller
             return to_route('dashboard.admin.marketplace.index')->with('error', 'Extension not found.');
         }
     }
-
 
     public function extensionActivate(Request $request, string $token)
     {

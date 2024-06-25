@@ -48,6 +48,19 @@
 
             <div class="col-md-12">
                 <div class="mb-3">
+                    <label class="form-label">{{ __('Features Subtitle') }}</label>
+                    <input
+                        class="form-control"
+                        id="features_subtitle"
+                        type="text"
+                        name="features_subtitle"
+                        value="{{ $fSectSettings->features_subtitle }}"
+                    >
+                </div>
+            </div>
+
+            <div class="col-md-12">
+                <div class="mb-3">
                     <label class="form-label">{{ __('Features Description') }}</label>
                     <textarea
                         class="form-control"
@@ -183,6 +196,31 @@
                 </div>
             </div>
 
+            <div class="col-md-12">
+                <div class="mb-3">
+                    <label class="form-label">{{ __('Custom Templates Learn More Link') }}</label>
+                    <input
+                        class="form-control"
+                        id="custom_templates_learn_more_link"
+                        type="text"
+                        name="custom_templates_learn_more_link"
+                        value="{{ $fSectSettings->custom_templates_learn_more_link }}"
+                    >
+                </div>
+            </div>
+
+            <div class="col-md-12">
+                <div class="mb-3">
+                    <label class="form-label">{{ __('Custom Templates Learn More Link URL') }}</label>
+                    <input
+                        class="form-control"
+                        id="custom_templates_learn_more_link_url"
+                        type="text"
+                        name="custom_templates_learn_more_link_url"
+                        value="{{ $fSectSettings->custom_templates_learn_more_link_url }}"
+                    >
+                </div>
+            </div>
         </div>
 
         <div class="row">
@@ -219,6 +257,19 @@
                         type="text"
                         name="tools_title"
                         value="{{ $fSectSettings->tools_title }}"
+                    >
+                </div>
+            </div>
+
+            <div class="col-md-12">
+                <div class="mb-3">
+                    <label class="form-label">{{ __('Tools Subtitle') }}</label>
+                    <input
+                        class="form-control"
+                        id="tools_subtitle"
+                        type="text"
+                        name="tools_subtitle"
+                        value="{{ $fSectSettings->tools_subtitle }}"
                     >
                 </div>
             </div>
@@ -274,6 +325,58 @@
                 </div>
             </div>
 
+            <div class="col-md-12">
+                <div class="mb-3">
+                    <label class="form-label">{{ __('How It Works Subtitle') }}</label>
+                    <input
+                        class="form-control"
+                        id="how_it_works_subtitle"
+                        type="text"
+                        name="how_it_works_subtitle"
+                        value="{{ $fSectSettings->how_it_works_subtitle }}"
+                    >
+                </div>
+            </div>
+
+            <div class="col-md-12">
+                <div class="mb-3">
+                    <label class="form-label">{{ __('How It Works Description') }}</label>
+                    <input
+                        class="form-control"
+                        id="how_it_works_description"
+                        type="text"
+                        name="how_it_works_description"
+                        value="{{ $fSectSettings->how_it_works_description }}"
+                    >
+                </div>
+            </div>
+
+            <div class="col-md-12">
+                <div class="mb-3">
+                    <label class="form-label">{{ __('How It Works Link') }}</label>
+                    <input
+                        class="form-control"
+                        id="how_it_works_link"
+                        type="text"
+                        name="how_it_works_link"
+                        value="{{ $fSectSettings->how_it_works_link }}"
+                    >
+                </div>
+            </div>
+
+            <div class="col-md-12">
+                <div class="mb-3">
+                    <label class="form-label">{{ __('How It Works Link Label') }}</label>
+                    <input
+                        class="form-control"
+                        id="how_it_works_link_label"
+                        type="text"
+                        name="how_it_works_link_label"
+                        value="{{ $fSectSettings->how_it_works_link_label }}"
+                    >
+                </div>
+            </div>
+
         </div>
 
         <div class="row">
@@ -310,6 +413,19 @@
                         type="text"
                         name="testimonials_title"
                         value="{{ $fSectSettings->testimonials_title }}"
+                    >
+                </div>
+            </div>
+
+            <div class="col-md-12">
+                <div class="mb-3">
+                    <label class="form-label">{{ __('Testimonials Description') }}</label>
+                    <input
+                        class="form-control"
+                        id="testimonials_description"
+                        type="text"
+                        name="testimonials_description"
+                        value="{{ $fSectSettings->testimonials_description }}"
                     >
                 </div>
             </div>
@@ -376,6 +492,19 @@
                         type="text"
                         name="pricing_title"
                         value="{{ $fSectSettings->pricing_title }}"
+                    >
+                </div>
+            </div>
+
+            <div class="col-md-12">
+                <div class="mb-3">
+                    <label class="form-label">{{ __('Pricing Subtitle') }}</label>
+                    <input
+                        class="form-control"
+                        id="pricing_subtitle"
+                        type="text"
+                        name="pricing_subtitle"
+                        value="{{ $fSectSettings->pricing_subtitle }}"
                     >
                 </div>
             </div>

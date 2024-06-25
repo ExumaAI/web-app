@@ -95,6 +95,7 @@ function frontendSectionSettingsSave() {
     var formData = new FormData();
     formData.append('features_active', $("#features_active").val());
     formData.append('features_title', $("#features_title").val());
+	formData.append('features_subtitle', $("#features_subtitle").val());
     formData.append('features_description', $("#features_description").val());
 
 
@@ -111,18 +112,28 @@ function frontendSectionSettingsSave() {
 
     formData.append('tools_active', $("#tools_active").val());
     formData.append('tools_title', $("#tools_title").val());
+	formData.append('tools_subtitle', $("#tools_subtitle").val());
     formData.append('tools_description', $("#tools_description").val());
+
+	formData.append('custom_templates_learn_more_link', $("#custom_templates_learn_more_link").val());
+	formData.append('custom_templates_learn_more_link_url', $("#custom_templates_learn_more_link_url").val());
 
     formData.append('how_it_works_active', $("#how_it_works_active").val());
     formData.append('how_it_works_title', $("#how_it_works_title").val());
+	formData.append('how_it_works_subtitle', $("#how_it_works_subtitle").val());
+	formData.append('how_it_works_description', $("#how_it_works_description").val());
+	formData.append('how_it_works_link', $("#how_it_works_link").val());
+	formData.append('how_it_works_link_label', $("#how_it_works_link_label").val());
 
     formData.append('testimonials_active', $("#testimonials_active").val());
     formData.append('testimonials_title', $("#testimonials_title").val());
+	formData.append('testimonials_description', $("#testimonials_description").val());
     formData.append('testimonials_subtitle_one', $("#testimonials_subtitle_one").val());
     formData.append('testimonials_subtitle_two', $("#testimonials_subtitle_two").val());
 
     formData.append('pricing_active', $("#pricing_active").val());
     formData.append('pricing_title', $("#pricing_title").val());
+	formData.append('pricing_subtitle', $("#pricing_subtitle").val());
     formData.append('pricing_description', $("#pricing_description").val());
     formData.append('pricing_save_percent', $("#pricing_save_percent").val());
 
@@ -1030,6 +1041,11 @@ function toolsCreateOrUpdate(item_id) {
     var formData = new FormData();
     formData.append('title', $("#title").val());
     formData.append('description', $("#description").val());
+	formData.append('buy_link', $("#buy_link").val());
+	formData.append('buy_link_url', $("#buy_link_url").val());
+	formData.append('learn_more_link', $("#learn_more_link").val());
+	formData.append('learn_more_link_url', $("#learn_more_link_url").val());
+
     if ($('#image').val() != 'undefined') {
         formData.append('image', $('#image').prop('files')[0]);
     }
@@ -1145,6 +1161,7 @@ function generatorlistCreateOrUpdate(item_id) {
     formData.append('text', $("#text").val());
     formData.append('image_title', $("#image_title").val());
     formData.append('image_subtitle', $("#image_subtitle").val());
+	formData.append('icon', $("#icon").val());
     formData.append('color', $("#color").val());
     if ($('#image').val() != 'undefined') {
         formData.append('image', $('#image').prop('files')[0]);

@@ -66,9 +66,9 @@ class DocumentsApiController extends Controller
     {
         $documents = $request->user()
             ->openai()
-            ->whereHas('generator', function ($query) {
-                $query->where('type', '!=', 'image');
-            })
+            // ->whereHas('generator', function ($query) {    // Disabled with AI Image module
+            //     $query->where('type', '!=', 'image');
+            // })
             ->latest('created_at')
             ->take(10)
             ->get();
@@ -226,7 +226,7 @@ class DocumentsApiController extends Controller
 
         $query = [
             ['user_openai.user_id', '=', $request->user()->id],
-            ['openai.type', '!=', 'image'],
+            // ['openai.type', '!=', 'image'], // Disabled with AI Image module
         ];
 
         if ($filter != 'all' && $filter != 'All') {

@@ -504,7 +504,7 @@ class StreamService
 			
 			if($contain_images)
             {
-				$chat_bot = 'gemini-pro-vision';
+				$chat_bot = 'gemini-1.5-flash';
 			}
 
 			$client = app(Gemini::class);

@@ -34,6 +34,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
 use Laravel\Cashier\Payment;
+use App\Models\AccountDeletionReqs;
 
 class UserController extends Controller
 {
@@ -863,4 +864,71 @@ class UserController extends Controller
 
         return redirect()->back();
     }
+	
+	public function overview(){
+		$overviewData = [
+			[
+				"title" => "Image Documents",
+				'slug' => 'image_documents',
+				"count" => 0
+			],
+			[
+				"title" => "Code Documents",
+				'slug' => 'code_documents',
+				"count" => 0
+			],
+			[
+				"title" => "Other Documents",
+				'slug' => 'other_documents',
+				"count" => 0
+			]
+		];
+		$total = 0;
+
+		$userId = Auth::id();
+		$userOpenai = UserOpenai::where('user_id', $userId)->with('generatorWithType')->get();
+		$imageCount = 0;
+		$codeCount = 0;
+		$otherCount = 0;
+		foreach ($userOpenai as $key => $value) {
+			if ($value->generator_type == 'image') {
+				$imageCount++;
+			} elseif ($value->generator_type == 'code') {
+				$codeCount++;
+			} else {
+				$otherCount++;
+			}
+			$total++;
+		}
+		$overviewData[0]['count'] = $imageCount;
+		$overviewData[1]['count'] = $codeCount;
+		$overviewData[2]['count'] = $otherCount;
+
+		$percantageOther =  round(($otherCount / $total) * 100);
+		return response()->json(['data' => $overviewData, 'total' => $total, 'percantageOther'=> $percantageOther]);
+	}
+	public function deleteAccount()
+	{
+		return view('panel.user.settings.deleteAccount');
+	}
+	public function deleteAccountRequest(Request $request)
+	{
+		abort_if(Helper::appIsDemo(), 404);
+		$request->validate([
+			'password' => 'required',
+		]);
+		$user = Auth::user();
+		if (Hash::check($request->password, $user->password)) {	
+			$oldRequest = AccountDeletionReqs::where('user_id', $user->id)->first();
+			if ($oldRequest) {
+				return response()->json(['message' => __('You have already requested to delete your account')], 409);
+			}
+			$deletionRequest = new AccountDeletionReqs();
+			$deletionRequest->user_id = $user->id;
+			$deletionRequest->save();
+			return response()->json(['message' => __('Your account deletion request has been successfully submitted')], 200);
+		} else {
+			return response()->json(['message' => __('Password is incorrect')], 401);
+		}
+	}
 }

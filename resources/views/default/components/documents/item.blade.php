@@ -30,7 +30,7 @@
                 {{ __($entry->generator->title) }}
             </span>
             <span class="lqd-docs-item-desc opacity-45 block w-full overflow-hidden overflow-ellipsis whitespace-nowrap italic">
-                {{ str()->words(__($entry->generator->description), 50) }}
+                {{ str()->words(__($entry->generator->description), 30) }}
             </span>
         </span>
         <span class="flex flex-col whitespace-nowrap">
@@ -77,9 +77,9 @@
                 <p
                     class="lqd-docs-item-title overflow-hidden overflow-ellipsis whitespace-nowrap group-[&[data-view-mode=grid]]:h-full group-[&[data-view-mode=grid]]:whitespace-normal">
                     @if (in_array($entry->generator->type, ['text', 'youtube', 'rss', 'code', 'image']))
-                        {{ str()->limit(strip_tags($entry->generator->type === 'image' ? $entry->title : $entry->title . ' : ' . $entry->output), 50) }}
+                        {{ str()->limit(strip_tags($entry->generator->type === 'image' ? $entry->title : $entry->title . ' : ' . $entry->output), 30) }}
                     @elseif($entry->generator->type == 'audio')
-                        {!! str()->limit($entry->title . ' : ' . $entry->output, 50) !!}
+                        {!! str()->limit($entry->title . ' : ' . $entry->output, 30) !!}
                     @elseif ($entry->generator->type == 'voiceover')
                         {{ str()->limit($entry->title) }}
                     @endif
@@ -113,12 +113,14 @@
         </span>
 
         <div class="lqd-docs-item-actions flex items-center justify-end gap-2 font-normal">
-            <x-favorite-button
-                class="group-[&[data-view-mode=grid]]:absolute group-[&[data-view-mode=grid]]:end-3 group-[&[data-view-mode=grid]]:top-3 group-[&[data-view-mode=grid]]:h-8 group-[&[data-view-mode=grid]]:w-8"
-                id="{{ $entry->id }}"
-                is-favorite="{{ isFavoritedDoc($entry->id) }}"
-                update-url="/dashboard/user/openai/documents/favorite"
-            />
+            @if (!$hideFav)
+                <x-favorite-button
+                    class="group-[&[data-view-mode=grid]]:absolute group-[&[data-view-mode=grid]]:end-3 group-[&[data-view-mode=grid]]:top-3 group-[&[data-view-mode=grid]]:h-8 group-[&[data-view-mode=grid]]:w-8"
+                    id="{{ $entry->id }}"
+                    is-favorite="{{ isFavoritedDoc($entry->id) }}"
+                    update-url="/dashboard/user/openai/documents/favorite"
+                />
+            @endif
             <x-button
                 class="size-9 z-10 group-[&[data-view-mode=grid]]:hidden"
                 size="none"

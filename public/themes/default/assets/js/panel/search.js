@@ -1,124 +1,105 @@
-var searchResultsVisible = false;
-
 ( () => {
 	'use strict';
 
-	const searchInput = document.querySelector( '.header-search-input' );
-	const searchShortcutKey = document.querySelector( '#search-shortcut-key' );
+	document.querySelectorAll('.header-search').forEach(headerSearch => {
 
-	if ( !searchInput ) return;
+		const searchInput = headerSearch.querySelector( '.header-search-input' );
+		const searchShortcutKey = headerSearch.querySelector( '.search-shortcut-key' );
 
-	const navbarSearch = document.querySelector( '#header-search' );
-	let inputFocused = false;
-	var timer = null;
+		if ( !searchInput ) return;
 
-	if ( searchShortcutKey ) {
-		if ( navigator.userAgent.indexOf( 'Mac OS X' ) != -1 ) {
-			searchShortcutKey.innerText = 'cmd';
-		} else {
-			searchShortcutKey.innerText = 'ctrl';
+		let inputFocused = false;
+		var timer = null;
+
+		if ( searchShortcutKey ) {
+			if ( navigator.userAgent.indexOf( 'Mac OS X' ) != -1 ) {
+				searchShortcutKey.innerText = 'cmd';
+			} else {
+				searchShortcutKey.innerText = 'ctrl';
+			}
+			searchShortcutKey.parentElement.classList.remove( 'opacity-0' );
 		}
-		searchShortcutKey.parentElement.classList.remove( 'opacity-0' );
+
+		searchInput.addEventListener( 'focus', function () {
+			if ( !onlySpaces( searchInput.value ) ) {
+				headerSearch.classList.add( 'done-searching' );
+			}
+		} );
+
+		searchInput.addEventListener( 'keyup', function () {
+			if ( onlySpaces( searchInput.value ) ) {
+				clearTimeout( timer );
+				headerSearch.classList.remove( 'is-searching' );
+				headerSearch.classList.remove( 'done-searching' );
+			} else {
+				headerSearch.classList.add( 'is-searching' );
+				clearTimeout( timer );
+				timer = setTimeout( () => searchFunction(headerSearch), 1000 );
+			}
+		} );
+
+		window.addEventListener( 'keydown', function ( e ) {
+			if ( ( e.ctrlKey || e.shiftKey || e.altKey || e.metaKey ) && e.key === 'k' ) {
+				e.preventDefault();
+				e.stopPropagation();
+				if ( inputFocused ) return;
+				searchInput.focus();
+				inputFocused = true;
+				if ( !onlySpaces( searchInput.value ) ) {
+					headerSearch.classList.add( 'done-searching' );
+				}
+			}
+			if ( e.key === 'Escape' ) {
+				if ( !inputFocused ) return;
+				searchInput.blur();
+				inputFocused = false;
+				headerSearch.classList.remove( 'done-searching' );
+			}
+		} );
+
+		searchInput.addEventListener( 'blur', () => {
+			inputFocused = false;
+		} );
+
+		document.addEventListener( 'click', ev => {
+			const { target } = ev;
+			const clickedOutside = !headerSearch?.contains( target );
+			if ( clickedOutside ) {
+				headerSearch.classList.remove( 'is-searching' );
+				headerSearch.classList.remove( 'done-searching' );
+			}
+		} );
+
+	});
+
+	function onlySpaces( str ) {
+		'use strict';
+
+		return str.trim().length === 0 || str === '';
 	}
 
-	searchInput.addEventListener( 'focus', function () {
-		if ( !onlySpaces( searchInput.value ) ) {
-			navbarSearch.classList.add( 'done-searching' );
-			searchResultsVisible = true;
-		}
-	} );
+	function searchFunction( headerSearch ) {
+		'use strict';
 
-	searchInput.addEventListener( 'keyup', function () {
-		if ( onlySpaces( searchInput.value ) ) {
-			searchResultsVisible = false;
-			clearTimeout( timer );
-			navbarSearch.classList.remove( 'is-searching' );
-			navbarSearch.classList.remove( 'done-searching' );
-		} else {
-			navbarSearch.classList.add( 'is-searching' );
-			clearTimeout( timer );
-			timer = setTimeout( searchFunction, 1000 );
-		}
-	} );
+		const formData = new FormData();
+		const searchInput = headerSearch.querySelector( '.header-search-input' );
 
-	window.addEventListener( 'keydown', function ( e ) {
-		if ( ( e.ctrlKey || e.shiftKey || e.altKey || e.metaKey ) && e.key === 'k' ) {
-			e.preventDefault();
-			e.stopPropagation();
-			if ( inputFocused ) return;
-			searchInput.focus();
-			inputFocused = true;
-			if ( !onlySpaces( searchInput.value ) ) {
-				navbarSearch.classList.add( 'done-searching' );
-				searchResultsVisible = true;
+		formData.append( '_token', document.querySelector( 'input[name=_token]' )?.value );
+		formData.append( 'search', searchInput.value );
+
+		$.ajax( {
+			type: 'POST',
+			url: '/dashboard/api/search',
+			data: formData,
+			contentType: false,
+			processData: false,
+			success: function ( result ) {
+				headerSearch.querySelector( '.search-results-container' ).innerHTML = result.html;
+				headerSearch.classList.add( 'done-searching' );
+				headerSearch.classList.remove( 'is-searching' );
 			}
-		}
-		if ( e.key === 'Escape' ) {
-			if ( !inputFocused ) return;
-			searchInput.blur();
-			inputFocused = false;
-			navbarSearch.classList.remove( 'done-searching' );
-			searchResultsVisible = false;
-		}
-	} );
-
-	searchInput.addEventListener( 'blur', () => {
-		inputFocused = false;
-	} );
-
-	document.addEventListener( 'click', ev => {
-		const { target } = ev;
-		const clickedOutside = !navbarSearch?.contains( target );
-		if ( clickedOutside ) {
-			navbarSearch.classList.remove( 'is-searching' );
-			navbarSearch.classList.remove( 'done-searching' );
-			searchResultsVisible = false;
-		}
-	} );
-
+		} );
+	}
 } )();
 
-//sadece boşlukla arama mı yapmış
-function onlySpaces( str ) {
-	'use strict';
-
-	return str.trim().length === 0 || str === '';
-}
-
-function resetSearch() {
-	'use strict';
-
-	document.getElementById( 'search_form' ).reset();
-	return searchFunction( 'delete' );
-}
-
-function searchFunction( n ) {
-	'use strict';
-
-	const formData = new FormData();
-	const navbarSearch = document.querySelector( '#header-search' );
-	const searchInput = document.querySelector( '.header-search-input' );
-	formData.append( '_token', document.querySelector( 'input[name=_token]' )?.value );
-
-	if ( n == 'delete' ) {
-		formData.append( 'search', n );
-	} else {
-		formData.append( 'search', searchInput.value );
-	}
-
-	$.ajax( {
-		type: 'POST',
-		url: '/dashboard/api/search',
-		data: formData,
-		contentType: false,
-		processData: false,
-		success: function ( result ) {
-			//DİV LOAD
-			$( '#search_results .search-results-container' ).html( result.html );
-			navbarSearch.classList.add( 'done-searching' );
-			navbarSearch.classList.remove( 'is-searching' );
-			searchResultsVisible = true;
-		}
-	} );
-}
 

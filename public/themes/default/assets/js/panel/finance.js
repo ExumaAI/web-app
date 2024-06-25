@@ -28,6 +28,7 @@ function prepaidSave( plan_id ) {
 	formData.append( 'total_images', $( "#total_images" ).val() );
 	formData.append( 'plan_type', $( "#plan_type" ).val() );
 	formData.append( 'features', $( "#features" ).val() );
+	formData.append( 'description', $( "#description" ).val() );
 
 	if(document.getElementById("display_word").checked){
 		formData.append( 'display_word', 1 );
@@ -105,6 +106,8 @@ function subscriptionSave( plan_id ) {
 	formData.append( 'plan_type', $( "#plan_type" ).val() );
 	formData.append( 'features', $( "#features" ).val() );
 	formData.append( 'trial_days', parseInt($( "#trial_days" ).val()) );
+	// description
+	formData.append( 'description', $( "#description" ).val() );
 
 	if(document.getElementById("display_word").checked){
 		formData.append( 'display_word', 1 );

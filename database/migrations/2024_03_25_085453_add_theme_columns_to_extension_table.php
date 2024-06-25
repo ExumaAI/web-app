@@ -23,8 +23,8 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('extensions', function (Blueprint $table) {
-            $table->dropColumn('is_theme');
-			$table->dropColumn('theme_type');
+          $table->dropColumn('is_theme');
+          $table->dropColumn('theme_type');
         });
     }
 };

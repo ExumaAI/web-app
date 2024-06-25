@@ -120,17 +120,17 @@
                             {{ __('Gemini 1.0 Pro (Model last updated: February 2024)') }}
                         </option>
                         <option
-                            value="gemini-pro-vision"
-                            {{ setting('gemini_default_model', 'gemini-pro') == 'gemini-pro-vision' ? 'selected' : null }}
+                            value="gemini-1.5-flash"
+                            {{ setting('gemini_default_model', 'gemini-pro') == 'gemini-1.5-flash' ? 'selected' : null }}
                         >
                             {{ __('Gemini 1.0 Pro Vision (Model last updated: February 2023)') }}
                         </option>
-{{--                        <option--}}
-{{--                            value="aqa"--}}
-{{--                            {{ setting('gemini_default_model', 'gemini-pro') == 'aqa' ? 'selected' : null }}--}}
-{{--                        >--}}
-{{--                            {{ __('AQA (Model last updated: December 2023)') }}--}}
-{{--                        </option>--}}
+                        {{--                        <option --}}
+                        {{--                            value="aqa" --}}
+                        {{--                            {{ setting('gemini_default_model', 'gemini-pro') == 'aqa' ? 'selected' : null }} --}}
+                        {{--                        > --}}
+                        {{--                            {{ __('AQA (Model last updated: December 2023)') }} --}}
+                        {{--                        </option> --}}
                     </select>
                 </div>
 

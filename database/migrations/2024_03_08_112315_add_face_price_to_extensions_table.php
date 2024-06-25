@@ -17,7 +17,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('extensions', function (Blueprint $table) {
-            $table->dropColumn('fake_price');
+             $table->dropColumn('fake_price');
         });
     }
 };

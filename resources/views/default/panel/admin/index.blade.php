@@ -2,14 +2,17 @@
     $sales_prev_week = cache('sales_previous_week');
     $sales_this_week = cache('sales_this_week');
 
+    $popular_tools_data = cache('popular_tools_data');
+    $popular_plans_data = cache('popular_plans_data');
+    $user_behavior_data = cache('user_behavior_data');
     $currencySymbol = currency()->symbol;
 @endphp
 
 @extends('panel.layout.app', ['disable_tblr' => true])
-@section('title', __('Dashboard'))
+@section('title', __('Overview'))
 
 @section('content')
-    <div class="py-6">
+    <div class="py-10">
         @if ($gatewayError == true)
             <x-alert class="mb-11">
                 <p>
@@ -38,6 +41,39 @@
         @endif
 
         <div class="flex flex-col gap-11">
+            <x-card
+                class="overflow-hidden px-2 py-4 hover:-translate-y-1 hover:bg-foreground/5"
+                variant="outline"
+                size="lg"
+            >
+                <div class="relative z-1 w-full lg:w-1/2">
+                    <h2 class="mb-2.5">
+                        @lang('Marketplace is here.')
+                    </h2>
+                    <p class="mb-0 text-sm">
+                        @lang('Extend the capabilities of MagicAI, explore new designs and unlock new horizons.')
+                    </p>
+                </div>
+                <figure
+                    class="absolute end-0 top-full max-w-md max-lg:-translate-y-16 lg:-end-24 lg:-top-16"
+                    aria-hidden="true"
+                >
+                    <img
+                        class="w-full"
+                        alt="{{ __('marketplace') }}"
+                        width="857"
+                        height="470"
+                        src="{{ custom_theme_url('/assets/img/misc/dash-marketplace-announce.png') }}"
+                    >
+                </figure>
+                <a
+                    class="absolute inset-0 z-1 inline-block overflow-hidden text-start -indent-96"
+                    href="{{ route('dashboard.admin.marketplace.index') }}"
+                >
+                    {{ __('Explore Marketplace') }}
+                </a>
+            </x-card>
+
             <div class="grid grid-cols-1 gap-5 md:grid-cols-2 lg:gap-8 xl:grid-cols-4">
                 <x-card
                     class="lqd-statistic-card w-full"
@@ -196,7 +232,7 @@
                 <x-card>
                     <x-slot:head>
                         <h4 class="m-0 text-base font-medium">
-                            {{ __('Generated Content') }}
+                            {{ __('AI Usage') }}
                         </h4>
                     </x-slot:head>
 
@@ -220,6 +256,110 @@
                         >
                             <x-tabler-arrow-right class="size-4" />
                         </button>
+                    </div>
+                </x-card>
+
+                <x-card
+                    class="flex flex-col"
+                    class:body="flex flex-col justify-center grow"
+                >
+                    <x-slot:head>
+                        <h4 class="m-0 text-base font-medium">
+                            {{ __('Popular Plans') }}
+                        </h4>
+                    </x-slot:head>
+
+                    <div
+                        class="min-h-[350px] w-full [&_.apexcharts-legend-text]:!m-0 [&_.apexcharts-legend-text]:!pe-2 [&_.apexcharts-legend-text]:ps-2 [&_.apexcharts-legend-text]:!text-foreground"
+                        id="popular-plans-chart"
+                    ></div>
+                </x-card>
+
+                <x-card
+                    class="flex flex-col"
+                    class:body="flex flex-col justify-center grow"
+                >
+                    <x-slot:head>
+                        <h4 class="m-0 text-base font-medium">
+                            {{ __('New Users') }}
+                        </h4>
+                    </x-slot:head>
+
+                    <div
+                        class="min-h-[350px] w-full [&_.apexcharts-legend-text]:!m-0 [&_.apexcharts-legend-text]:!pe-2 [&_.apexcharts-legend-text]:ps-2 [&_.apexcharts-legend-text]:!text-foreground"
+                        id="new-users-chart"
+                    ></div>
+                </x-card>
+
+                <x-card
+                    class="flex flex-col"
+                    class:body="flex flex-col justify-center grow"
+                >
+                    <x-slot:head>
+                        <h4 class="m-0 text-base font-medium">
+                            {{ __('Popular AI Tools') }}
+                        </h4>
+                    </x-slot:head>
+
+                    <div
+                        class="min-h-[350px] w-full [&_.apexcharts-legend-text]:!m-0 [&_.apexcharts-legend-text]:!pe-2 [&_.apexcharts-legend-text]:ps-2 [&_.apexcharts-legend-text]:!text-foreground"
+                        id="popular-tools-chart"
+                    ></div>
+                </x-card>
+
+                <x-card
+                    class="flex flex-col"
+                    class:body="flex flex-col justify-center grow min-h-[350px] w-full"
+                    size="none"
+                >
+                    <x-slot:head>
+                        <h4 class="m-0 text-base font-medium">
+                            {{ __('User Behaviour') }}
+                        </h4>
+                    </x-slot:head>
+
+                    @php
+                        $values_sum = array_sum(array_column($user_behavior_data, 'value'));
+                    @endphp
+
+                    <div id="user-behaviour-chart">
+                        <div>
+                            <div class="lqd-progress flex h-1.5 overflow-hidden rounded-full">
+                                @foreach ($user_behavior_data as $data)
+                                    <div
+                                        class="lqd-progress-bar h-full grow"
+                                        style="width: {{ ($data['value'] / $values_sum) * 100 }}%; background-color: {{ $data['color'] }};"
+                                    ></div>
+                                @endforeach
+                            </div>
+                        </div>
+
+                        <div class="flex">
+                            @foreach ($user_behavior_data as $data)
+                                <div class="group flex shrink-0 grow basis-0 flex-col justify-center space-y-3 px-9 pt-9 text-xs text-heading-foreground last:text-end">
+                                    <div class="flex items-center gap-2 group-last:flex-row-reverse">
+                                        <span
+                                            class="h-[18px] w-1 rounded-full"
+                                            style="background-color: {{ $data['color'] }}"
+                                        ></span>
+                                        {{ $data['label'] }}
+                                    </div>
+                                    <div class="text-[28px] font-bold opacity-70">
+                                        {{ number_format(($data['value'] / $values_sum) * 100, 2) }}%
+                                    </div>
+                                    <div>
+                                        {{ $data['value'] }}
+                                    </div>
+                                </div>
+                                @if (!$loop->last)
+                                    <div class="relative flex w-px items-center justify-center bg-border">
+                                        <div class="size-[50px] inline-flex shrink-0 items-center justify-center rounded-full border bg-background text-sm font-medium shadow-sm">
+                                            @lang('vs')
+                                        </div>
+                                    </div>
+                                @endif
+                            @endforeach
+                        </div>
                     </div>
                 </x-card>
 
@@ -452,6 +592,12 @@
                     $daily_usages = [];
                 }
 
+                $daily_users = json_decode(cache('daily_users'));
+
+                if (empty($daily_users) || !is_array($daily_users)) {
+                    $daily_users = [];
+                }
+
                 $daily_sales = json_decode(cache('daily_sales'));
 
                 if (empty($daily_sales) || !is_array($daily_sales)) {
@@ -459,7 +605,13 @@
                 }
             @endphp
 
-            var dailySalesChartOptions = {
+            const currentDate = new Date();
+            const targetDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 0, 1);
+            const firstDayOfMonth = new Date(targetDate.getFullYear(), targetDate.getMonth(), 1);
+            const lastDayOfMonth = new Date(targetDate.getFullYear(), targetDate.getMonth() + 1, 0);
+
+            // Start Sales Chart
+            const dailySalesChartOptions = {
                 series: [{
                     name: 'Sales',
                     data: [
@@ -468,7 +620,6 @@
                         @endforeach
                     ]
                 }],
-                colors: ['hsl(var(--primary))'],
                 chart: {
                     id: 'area-datetime',
                     type: 'area',
@@ -484,6 +635,9 @@
                     enabled: false
                 },
                 grid: {
+                    show: false,
+                },
+                stroke: {
                     show: false,
                 },
                 xaxis: {
@@ -555,16 +709,12 @@
                 },
             };
 
-            var chart = new ApexCharts(document.querySelector("#chart-daily-sales"), dailySalesChartOptions);
-            chart.render();
+            const dailySalesChart = new ApexCharts(document.querySelector("#chart-daily-sales"), dailySalesChartOptions);
+            dailySalesChart.render();
+            // End Sales Chart
 
-            var currentDate = new Date();
-            var targetDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 0, 1);
-            var firstDayOfMonth = new Date(targetDate.getFullYear(), targetDate.getMonth(), 1);
-            var lastDayOfMonth = new Date(targetDate.getFullYear(), targetDate.getMonth() + 1, 0);
-
-
-            var dailyUsageChartOptions = {
+            // Start Usage Chart
+            const dailyUsageChartOptions = {
                 series: [{
                     name: 'Words',
                     data: [
@@ -675,7 +825,7 @@
                 }
             };
 
-            var chart2 = new ApexCharts(document.querySelector("#chart-daily-usages"), dailyUsageChartOptions);
+            const dailyUsageChart = new ApexCharts(document.querySelector("#chart-daily-usages"), dailyUsageChartOptions);
 
             // Function to update chart based on selected month
             function updateChartForMonth(monthOffset) {
@@ -685,7 +835,7 @@
                 var lastDayOfMonth = new Date(targetDate.getFullYear(), targetDate.getMonth() + 1, 0);
 
 
-                chart2.updateOptions({
+                dailyUsageChart.updateOptions({
                     xaxis: {
                         min: firstDayOfMonth.getTime(),
                         max: lastDayOfMonth.getTime(),
@@ -702,7 +852,343 @@
                 updateChartForMonth(1);
             });
 
-            chart2.render();
+            dailyUsageChart.render();
+            // End Usage Chart
+
+            // Start Popular Plans Chart
+            const data = @json($popular_plans_data);
+            const dataLength = data.length;
+            const series = [];
+
+            // first, add invisible data in all 4 corners to prevent overflow hidden
+            series.push({
+                name: '',
+                data: [
+                    [0, 0, 0]
+                ],
+                color: '#ffffff00'
+            }, {
+                name: '',
+                data: [
+                    [dataLength, 0, 0]
+                ],
+                color: '#ffffff00'
+            }, {
+                name: '',
+                data: [
+                    [dataLength, dataLength, 0]
+                ],
+                color: '#ffffff00'
+            }, {
+                name: '',
+                data: [
+                    [0, dataLength, 0]
+                ],
+                color: '#ffffff00'
+            });
+
+            // adding actual data
+            // Find the biggest value
+            let biggestValue = data[0];
+            for (let i = 1; i < dataLength; i++) {
+                if (data[i]?.value > biggestValue?.value) {
+                    biggestValue = data[i];
+                }
+            }
+
+            // Calculate the coordinates for the biggest value
+            let centerX = dataLength <= 1 ? 0.5 : Math.round(dataLength / 2);
+            let centerY = dataLength <= 1 ? 0.5 : Math.round(dataLength / 2);
+
+            // Add the biggest value in the middle of the chart
+            series.push({
+                name: biggestValue?.label,
+                data: [
+                    [centerX, centerY, biggestValue?.value]
+                ],
+                color: biggestValue?.color
+            });
+
+            // Calculate the remaining coordinates
+            let angle = 0;
+            let angleIncrement = (2 * Math.PI) / (dataLength - 1);
+            for (let i = 0; i < dataLength; i++) {
+                if (data[i]?.label !== biggestValue?.label) {
+                    let radius = Math.min(dataLength - 1.5, Math.random() * (dataLength - 1.5) + 1);
+                    let x = Math.min(dataLength - 1.5, centerX + radius * Math.cos(angle));
+                    let y = Math.min(dataLength - 1.5, centerY + radius * Math.sin(angle));
+                    series.push({
+                        name: data[i]?.label,
+                        data: [
+                            [x, y, data[i]?.value]
+                        ],
+                        color: data[i]?.color
+                    });
+                    angle += Math.min(dataLength - 1.5, angleIncrement);
+                }
+            }
+
+            const popularPlansChartOptions = {
+                series,
+                chart: {
+                    height: 300,
+                    type: 'bubble',
+                    dropShadow: {
+                        enabled: false,
+                        enabledOnSeries: undefined,
+                        top: 4,
+                        left: 0,
+                        blur: 6,
+                        color: '#000',
+                        opacity: 0.1
+                    },
+                    zoom: {
+                        enabled: false
+                    },
+                    toolbar: {
+                        show: false
+                    }
+                },
+                dataLabels: {
+                    enabled: true,
+                    style: {
+                        fontSize: '18px',
+                        fontWeight: 700,
+                        colors: ['hsl(var--foreground)'],
+                    },
+                },
+                plotOptions: {
+                    bubble: {
+                        zScaling: false,
+                        minBubbleRadius: 40,
+                        maxBubbleRadius: 175,
+                    }
+                },
+                grid: {
+                    show: false,
+                },
+                stroke: {
+                    show: false,
+                    width: 0
+                },
+                markers: {
+                    strokeWidth: 0,
+                },
+                tooltip: {
+                    enabled: false
+                },
+                xaxis: {
+                    labels: {
+                        show: false
+                    },
+                    axisBorder: {
+                        show: false,
+                    },
+                    axisTicks: {
+                        show: false,
+                    }
+                },
+                yaxis: {
+                    labels: {
+                        show: false
+                    },
+                    axisBorder: {
+                        show: false,
+                    },
+                    axisTicks: {
+                        show: false,
+                    }
+                }
+            };
+
+            const popularPlansChart = new ApexCharts(document.querySelector("#popular-plans-chart"), popularPlansChartOptions);
+            popularPlansChart.render();
+            // End Popular Plans Chart
+
+            const dailyUserChartOptions = {
+                series: [{
+                    name: 'Total',
+                    data: [
+                        @foreach ($daily_users as $user)
+                            '{{ (int) $user->total }}',
+                        @endforeach
+                    ]
+                }],
+                colors: ['hsl(var(--primary))', 'hsl(var(--primary) / 15%)'],
+                chart: {
+                    type: 'bar',
+                    height: 260,
+                    stacked: true,
+                    zoom: {
+                        enabled: false
+                    },
+                    toolbar: {
+                        show: false
+                    }
+                },
+                plotOptions: {
+                    bar: {
+                        horizontal: false,
+                        columnWidth: '100%',
+                        borderRadius: 5,
+                    },
+                },
+                dataLabels: {
+                    enabled: false
+                },
+                grid: {
+                    show: false
+                },
+                xaxis: {
+                    type: 'datetime',
+                    categories: [
+                        @foreach ($daily_users as $users)
+                            '{{ $users->days }}',
+                        @endforeach
+                    ],
+                    labels: {
+                        offsetY: 0,
+                        style: {
+                            colors: 'hsl(var(--foreground) / 40%)',
+                            fontSize: '10px',
+                            fontFamily: 'inherit',
+                            fontWeight: 500,
+                        },
+                    },
+                    axisBorder: {
+                        show: false,
+                    },
+                    axisTicks: {
+                        show: false,
+                    },
+                    min: firstDayOfMonth.getTime(),
+                    max: lastDayOfMonth.getTime(),
+                },
+                yaxis: {
+                    labels: {
+                        offsetX: -10,
+                        style: {
+                            colors: 'hsl(var(--foreground) / 40%)',
+                            fontSize: '10px',
+                            fontFamily: 'inherit',
+                            fontWeight: 500,
+                        },
+                    },
+                    axisBorder: {
+                        show: false,
+                    },
+                    axisTicks: {
+                        show: false,
+                    },
+                },
+                tooltip: {
+                    x: {
+                        format: 'dd MMM yyyy'
+                    }
+                },
+                stroke: {
+                    width: 1,
+                    colors: ['var(--background)', 'var(--background)']
+                },
+                legend: {
+                    position: 'top',
+                    horizontalAlign: 'left',
+                    offsetY: 0,
+                    offsetX: -40,
+                    markers: {
+                        width: 8,
+                        height: 8,
+                        radius: 10,
+                    },
+                    itemMargin: {
+                        horizontal: 15,
+                    },
+                },
+                fill: {
+                    opacity: 1
+                }
+            };
+
+            // Start New Users Chart
+            const newUsersChart = new ApexCharts(document.querySelector("#new-users-chart"), dailyUserChartOptions);
+            newUsersChart.render();
+            // End New Users Chart
+
+            // Start Popular Tools Chart
+            const popularToolsData = @json($popular_tools_data);
+            const popularToolsChartOptions = {
+                series: [],
+                labels: [],
+                colors: [],
+                chart: {
+                    height: 210,
+                    type: 'donut',
+                },
+                plotOptions: {
+                    pie: {
+                        donut: {
+                            size: '90%',
+                            labels: {
+                                show: true,
+                                name: {
+                                    show: false
+                                },
+                                value: {
+                                    show: true,
+                                    fontSize: '36px',
+                                    fontFamily: 'var(--headings-font-family)',
+                                    fontWeight: 700,
+                                    color: 'hsl(var(--heading-foreground)/70%)',
+                                    formatter: function(val) {
+                                        return `${val}%`;
+                                    },
+                                },
+                            }
+                        }
+                    },
+                },
+                dataLabels: {
+                    enabled: false
+                },
+                legend: {
+                    fontSize: '14px',
+                    fontFamily: 'var(--font-body)',
+                    fontWeight: 400,
+                    formatter: function(seriesName, opts) {
+                        return [seriesName, `<span>${opts.w.globals.series[opts.seriesIndex]}%</span>`];
+                    },
+                    markers: {
+                        width: 8,
+                        height: 8,
+                        radius: 2,
+                    },
+                    itemMargin: {
+                        horizontal: 0,
+                        vertical: 0
+                    }
+                },
+                responsive: [{
+                    breakpoint: 501,
+                    options: {
+                        chart: {
+                            height: 500,
+                        },
+                        legend: {
+                            position: 'bottom',
+                        }
+                    }
+                }]
+            };
+
+            popularToolsData.forEach(tool => {
+                popularToolsChartOptions.series.push(Number(tool.value));
+                popularToolsChartOptions.labels.push(tool.label);
+                popularToolsChartOptions.colors.push(tool.color);
+            });
+
+            const popularToolsChart = new ApexCharts(document.querySelector("#popular-tools-chart"), popularToolsChartOptions);
+            popularToolsChart.render();
+            // End Popular Tools Chart
 
         })();
     </script>

@@ -417,6 +417,7 @@ class PaymentProcessController extends Controller
             if($activeSubY != null) {
                 $gateway = "yokassa";
                 $activeSub = $activeSubY;
+				$activeSub->paid_with = "yokassa";
             }
         }
         if($activeSub){

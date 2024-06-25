@@ -326,379 +326,416 @@
                     >
                 </div>
             </div>
-
-            <div class="col-md-12 deprecated hidden">
-                <div class="mb-3">
-                    <label class="form-label">
-                        {{ __('Footer Header') }}
-                        <span class="text-red-500/80">{{ __('Deprecated') }}</span>
-                    </label>
-                    <input
-                        class="form-control"
-                        id="footer_header"
-                        type="text"
-                        name="footer_header"
-                        value="{{ $fSetting->footer_header }}"
-                    >
-                </div>
-            </div>
-
-            <div class="col-md-12 deprecated hidden">
-                <div class="mb-3">
-                    <label class="form-label">
-                        {{ __('Footer Header Small Text') }}
-                        <span class="text-red-500/80">{{ __('Deprecated') }}</span>
-                    </label>
-                    <input
-                        class="form-control"
-                        id="footer_text_small"
-                        type="text"
-                        name="footer_text_small"
-                        value="{{ $fSetting->footer_text_small }}"
-                    >
-                </div>
-            </div>
-            <div class="col-md-12 deprecated hidden">
-                <div class="mb-3">
-                    <label class="form-label">
-                        {{ __('Footer Text') }}
-                        <span class="text-red-500/80">{{ __('Deprecated') }}</span>
-                    </label>
-                    <input
-                        class="form-control"
-                        id="footer_text"
-                        type="text"
-                        name="footer_text"
-                        value="{{ $fSetting->footer_text }}"
-                    >
-                </div>
-            </div>
-
-            <div class="col-md-12 deprecated hidden">
-                <div class="mb-3">
-                    <label class="form-label">
-                        {{ __('Footer Button Text') }}
-                        <span class="text-red-500/80">{{ __('Deprecated') }}</span>
-                    </label>
-                    <input
-                        class="form-control"
-                        id="footer_button_text"
-                        type="text"
-                        name="footer_button_text"
-                        value="{{ $fSetting->footer_button_text }}"
-                    >
-                </div>
-            </div>
-
             <div class="col-md-12">
                 <div class="mb-3">
-                    <label class="form-label">{{ __('Footer Button URL (Please enter full url)') }}</label>
-                    <input
-                        class="form-control"
-                        id="footer_button_url"
-                        type="text"
-                        name="footer_button_url"
-                        value="{{ $fSetting->footer_button_url }}"
-                    >
-                </div>
-            </div>
-
-            <div class="col-md-12 deprecated hidden">
-                <div class="mb-3">
-                    <label class="form-label">
-                        {{ __('Footer Copyright') }}
-                        <span class="text-red-500/80">{{ __('Deprecated') }}</span>
-                    </label>
-                    <input
-                        class="form-control"
-                        id="footer_copyright"
-                        type="text"
-                        name="footer_copyright"
-                        value="{{ $fSetting->footer_copyright }}"
-                    >
-                </div>
-            </div>
-
-            <div class="col-md-12">
-                <div class="mb-3">
-                    <label class="form-label">
-                        {{ __('Pricing Section') }}
-                    </label>
-                    <select
-                        class="form-select"
-                        id="frontend_pricing_section"
-                        name="frontend_pricing_section"
-                    >
-                        <option
-                            value="1"
-                            {{ $setting->frontend_pricing_section == 1 ? 'selected' : '' }}
+                    <div class="group relative w-full">
+                        <button
+                            class="mb-3 flex w-full items-center gap-5 text-sm text-heading-foreground"
+                            type="button"
                         >
-                            {{ __('Active') }}</option>
-                        <option
-                            value="0"
-                            {{ $setting->frontend_pricing_section == 0 ? 'selected' : '' }}
-                        >
-                            {{ __('Passive') }}</option>
-                    </select>
-                </div>
-            </div>
+                            <span
+                                class="size-12 inline-grid place-items-center rounded-full bg-foreground/[7%] text-heading-foreground transition-colors group-hover:bg-heading-foreground group-hover:text-heading-background"
+                            >
+                                <x-tabler-plus />
+                            </span>
+                            @lang('Hero Image')
+                        </button>
+                        <x-forms.input
+                            class="absolute inset-0 z-2 h-full w-full cursor-pointer opacity-0"
+                            class:label="leading-tight text-foreground/30"
+                            id="hero_image"
+                            container-class="static max-w-[270px] mx-auto"
+                            size="lg"
+                            name="hero_image"
+                            type="file"
+                            placeholder="{{ __('Upload Hero Image') }}"
+                            required
+                        />
+                    </div>
+                    @if ($fSetting->hero_image)
+                        <div class="my-2">
+                            <img
+                                class="w-full rounded-lg object-cover"
+                                src="{{ $fSetting->hero_image }}"
+                                alt="hero image"
+                            >
+                        </div>
+                    @endif
 
-            <div class="col-md-12">
-                <div class="mb-3">
-                    <label class="form-label">{{ __('Custom Templates Section') }}</label>
-                    <select
-                        class="form-select"
-                        id="frontend_custom_templates_section"
-                        name="frontend_custom_templates_section"
-                    >
-                        <option
-                            value="1"
-                            {{ $setting->frontend_custom_templates_section == 1 ? 'selected' : '' }}
-                        >
-                            {{ __('Active') }}</option>
-                        <option
-                            value="0"
-                            {{ $setting->frontend_custom_templates_section == 0 ? 'selected' : '' }}
-                        >
-                            {{ __('Passive') }}</option>
-                    </select>
-                </div>
-            </div>
+                    <div class="col-md-12 deprecated hidden">
+                        <div class="mb-3">
+                            <label class="form-label">
+                                {{ __('Footer Header') }}
+                                <span class="text-red-500/80">{{ __('Deprecated') }}</span>
+                            </label>
+                            <input
+                                class="form-control"
+                                id="footer_header"
+                                type="text"
+                                name="footer_header"
+                                value="{{ $fSetting->footer_header }}"
+                            >
+                        </div>
+                    </div>
 
-        </div>
+                    <div class="col-md-12 deprecated hidden">
+                        <div class="mb-3">
+                            <label class="form-label">
+                                {{ __('Footer Header Small Text') }}
+                                <span class="text-red-500/80">{{ __('Deprecated') }}</span>
+                            </label>
+                            <input
+                                class="form-control"
+                                id="footer_text_small"
+                                type="text"
+                                name="footer_text_small"
+                                value="{{ $fSetting->footer_text_small }}"
+                            >
+                        </div>
+                    </div>
+                    <div class="col-md-12 deprecated hidden">
+                        <div class="mb-3">
+                            <label class="form-label">
+                                {{ __('Footer Text') }}
+                                <span class="text-red-500/80">{{ __('Deprecated') }}</span>
+                            </label>
+                            <input
+                                class="form-control"
+                                id="footer_text"
+                                type="text"
+                                name="footer_text"
+                                value="{{ $fSetting->footer_text }}"
+                            >
+                        </div>
+                    </div>
 
-        <div class="row mb-4">
-            <h3 class="mb-[25px] text-[20px]">{{ __('Floating Button') }}</h3>
-            <div class="col-md-12">
-                <div class="mb-3">
-                    <select
-                        class="form-select"
-                        id="floating_button_active"
-                        name="floating_button_active"
-                    >
-                        <option
-                            value="1"
-                            {{ $fSetting->floating_button_active == 1 ? 'selected' : '' }}
-                        >
-                            {{ __('Active') }}</option>
-                        <option
-                            value="0"
-                            {{ $fSetting->floating_button_active == 0 ? 'selected' : '' }}
-                        >
-                            {{ __('Passive') }}</option>
-                    </select>
-                </div>
-            </div>
-            <div class="col-md-12 floating-button-input">
-                <div class="mb-3">
-                    <label class="form-label">{{ __('Floating Button Small Text') }}</label>
-                    <input
-                        class="form-control"
-                        id="floating_button_small_text"
-                        type="text"
-                        name="floating_button_small_text"
-                        value="{{ $fSetting->floating_button_small_text }}"
-                    >
-                </div>
-            </div>
-            <div class="col-md-12 floating-button-input">
-                <div class="mb-3">
-                    <label class="form-label">{{ __('Floating Button Bold Text') }}</label>
-                    <input
-                        class="form-control"
-                        id="floating_button_bold_text"
-                        type="text"
-                        name="floating_button_bold_text"
-                        value="{{ $fSetting->floating_button_bold_text }}"
-                    >
-                </div>
-            </div>
-            <div class="col-md-12 floating-button-input">
-                <div class="mb-3">
-                    <label class="form-label">{{ __('Floating Button URL') }}</label>
-                    <input
-                        class="form-control"
-                        id="floating_button_link"
-                        type="text"
-                        name="floating_button_link"
-                        value="{{ $fSetting->floating_button_link }}"
-                    >
-                </div>
-            </div>
+                    <div class="col-md-12 deprecated hidden">
+                        <div class="mb-3">
+                            <label class="form-label">
+                                {{ __('Footer Button Text') }}
+                                <span class="text-red-500/80">{{ __('Deprecated') }}</span>
+                            </label>
+                            <input
+                                class="form-control"
+                                id="footer_button_text"
+                                type="text"
+                                name="footer_button_text"
+                                value="{{ $fSetting->footer_button_text }}"
+                            >
+                        </div>
+                    </div>
 
-            <div class="floating-button-input mt-2 flex items-center justify-center">
-                <a
-                    class="flex max-w-max items-center gap-3 rounded-xl bg-white px-3 py-2 text-sm text-[#002A40] text-opacity-60 shadow-lg transition-all duration-300 hover:-translate-y-1 hover:scale-110 hover:no-underline hover:shadow-md"
-                    id="floating_button_preview"
-                    data-fslightbox="html5-youtube-videos"
-                    href="{{ !empty($fSetting->floating_button_link) ? $fSetting->floating_button_link : '#' }}"
+                    <div class="col-md-12">
+                        <div class="mb-3">
+                            <label class="form-label">{{ __('Footer Button URL (Please enter full url)') }}</label>
+                            <input
+                                class="form-control"
+                                id="footer_button_url"
+                                type="text"
+                                name="footer_button_url"
+                                value="{{ $fSetting->footer_button_url }}"
+                            >
+                        </div>
+                    </div>
+
+                    <div class="col-md-12 deprecated hidden">
+                        <div class="mb-3">
+                            <label class="form-label">
+                                {{ __('Footer Copyright') }}
+                                <span class="text-red-500/80">{{ __('Deprecated') }}</span>
+                            </label>
+                            <input
+                                class="form-control"
+                                id="footer_copyright"
+                                type="text"
+                                name="footer_copyright"
+                                value="{{ $fSetting->footer_copyright }}"
+                            >
+                        </div>
+                    </div>
+
+                    <div class="col-md-12">
+                        <div class="mb-3">
+                            <label class="form-label">
+                                {{ __('Pricing Section') }}
+                            </label>
+                            <select
+                                class="form-select"
+                                id="frontend_pricing_section"
+                                name="frontend_pricing_section"
+                            >
+                                <option
+                                    value="1"
+                                    {{ $setting->frontend_pricing_section == 1 ? 'selected' : '' }}
+                                >
+                                    {{ __('Active') }}</option>
+                                <option
+                                    value="0"
+                                    {{ $setting->frontend_pricing_section == 0 ? 'selected' : '' }}
+                                >
+                                    {{ __('Passive') }}</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="col-md-12">
+                        <div class="mb-3">
+                            <label class="form-label">{{ __('Custom Templates Section') }}</label>
+                            <select
+                                class="form-select"
+                                id="frontend_custom_templates_section"
+                                name="frontend_custom_templates_section"
+                            >
+                                <option
+                                    value="1"
+                                    {{ $setting->frontend_custom_templates_section == 1 ? 'selected' : '' }}
+                                >
+                                    {{ __('Active') }}</option>
+                                <option
+                                    value="0"
+                                    {{ $setting->frontend_custom_templates_section == 0 ? 'selected' : '' }}
+                                >
+                                    {{ __('Passive') }}</option>
+                            </select>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="row mb-4">
+                    <h3 class="mb-[25px] text-[20px]">{{ __('Floating Button') }}</h3>
+                    <div class="col-md-12">
+                        <div class="mb-3">
+                            <select
+                                class="form-select"
+                                id="floating_button_active"
+                                name="floating_button_active"
+                            >
+                                <option
+                                    value="1"
+                                    {{ $fSetting->floating_button_active == 1 ? 'selected' : '' }}
+                                >
+                                    {{ __('Active') }}</option>
+                                <option
+                                    value="0"
+                                    {{ $fSetting->floating_button_active == 0 ? 'selected' : '' }}
+                                >
+                                    {{ __('Passive') }}</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-12 floating-button-input">
+                        <div class="mb-3">
+                            <label class="form-label">{{ __('Floating Button Small Text') }}</label>
+                            <input
+                                class="form-control"
+                                id="floating_button_small_text"
+                                type="text"
+                                name="floating_button_small_text"
+                                value="{{ $fSetting->floating_button_small_text }}"
+                            >
+                        </div>
+                    </div>
+                    <div class="col-md-12 floating-button-input">
+                        <div class="mb-3">
+                            <label class="form-label">{{ __('Floating Button Bold Text') }}</label>
+                            <input
+                                class="form-control"
+                                id="floating_button_bold_text"
+                                type="text"
+                                name="floating_button_bold_text"
+                                value="{{ $fSetting->floating_button_bold_text }}"
+                            >
+                        </div>
+                    </div>
+                    <div class="col-md-12 floating-button-input">
+                        <div class="mb-3">
+                            <label class="form-label">{{ __('Floating Button URL') }}</label>
+                            <input
+                                class="form-control"
+                                id="floating_button_link"
+                                type="text"
+                                name="floating_button_link"
+                                value="{{ $fSetting->floating_button_link }}"
+                            >
+                        </div>
+                    </div>
+
+                    <div class="floating-button-input mt-2 flex items-center justify-center">
+                        <a
+                            class="flex max-w-max items-center gap-3 rounded-xl bg-white px-3 py-2 text-sm text-[#002A40] text-opacity-60 shadow-lg transition-all duration-300 hover:-translate-y-1 hover:scale-110 hover:no-underline hover:shadow-md"
+                            id="floating_button_preview"
+                            data-fslightbox="html5-youtube-videos"
+                            href="{{ !empty($fSetting->floating_button_link) ? $fSetting->floating_button_link : '#' }}"
+                        >
+                            <span
+                                class="lqd-is-in-view inline-flex shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#3655df] via-[#A068FA] via-70% to-[#327BD1]"
+                            >
+                                <svg
+                                    style="padding: 16px;"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    width="45"
+                                    height="45"
+                                    viewBox="0 0 24 24"
+                                    stroke-width="2"
+                                    stroke="currentColor"
+                                    fill="none"
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                >
+                                    <path
+                                        stroke="none"
+                                        d="M0 0h24v24H0z"
+                                        fill="none"
+                                    ></path>
+                                    <path
+                                        d="M6 4v16a1 1 0 0 0 1.524 .852l13 -8a1 1 0 0 0 0 -1.704l-13 -8a1 1 0 0 0 -1.524 .852z"
+                                        stroke-width="0"
+                                        fill="#fff"
+                                    ></path>
+                                </svg>
+                            </span>
+                            <p class="[&amp;_strong]:block pt-2">{!! __($fSetting->floating_button_small_text ?? 'See it in action') !!}<strong class="text-[0.9rem] text-black">{!! __($fSetting->floating_button_bold_text ?? 'How it Works?') !!} &nbsp;</strong></p>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="row mb-4">
+                    <h3 class="mb-[25px] text-[20px]">{{ __('Footer Social Media Settings') }}</h3>
+                    <div class="col-md-12">
+                        <div class="mb-3">
+                            <label class="form-label">Facebook {{ __('Address') }}</label>
+                            <input
+                                class="form-control"
+                                id="frontend_footer_facebook"
+                                type="text"
+                                name="frontend_footer_facebook"
+                                value="{{ $setting->frontend_footer_facebook }}"
+                            >
+                        </div>
+                    </div>
+
+                    <div class="col-md-12">
+                        <div class="mb-3">
+                            <label class="form-label">Twitter {{ __('Address') }}</label>
+                            <input
+                                class="form-control"
+                                id="frontend_footer_twitter"
+                                type="text"
+                                name="frontend_footer_twitter"
+                                value="{{ $setting->frontend_footer_twitter }}"
+                            >
+                        </div>
+                    </div>
+
+                    <div class="col-md-12">
+                        <div class="mb-3">
+                            <label class="form-label">Instagram {{ __('Address') }}</label>
+                            <input
+                                class="form-control"
+                                id="frontend_footer_instagram"
+                                type="text"
+                                name="frontend_footer_instagram"
+                                value="{{ $setting->frontend_footer_instagram }}"
+                            >
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="row mb-4">
+                    <h3 class="mb-[25px] text-[20px]">{{ __('Advanced Settings') }}</h3>
+                    <div class="col-md-12">
+                        <div class="mb-3">
+                            <label class="form-label">{{ __('Custom Landing Page URL') }}</label>
+                            <input
+                                class="form-control"
+                                id="frontend_additional_url"
+                                type="text"
+                                name="frontend_additional_url"
+                                value="{{ $setting->frontend_additional_url }}"
+                            >
+                            <x-alert class="!mt-2">
+                                <p>
+                                    {{ __('Please provide full URL with http:// or https://') }}
+                                </p>
+                            </x-alert>
+                        </div>
+                    </div>
+
+                    <div class="col-md-12">
+                        <div class="mb-3">
+                            <label class="form-label">{{ __('Custom CSS URL') }}</label>
+                            <input
+                                class="form-control"
+                                id="frontend_custom_css"
+                                type="text"
+                                name="frontend_custom_css"
+                                value="{{ $setting->frontend_custom_css }}"
+                            >
+                            <x-alert class="!mt-2">
+                                <p>
+                                    {{ __('Please provide full URL with http:// or https://') }}
+                                </p>
+                            </x-alert>
+                        </div>
+                    </div>
+
+                    <div class="col-md-12">
+                        <div class="mb-3">
+                            <label class="form-label">{{ __('Custom JS URL') }}</label>
+                            <input
+                                class="form-control"
+                                id="frontend_custom_js"
+                                type="text"
+                                name="frontend_custom_js"
+                                value="{{ $setting->frontend_custom_js }}"
+                            >
+                            <x-alert class="!mt-2">
+                                <p>
+                                    {{ __('Please provide full URL with http:// or https://') }}
+                                </p>
+                            </x-alert>
+                        </div>
+                    </div>
+
+                    <div class="col-md-12">
+                        <div class="mb-3">
+                            <label class="form-label">
+                                {{ __('Code before </head>') }}
+                                <x-info-tooltip text="{{ __('Only accepts javascript code wrapped with <script> tags and HTML markup that is valid inside the </head> tag.') }}" />
+                            </label>
+                            <textarea
+                                class="form-control"
+                                id="frontend_code_before_head"
+                                name="frontend_code_before_head"
+                            >{{ $setting->frontend_code_before_head }}</textarea>
+                        </div>
+                    </div>
+
+                    <div class="col-md-12">
+                        <div class="mb-3">
+                            <label class="form-label">
+                                {{ __('Code before </body>') }}
+                                <x-info-tooltip text="{{ __('Only accepts javascript code wrapped with <script> tags and HTML markup that is valid inside the </body> tag.') }}" />
+                            </label>
+                            <textarea
+                                class="form-control"
+                                id="frontend_code_before_body"
+                                name="frontend_code_before_body"
+                            >{{ $setting->frontend_code_before_body }}</textarea>
+                        </div>
+                    </div>
+
+                </div>
+
+                <button
+                    class="btn btn-primary w-full"
+                    id="settings_button"
+                    form="settings_form"
                 >
-                    <span class="lqd-is-in-view inline-flex shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#3655df] via-[#A068FA] via-70% to-[#327BD1]">
-                        <svg
-                            style="padding: 16px;"
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="45"
-                            height="45"
-                            viewBox="0 0 24 24"
-                            stroke-width="2"
-                            stroke="currentColor"
-                            fill="none"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                        >
-                            <path
-                                stroke="none"
-                                d="M0 0h24v24H0z"
-                                fill="none"
-                            ></path>
-                            <path
-                                d="M6 4v16a1 1 0 0 0 1.524 .852l13 -8a1 1 0 0 0 0 -1.704l-13 -8a1 1 0 0 0 -1.524 .852z"
-                                stroke-width="0"
-                                fill="#fff"
-                            ></path>
-                        </svg>
-                    </span>
-                    <p class="[&amp;_strong]:block pt-2">{!! __($fSetting->floating_button_small_text ?? 'See it in action') !!}<strong class="text-[0.9rem] text-black">{!! __($fSetting->floating_button_bold_text ?? 'How it Works?') !!} &nbsp;</strong></p>
-                </a>
-            </div>
-        </div>
-
-        <div class="row mb-4">
-            <h3 class="mb-[25px] text-[20px]">{{ __('Footer Social Media Settings') }}</h3>
-            <div class="col-md-12">
-                <div class="mb-3">
-                    <label class="form-label">Facebook {{ __('Address') }}</label>
-                    <input
-                        class="form-control"
-                        id="frontend_footer_facebook"
-                        type="text"
-                        name="frontend_footer_facebook"
-                        value="{{ $setting->frontend_footer_facebook }}"
-                    >
-                </div>
-            </div>
-
-            <div class="col-md-12">
-                <div class="mb-3">
-                    <label class="form-label">Twitter {{ __('Address') }}</label>
-                    <input
-                        class="form-control"
-                        id="frontend_footer_twitter"
-                        type="text"
-                        name="frontend_footer_twitter"
-                        value="{{ $setting->frontend_footer_twitter }}"
-                    >
-                </div>
-            </div>
-
-            <div class="col-md-12">
-                <div class="mb-3">
-                    <label class="form-label">Instagram {{ __('Address') }}</label>
-                    <input
-                        class="form-control"
-                        id="frontend_footer_instagram"
-                        type="text"
-                        name="frontend_footer_instagram"
-                        value="{{ $setting->frontend_footer_instagram }}"
-                    >
-                </div>
-            </div>
-
-        </div>
-
-        <div class="row mb-4">
-            <h3 class="mb-[25px] text-[20px]">{{ __('Advanced Settings') }}</h3>
-            <div class="col-md-12">
-                <div class="mb-3">
-                    <label class="form-label">{{ __('Custom Landing Page URL') }}</label>
-                    <input
-                        class="form-control"
-                        id="frontend_additional_url"
-                        type="text"
-                        name="frontend_additional_url"
-                        value="{{ $setting->frontend_additional_url }}"
-                    >
-                    <x-alert class="!mt-2">
-                        <p>
-                            {{ __('Please provide full URL with http:// or https://') }}
-                        </p>
-                    </x-alert>
-                </div>
-            </div>
-
-            <div class="col-md-12">
-                <div class="mb-3">
-                    <label class="form-label">{{ __('Custom CSS URL') }}</label>
-                    <input
-                        class="form-control"
-                        id="frontend_custom_css"
-                        type="text"
-                        name="frontend_custom_css"
-                        value="{{ $setting->frontend_custom_css }}"
-                    >
-                    <x-alert class="!mt-2">
-                        <p>
-                            {{ __('Please provide full URL with http:// or https://') }}
-                        </p>
-                    </x-alert>
-                </div>
-            </div>
-
-            <div class="col-md-12">
-                <div class="mb-3">
-                    <label class="form-label">{{ __('Custom JS URL') }}</label>
-                    <input
-                        class="form-control"
-                        id="frontend_custom_js"
-                        type="text"
-                        name="frontend_custom_js"
-                        value="{{ $setting->frontend_custom_js }}"
-                    >
-                    <x-alert class="!mt-2">
-                        <p>
-                            {{ __('Please provide full URL with http:// or https://') }}
-                        </p>
-                    </x-alert>
-                </div>
-            </div>
-
-            <div class="col-md-12">
-                <div class="mb-3">
-                    <label class="form-label">
-                        {{ __('Code before </head>') }}
-                        <x-info-tooltip text="{{ __('Only accepts javascript code wrapped with <script> tags and HTML markup that is valid inside the </head> tag.') }}" />
-                    </label>
-                    <textarea
-                        class="form-control"
-                        id="frontend_code_before_head"
-                        name="frontend_code_before_head"
-                    >{{ $setting->frontend_code_before_head }}</textarea>
-                </div>
-            </div>
-
-            <div class="col-md-12">
-                <div class="mb-3">
-                    <label class="form-label">
-                        {{ __('Code before </body>') }}
-                        <x-info-tooltip text="{{ __('Only accepts javascript code wrapped with <script> tags and HTML markup that is valid inside the </body> tag.') }}" />
-                    </label>
-                    <textarea
-                        class="form-control"
-                        id="frontend_code_before_body"
-                        name="frontend_code_before_body"
-                    >{{ $setting->frontend_code_before_body }}</textarea>
-                </div>
-            </div>
-
-        </div>
-
-        <button
-            class="btn btn-primary w-full"
-            id="settings_button"
-            form="settings_form"
-        >
-            {{ __('Save') }}
-        </button>
+                    {{ __('Save') }}
+                </button>
     </form>
 @endsection
 

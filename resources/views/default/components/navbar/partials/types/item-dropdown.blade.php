@@ -1,5 +1,5 @@
 @php
-    $href = $item['route_slug'] ? route($item['route'], $item['route_slug']) : route($item['route']);
+    $href = $item['route_slug'] && $item['route'] ? route($item['route'], $item['route_slug']) : route($item['route'] ?: 'default');
     $is_active = $href === url()->current();
 
     if (!$is_active) {

@@ -45,7 +45,7 @@ class TokenSeeder extends Seeder
 			# gemini
 			['aiEngine' => AIEngine::GEMINI, 'type' => AITokenType::WORD, 'key' => 'gemini-1.5-pro-latest'],
 			['aiEngine' => AIEngine::GEMINI, 'type' => AITokenType::WORD, 'key' => 'gemini-pro'],
-			['aiEngine' => AIEngine::GEMINI, 'type' => AITokenType::WORD, 'key' => 'gemini-pro-vision'],
+			['aiEngine' => AIEngine::GEMINI, 'type' => AITokenType::WORD, 'key' => 'gemini-1.5-flash'],
 			# unsplash
 			['aiEngine' => AIEngine::UNSPLASH, 'type' => AITokenType::IMAGE, 'key' => 'unsplash'],
 			# pexels

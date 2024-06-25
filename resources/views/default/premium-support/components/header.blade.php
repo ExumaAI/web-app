@@ -64,7 +64,7 @@
         <div class="flex justify-end">
             <a
                 class="flex items-center gap-2 rounded-full border border-white/15 bg-black/15 px-7 py-3 leading-tight text-white/90 backdrop-blur-md transition-all hover:scale-110 hover:bg-white hover:text-black max-xl:hidden"
-                href="https://buy.stripe.com/7sI4hfazDfb9alO6pj"
+                href="{{ app(\App\Repositories\ExtensionRepository::class)->subscriptionPayment() }}"
                 target="_blank"
             >
                 @lang('Start Free Trial')

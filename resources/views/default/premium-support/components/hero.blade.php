@@ -32,7 +32,7 @@
                         variant="primary"
                         target="_blank"
                         size="lg"
-                        href="https://buy.stripe.com/7sI4hfazDfb9alO6pj"
+                        href="{{ app(\App\Repositories\ExtensionRepository::class)->subscriptionPayment() }}"
                         style="background: linear-gradient(0deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.07)), radial-gradient(69.44% 69.44% at 50.15% 30.56%, #9A67FE 0%, #33889B 100%);"
                     >
                         @lang('Start your free trial')

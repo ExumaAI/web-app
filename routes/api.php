@@ -107,6 +107,12 @@ Route::middleware('auth:api')->group(function () {
         Route::post('/favorite-openai-list-remove', 'App\Http\Controllers\Api\AIWriterController@removeFromFavoriteOpenaiList'); # returns all favorited openais id list [1,2,3] related to current user
     });
 
+    Route::prefix('aiimage')->group(function () {
+        Route::get('/versions',               'App\Http\Controllers\Api\AIImageController@versions'); # returns the model versions
+        Route::get('/check-availability',     'App\Http\Controllers\Api\AIImageController@checkActiveGeneration'); # returns if there is an active generation
+        Route::post('/generate-image',     'App\Http\Controllers\Api\AIImageController@generateImage'); # returns generated images list
+    });
+
     Route::prefix('payment')->group(function () { 
         Route::get("/", "App\Http\Controllers\Api\PaymentApiController@getCurrentPlan");
         Route::get("/check-revenue-cat", "App\Http\Controllers\Api\PaymentApiController@checkRevenueCat");

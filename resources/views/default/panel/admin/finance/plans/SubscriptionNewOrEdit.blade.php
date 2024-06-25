@@ -113,6 +113,16 @@
                 </div>
                 <x-forms.input
                     class:container="w-full mt-4"
+                    id="description"
+                    name="description"
+                    label="{{ __('Plan Description') }}"
+                    size="lg"
+                    placeholder="{{ __('Plan Description') }}"
+                    value="{{ isset($subscription) ? $subscription->description : null }}"
+                    required
+                />
+                <x-forms.input
+                    class:container="w-full mt-4"
                     id="is_team_plan"
                     type="checkbox"
                     name="is_team_plan"

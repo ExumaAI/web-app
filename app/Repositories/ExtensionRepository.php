@@ -27,11 +27,11 @@ class ExtensionRepository implements ExtensionRepositoryInterface
         return $this->all(true);
     }
 
-    public function all(bool $isTheme =false)
+    public function all(bool $isTheme = false)
     {
-        $response = $this->request('get','extension', [
+        $response = $this->request('get', 'extension', [
             'is_theme' => $isTheme,
-            'is_beta' => true
+            'is_beta' => true,
         ]);
 
         if ($response->ok()) {
@@ -77,7 +77,7 @@ class ExtensionRepository implements ExtensionRepositoryInterface
 
     public function request(string $method, string $route, array $body = [], $fullUrl = null)
     {
-        $fullUrl  = $fullUrl ?? self::API_URL . $route;
+        $fullUrl = $fullUrl ?? self::API_URL.$route;
 
         return Http::withHeaders([
             'Accept' => 'application/json',
@@ -85,7 +85,7 @@ class ExtensionRepository implements ExtensionRepositoryInterface
             'x-domain' => request()->getHost(),
             'x-domain-key' => $this->domainKey(),
             'x-license-type' => $this->licenseType(),
-            'x-app-key' => $this->appKey()
+            'x-app-key' => $this->appKey(),
         ])->when($method === 'post', function ($http) use ($fullUrl, $body) {
             return $http->post($fullUrl, $body);
         }, function ($http) use ($fullUrl, $body) {
@@ -120,7 +120,7 @@ class ExtensionRepository implements ExtensionRepositoryInterface
         }
     }
 
-    private function dbExtensionCount(bool $isTheme =false): int
+    private function dbExtensionCount(bool $isTheme = false): int
     {
         return Extension::query()
             ->where('is_theme', $isTheme)
@@ -140,5 +140,22 @@ class ExtensionRepository implements ExtensionRepositoryInterface
     public function domainKey()
     {
         return app(ApplicationStatusRepository::class)->getVariable('liquid_license_domain_key') ?: Helper::settingTwo('liquid_license_domain_key');
+    }
+
+    public function subscription()
+    {
+        return $this->request('get', 'subscription');
+    }
+
+    public function subscriptionPayment()
+    {
+        return cache()->remember('subscription_payment', 60 * 60 * 24, function () {
+
+            if ($this->subscription()->json('payment')) {
+                return $this->subscription()->json('payment');
+            }
+
+            return '';
+        });
     }
 }

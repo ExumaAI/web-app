@@ -10,6 +10,8 @@ interface ExtensionRepositoryInterface extends PortalRepositoryInterface
 
     public function themes();
 
+    public function subscription();
+
     public function all(bool $isTheme =false);
 
     public function find(string $slug);

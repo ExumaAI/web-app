@@ -524,9 +524,17 @@ function checkIfTrial(){
     return PaymentProcessController::checkIfTrial();
 }
 
-function getSubscriptionName(){
-    $user = Auth::user();
-    return PaymentPlans::where('id', getSubscription()->name)->first()->name;
+function getSubscriptionName()
+{
+    $subscription = getSubscription();
+
+    if ($subscription) {
+        $plan = PaymentPlans::where('id', $subscription->name)->first();
+
+        return $plan?->name;
+    }
+
+    return '';
 }
 
 function getYokassaSubscriptionName(){

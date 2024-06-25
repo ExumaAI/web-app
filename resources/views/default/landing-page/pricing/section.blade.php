@@ -18,7 +18,7 @@
                             'target' => '#pricing-monthly',
                             'label' => __('Monthly'),
                             'active' => true,
-                            'currency' => $currency
+                            'currency' => $currency,
                         ])
                     @endif
                     @if ($plansSubscriptionAnnual->count() > 0)
@@ -26,21 +26,21 @@
                             'target' => '#pricing-annual',
                             'label' => __('Annual'),
                             'badge' => __($fSectSettings->pricing_save_percent),
-                            'currency' => $currency
+                            'currency' => $currency,
                         ])
                     @endif
                     @if ($plansSubscriptionLifetime->count() > 0)
                         @include('landing-page.pricing.item-trigger', [
                             'target' => '#pricing-lifetime',
                             'label' => __('Lifetime'),
-                            'currency' => $currency
+                            'currency' => $currency,
                         ])
                     @endif
                     @if ($plansPrepaid->count() > 0)
                         @include('landing-page.pricing.item-trigger', [
                             'target' => '#pricing-prepaid',
                             'label' => __('Pre-Paid'),
-                            'currency' => $currency
+                            'currency' => $currency,
                         ])
                     @endif
                 </div>
@@ -49,7 +49,7 @@
                         <div id="pricing-monthly">
                             <div class="grid grid-cols-3 gap-2 max-md:grid-cols-1">
                                 @foreach ($plansSubscriptionMonthly as $plan)
-                                    @include('landing-page.pricing.item-content', ['period' => $plan->frequency == 'monthly' ? 'month' : 'year', ])
+                                    @include('landing-page.pricing.item-content', ['period' => $plan->frequency == 'monthly' ? 'Per Month' : 'Per Year'])
                                 @endforeach
                             </div>
                         </div>
@@ -59,7 +59,7 @@
                         >
                             <div class="grid grid-cols-3 gap-2 max-md:grid-cols-1">
                                 @foreach ($plansSubscriptionAnnual as $plan)
-                                    @include('landing-page.pricing.item-content', ['period' => $plan->frequency == 'monthly' ? 'month' : 'year'])
+                                    @include('landing-page.pricing.item-content', ['period' => $plan->frequency == 'monthly' ? 'Per Month' : 'Per Year'])
                                 @endforeach
                             </div>
                         </div>
@@ -79,7 +79,7 @@
                         >
                             <div class="grid grid-cols-3 gap-2 max-md:grid-cols-1">
                                 @foreach ($plansSubscriptionLifetime as $plan)
-                                    @include('landing-page.pricing.item-content', ['period' => $plan->frequency == 'lifetime_monthly' ? 'month' : 'year'])
+                                    @include('landing-page.pricing.item-content', ['period' => __('One Time Payment')])
                                 @endforeach
                             </div>
                         </div>

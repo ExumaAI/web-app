@@ -17,7 +17,8 @@ class UserOpenai extends Model
     ];
 
     protected $appends = [
-        'format_date'
+        'format_date',
+		'generator_type'
     ];
 
     // STORAGE
@@ -43,5 +44,14 @@ class UserOpenai extends Model
         else {
             return null;
         }
+    }
+	public function generatorWithType(): BelongsTo
+    {
+        return $this->belongsTo(OpenAIGenerator::class, 'openai_id', 'id')->select(['id', 'type']);
+    }
+
+    public function getGeneratorTypeAttribute()
+    {
+        return $this->generator?->type;
     }
 }

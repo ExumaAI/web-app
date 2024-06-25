@@ -19,7 +19,7 @@ $currencySymbol = $currency ?? currency()->symbol;
         @endif
 
     </p>
-    <p class="mb-4 text-sm opacity-60">{{ __('per ' . $period) }}</p>
+    <p class="mb-4 text-sm opacity-60">{{ __($period) }}</p>
     <a
         class="mb-6 block w-full rounded-lg bg-black bg-opacity-[0.03] p-3 font-medium text-heading-foreground transition-colors hover:bg-black hover:text-white"
         href="{{ $buttonLink }}"

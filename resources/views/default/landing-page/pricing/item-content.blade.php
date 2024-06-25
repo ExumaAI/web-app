@@ -3,7 +3,7 @@
     featured="{{ $plan->is_featured == 1 }}"
     title="{!! $plan->name !!}"
     price="{{ formatPrice($plan->price, 2) }}"
-    period="{{ $period ?? $plan->frequency == 'monthly' ? 'month' : 'year' }}"
+    period="{{ $period }}"
     buttonLabel="{{ __('Select') }} {{ __($plan->name) }}"
     buttonLink="{{ route('register', ['plan' => $plan->id]) }}"
     activeFeatures="{{ $plan->features }}"

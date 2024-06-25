@@ -32,8 +32,6 @@ class SettingsController extends Controller
 
     public function generalSave(Request $request)
     {
-
-        // TODO SETTINGS
         if (Helper::appIsNotDemo()) {
             $settings = Setting::first();
             $settings_two = SettingTwo::first();
@@ -404,12 +402,10 @@ class SettingsController extends Controller
     public function unsplashapiSave(Request $request)
     {
         $settings = SettingTwo::first();
-        // TODO SETTINGS
         if (Helper::appIsNotDemo()) {
             $settings->unsplash_api_key = $request->unsplash_api_key;
             $settings->save();
         }
-
         return response()->json([], 200);
     }
 
@@ -523,7 +519,6 @@ class SettingsController extends Controller
 
     public function clipdropSave(Request $request)
     {
-        // TODO SETTINGS
         if (Helper::appIsNotDemo()) {
             setting([
                 'clipdrop_api_key' => $request->clipdrop_api_key
@@ -660,7 +655,6 @@ class SettingsController extends Controller
     {
         $settings = Setting::first();
         $settings_two = SettingTwo::first();
-        // TODO SETTINGS
         if (Helper::appIsNotDemo()) {
             $settings->openai_api_secret = $request->openai_api_secret;
             $settings->openai_default_model = $request->openai_default_model;
@@ -699,7 +693,6 @@ class SettingsController extends Controller
     public function stablediffusionSave(Request $request)
     {
         $settings = SettingTwo::first();
-        // TODO SETTINGS
         if (Helper::appIsNotDemo()) {
             $settings->stable_diffusion_api_key = $request->stable_diffusion_api_key;
             $settings->stablediffusion_default_language = $request->stablediffusion_default_language;
@@ -747,7 +740,6 @@ class SettingsController extends Controller
     {
         $settings = Setting::first();
         $settings_two = SettingTwo::first();
-        // TODO SETTINGS
         if (Helper::appIsNotDemo()) {
             $settings->gcs_file = $request->gcs_file;
             $settings->gcs_name = $request->gcs_name;
@@ -781,7 +773,6 @@ class SettingsController extends Controller
     public function invoiceSave(Request $request)
     {
         $settings = Setting::first();
-        // TODO SETTINGS
         if (Helper::appIsNotDemo()) {
             $settings->invoice_currency = $request->invoice_currency;
             $settings->invoice_name = $request->invoice_name;
@@ -806,7 +797,6 @@ class SettingsController extends Controller
 
     public function paymentSave(Request $request)
     {
-        // TODO SETTINGS
         if (Helper::appIsNotDemo()) {
             $settings = Setting::first();
             $settings->default_currency = $request->default_currency;
@@ -829,7 +819,6 @@ class SettingsController extends Controller
 
     public function affiliateSave(Request $request)
     {
-        // TODO SETTINGS
         if (Helper::appIsNotDemo()) {
             $settings = Setting::first();
             $settings->affiliate_minimum_withdrawal = $request->affiliate_minimum_withdrawal;
@@ -847,7 +836,6 @@ class SettingsController extends Controller
 
     public function smtpSave(Request $request)
     {
-        // TODO SETTINGS
         if (Helper::appIsNotDemo()) {
             $settings = Setting::first();
             $settings->smtp_host = $request->smtp_host;
@@ -1018,7 +1006,6 @@ class SettingsController extends Controller
 
     public function storagesave(Request $request)
     {
-        // TODO SETTINGS
         if (Helper::appIsNotDemo()) {
             $settings_two = SettingTwo::first();
             $settings_two->ai_image_storage = $request->ai_image_storage;

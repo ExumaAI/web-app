@@ -82,6 +82,7 @@ Route::group(['prefix' => LaravelLocalization::setLocale(), 'middleware' => ['lo
                 ], function () {
                     Route::get('share/{userIntegration}/workbook/{userOpenai}', 'workbook')->name('share.workbook');
                     Route::post('share/{userIntegration}/workbook/{userOpenai}', 'storeWorkbook');
+                    Route::post('share/{userIntegration}/image/{userOpenai}', 'storeImage')->name('share.image');
                 });
 
                 Route::resource('integration', IntegrationController::class)->only(['index', 'edit', 'update']);
@@ -191,6 +192,7 @@ Route::group(['prefix' => LaravelLocalization::setLocale(), 'middleware' => ['lo
 
                             // make favorite
                             Route::post('/favorite', [UserController::class, 'docsFavorite'])->name('favorite');
+							Route::post('/overview', [UserController::class, 'overview'])->name('overview');
                         });
 
                         Route::middleware('hasTokens')->group(function () {
@@ -272,6 +274,8 @@ Route::group(['prefix' => LaravelLocalization::setLocale(), 'middleware' => ['lo
                 Route::prefix('settings')->name('settings.')->group(function () {
                     Route::get('/', [UserController::class, 'userSettings'])->name('index');
                     Route::post('/save', [UserController::class, 'userSettingsSave']);
+					Route::get('/delete-account', [UserController::class, 'deleteAccount'])->name('deleteAccount');
+					Route::post('/delete-account', [UserController::class, 'deleteAccountRequest'])->name('deleteAccount.send');
                 });
                 // Subscription and payment
                 Route::prefix('payment')->name('payment.')->group(function () {
@@ -381,6 +385,9 @@ Route::group(['prefix' => LaravelLocalization::setLocale(), 'middleware' => ['lo
                         Route::get('activity', [AdminController::class, 'usersActivity'])->name('activity');
                         Route::get('dashboard', [AdminController::class, 'usersDashboard'])->name('dashboard');
                         Route::get('export/{type}', [AdminController::class, 'userExport'])->name('userExport');
+
+						Route::get('deletion/requests', [AdminController::class, 'deletionRequests'])->name('deletion.reqs');
+						Route::post('deletion/requests/{id}', [AdminController::class, 'deletionRequest'])->name('deletion.req');
                     });
 
                     //Adsense
@@ -640,6 +647,10 @@ Route::group(['prefix' => LaravelLocalization::setLocale(), 'middleware' => ['lo
                             Route::get('/action/delete/{id}', [AdminController::class, 'frontendGeneratorlistDelete'])->name('delete');
                             Route::post('/action/save', [AdminController::class, 'frontendGeneratorlistCreateOrUpdateSave']);
                         });
+
+						// socialmedia
+						Route::get('/socialmedia', [AdminController::class, 'socialmedia'])->name('socialmedia');
+						Route::post('/socialmedia', [AdminController::class, 'socialmediaSave'])->name('socialmedia.save');
                     });
 
                     Route::resource('advertis', AdvertisController::class)->parameter('advertis', 'advertis');

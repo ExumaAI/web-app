@@ -6,6 +6,7 @@
     <form
         class="flex flex-col gap-5"
         id="item_edit_form"
+        enctype="multipart/form-data"
         onsubmit="return howitWorksSave({{ $howitWorks->id ?? null }});"
     >
 
@@ -28,6 +29,40 @@
             size="lg"
             required
         >{{ isset($howitWorks) ? $howitWorks->title : null }}</x-forms.input>
+
+        <x-forms.input
+            id="bg_color"
+            name="bg_color"
+            label="{{ __('Background Color') }}"
+            type="color"
+            size="lg"
+            value="{{ isset($howitWorks) ? $howitWorks->bg_color : null }}"
+        />
+
+        <x-forms.input
+            id="bg_image"
+            name="bg_image"
+            label="{{ __('Background Image') }}"
+            type="file"
+            size="lg"
+        />
+
+        <x-forms.input
+            id="text_color"
+            name="text_color"
+            label="{{ __('Text Color') }}"
+            type="color"
+            size="lg"
+            value="{{ isset($howitWorks) ? $howitWorks->text_color : null }}"
+        />
+
+        <x-forms.input
+            id="image"
+            name="image"
+            label="{{ __('Image') }}"
+            type="file"
+            size="lg"
+        />
 
         <x-button
             id="item_edit_button"

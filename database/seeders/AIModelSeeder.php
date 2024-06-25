@@ -45,7 +45,7 @@ class AIModelSeeder extends Seeder
             # Gemini
             ['aiEngine' => AIEngine::GEMINI, 'key' => 'gemini-1.5-pro-latest', 'title' => 'Gemini 1.5 Pro (Preview only) (Model last updated: April 2024)'],
             ['aiEngine' => AIEngine::GEMINI, 'key' => 'gemini-pro', 'title' => 'Gemini 1.0 Pro (Model last updated: February 2024)'],
-            ['aiEngine' => AIEngine::GEMINI, 'key' => 'gemini-pro-vision', 'title' => 'Gemini 1.0 Pro Vision (Model last updated: February 2023)'],
+            ['aiEngine' => AIEngine::GEMINI, 'key' => 'gemini-1.5-flash', 'title' => 'Gemini 1.0 Pro Vision (Model last updated: February 2023)'],
             # Unsplash
             ['aiEngine' => AIEngine::UNSPLASH, 'key' => 'unsplash', 'title' => 'Unsplash for AI Article Wizard'],
             # Pexels

@@ -112,6 +112,8 @@
 			@apply px-4;
 		}
 	}
+
+	@import './components/outline-glow.scss';
 }
 
 @layer utilities {

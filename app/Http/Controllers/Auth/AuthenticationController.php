@@ -202,8 +202,7 @@ class AuthenticationController extends Controller
             }
         }
 
-        //TODO DEMO
-        if (Helper::appIsDemo()) {
+		if (Helper::appIsDemo()) {
             $user = User::create([
                 'team_id' => $teamMember?->team_id,
                 'team_manager_id' => $teamMember?->team?->user_id,

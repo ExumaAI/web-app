@@ -7,16 +7,16 @@
         <h2 class="mb-5 flex items-start leading-none text-heading-foreground">
             @lang('Order Summary')
         </h2>
-        <p class="mb-0 mt-1 flex items-start leading-none text-heading-foreground">
-            {{ __($plan->name) }} / {{ $plan->type == 'prepaid' ? __('One time') : __(formatCamelCase($plan->frequency)) }} @lang('Plan')
-        <div class="ms-2 inline-flex flex-col items-start gap-2 text-[0.3em]">
+        <div class="inline-flex flex-col items-start gap-2">
+            <p class="mb-0 mt-1 flex items-start leading-none text-heading-foreground">
+                {{ __($plan->name) }} / {{ $plan->type == 'prepaid' ? __('One time') : __(formatCamelCase($plan->frequency)) }} @lang('Plan')
+            </p>
             @if ($plan->is_featured == 1)
                 <div class="inline-flex rounded-full bg-gradient-to-r from-[#ece7f7] via-[#e7c5e6] to-[#e7ebf9] px-3 py-1 text-3xs text-black">
                     {{ __('Popular plan') }}
                 </div>
             @endif
         </div>
-        </p>
 
         <ul class="list-unstyled">
             <hr>

@@ -14,7 +14,8 @@ class Item extends Component
      */
     public function __construct(
 		public UserOpenai $entry,
-		public string $style = 'min'
+		public string $style = 'min',
+		public bool $hideFav = false
 	) {}
 
     /**

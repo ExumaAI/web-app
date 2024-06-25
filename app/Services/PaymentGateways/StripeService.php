@@ -137,7 +137,6 @@ class StripeService
             $data = [
                 'unit_amount' => $price,
                 'currency' => $currency,
-				'description' => 'AI Services',
                 'product' => $product->product_id,
             ];
             // if Subscription price and its not lifetime subscription

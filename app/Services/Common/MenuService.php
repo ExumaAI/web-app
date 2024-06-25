@@ -479,7 +479,7 @@ class MenuService
                 'active_condition' => [
                     'dashboard.user.apikeys.*',
                 ],
-                'show_condition' => Helper::appIsDemo() && Helper::setting('user_api_option', null, $setting),
+                'show_condition' => Helper::appIsDemo() || Helper::setting('user_api_option', null, $setting),
             ],
             'affiliates' => [
                 'parent_key' => null,
@@ -755,6 +755,24 @@ class MenuService
                 'show_condition' => true,
                 'is_admin' => true
             ],
+			'user_deletion' => [
+                'parent_key' => 'user_management',
+                'key' => 'user_deletion',
+                'route' => 'dashboard.admin.users.deletion.reqs',
+                'label' => 'User Deletion Requests',
+                'icon' => 'tabler-users',
+                'svg' => null,
+                'order' => 34,
+                'is_active' => true,
+                'params' => [],
+                'type' => 'item',
+                'extension' => null,
+                'active_condition' => [
+                    'dashboard.admin.users.deletion.reqs',
+                ],
+                'show_condition' => true,
+                'is_admin' => true
+            ],
 
             'google_adsense' => [
                 'parent_key' => null,
@@ -1024,6 +1042,24 @@ class MenuService
                 'show_condition' => true,
                 'is_admin' => true
             ],
+			'social_media_accounts' => [
+				'parent_key' => 'frontend',
+				'key' => 'social_media_accounts',
+				'route' => 'dashboard.admin.frontend.socialmedia',
+				'label' => 'Social Media Accounts',
+				'icon' => 'tabler-list-details',
+				'svg' => null,
+				'order' => 50,
+				'is_active' => true,
+				'params' => [],
+				'type' => 'item',
+				'extension' => null,
+				'active_condition' => [
+					'dashboard.admin.frontend.socialmedia',
+				],
+				'show_condition' => true,
+				'is_admin' => true
+			],
             'auth_settings' => [
                 'parent_key' => 'frontend',
                 'key' => 'auth_settings',
@@ -1402,7 +1438,7 @@ class MenuService
             'api_integration' => [
                 'parent_key' => null,
                 'key' => 'api_integration',
-                'route' => 'dashboard.admin.settings.general',
+                'route' => 'default',
                 'label' => 'API Integration',
                 'icon' => 'tabler-api',
                 'svg' => null,
@@ -1412,7 +1448,7 @@ class MenuService
                 'type' => 'item',
                 'extension' => null,
                 'active_condition' => [
-                    'dashboard.admin.settings.*', 'elseyyid.translations.home', 'elseyyid.translations.lang',
+                    'dashboard.admin.settings.openai', 'dashboard.admin.settings.gemini.*'
                 ],
                 'show_condition' => true,
                 'is_admin' => true

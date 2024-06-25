@@ -814,7 +814,7 @@
                 "tags": [
                     "AI Writer"
                 ],
-                "summary": "Build AI-generated content please see the function there is custom inputes foreach template",
+                "summary": "Build AI-generated content please see the function there is custom inputs foreach template",
                 "description": "Build AI-generated content based on user input.",
                 "operationId": "buildOutputApi",
                 "requestBody": {
@@ -974,6 +974,72 @@
                                 }
                             }
                         }
+                    }
+                },
+                "security": [
+                    {
+                        "passport": []
+                    }
+                ]
+            }
+        },
+        "/api/aiimage/versions": {
+            "get": {
+                "tags": [
+                    "AI Image Generation"
+                ],
+                "summary": "Get Model Versions for AI Image Generation (DALL-E, Stable Diffusion) from settings",
+                "description": "Get Model Versions for AI Image Generation",
+                "operationId": "versions",
+                "responses": {
+                    "200": {
+                        "description": "Successful operation"
+                    }
+                },
+                "security": [
+                    {
+                        "passport": []
+                    }
+                ]
+            }
+        },
+        "/api/aiimage/check-availability": {
+            "get": {
+                "tags": [
+                    "AI Image Generation"
+                ],
+                "summary": "Check if image generation is active / available",
+                "description": "Check if image generation is active",
+                "operationId": "checkActiveGeneration",
+                "responses": {
+                    "200": {
+                        "description": "Image generation is available."
+                    },
+                    "409": {
+                        "description": "Image generation in progress. Please try again later."
+                    }
+                },
+                "security": [
+                    {
+                        "passport": []
+                    }
+                ]
+            }
+        },
+        "/api/aiimage/generate-image": {
+            "post": {
+                "tags": [
+                    "AI Image Generation"
+                ],
+                "summary": "Generate Image (DALL-E / Stable Diffusion parameters required in request)",
+                "description": "Generate Image",
+                "operationId": "generateImage",
+                "responses": {
+                    "200": {
+                        "description": "Image generation successful. Image info in json response [images]."
+                    },
+                    "409": {
+                        "description": "Image generation in progress. Please try again later."
                     }
                 },
                 "security": [
@@ -3021,6 +3087,34 @@
                         "passport": []
                     }
                 ]
+            },
+            "delete": {
+                "tags": [
+                    "User Profile"
+                ],
+                "summary": "Delete user account",
+                "description": "Get the profile of the authenticated user and delete account.",
+                "operationId": "UserController::destroy",
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "passport": []
+                    }
+                ]
             }
         },
         "/api/support/": {
@@ -3346,9 +3440,9 @@
                 "scheme": "https",
                 "flows": {
                     "password": {
-                        "authorizationUrl": "http://127.0.0.1:8000/oauth/authorize",
-                        "tokenUrl": "http://127.0.0.1:8000/oauth/token",
-                        "refreshUrl": "http://127.0.0.1:8000/token/refresh",
+                        "authorizationUrl": "http://localhost/oauth/authorize",
+                        "tokenUrl": "http://localhost/oauth/token",
+                        "refreshUrl": "http://localhost/token/refresh",
                         "scopes": []
                     }
                 }

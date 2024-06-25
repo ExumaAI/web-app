@@ -2,6 +2,10 @@
   "_fetch-0a44356a.js": {
     "file": "assets/fetch-0a44356a.js"
   },
+  "public/themes/magic-works/assets/img/bg.png": {
+    "file": "assets/bg-7c484055.png",
+    "src": "public/themes/magic-works/assets/img/bg.png"
+  },
   "public/themes/neura/assets/img/bg/bg-2.jpeg": {
     "file": "assets/bg-2-59f936fa.jpeg",
     "src": "public/themes/neura/assets/img/bg/bg-2.jpeg"
@@ -15,7 +19,7 @@
     "src": "public/themes/sleek/assets/img/bg/bg.png"
   },
   "resources/views/classic/js/app.js": {
-    "file": "assets/app-2d979979.js",
+    "file": "assets/app-14080a5e.js",
     "imports": [
       "_fetch-0a44356a.js"
     ],
@@ -23,17 +27,17 @@
     "src": "resources/views/classic/js/app.js"
   },
   "resources/views/classic/scss/dashboard.scss": {
-    "file": "assets/dashboard-1027fe74.css",
+    "file": "assets/dashboard-2d4a0f6c.css",
     "isEntry": true,
     "src": "resources/views/classic/scss/dashboard.scss"
   },
   "resources/views/classic/scss/landing-page.scss": {
-    "file": "assets/landing-page-dc5370af.css",
+    "file": "assets/landing-page-d79bcf8b.css",
     "isEntry": true,
     "src": "resources/views/sleek/scss/landing-page.scss"
   },
   "resources/views/creative/js/app.js": {
-    "file": "assets/app-14080a5e.js",
+    "file": "assets/app-aadbf4ab.js",
     "imports": [
       "_fetch-0a44356a.js"
     ],
@@ -41,17 +45,35 @@
     "src": "resources/views/creative/js/app.js"
   },
   "resources/views/creative/scss/dashboard.scss": {
-    "file": "assets/dashboard-952de0cb.css",
+    "file": "assets/dashboard-051cc503.css",
     "isEntry": true,
-    "src": "resources/views/default/scss/dashboard.scss"
+    "src": "resources/views/myai-tools/scss/dashboard.scss"
   },
   "resources/views/creative/scss/landing-page.scss": {
-    "file": "assets/landing-page-974d3954.css",
+    "file": "assets/landing-page-69239a7c.css",
     "isEntry": true,
     "src": "resources/views/creative/scss/landing-page.scss"
   },
+  "resources/views/dark/js/app.js": {
+    "file": "assets/app-57f2f828.js",
+    "imports": [
+      "_fetch-0a44356a.js"
+    ],
+    "isEntry": true,
+    "src": "resources/views/dark/js/app.js"
+  },
+  "resources/views/dark/scss/dashboard.scss": {
+    "file": "assets/dashboard-051cc503.css",
+    "isEntry": true,
+    "src": "resources/views/myai-tools/scss/dashboard.scss"
+  },
+  "resources/views/dark/scss/landing-page.scss": {
+    "file": "assets/landing-page-eed5d16c.css",
+    "isEntry": true,
+    "src": "resources/views/dark/scss/landing-page.scss"
+  },
   "resources/views/default/js/app.js": {
-    "file": "assets/app-abaa0f1c.js",
+    "file": "assets/app-2d979979.js",
     "imports": [
       "_fetch-0a44356a.js"
     ],
@@ -59,17 +81,53 @@
     "src": "resources/views/default/js/app.js"
   },
   "resources/views/default/scss/dashboard.scss": {
-    "file": "assets/dashboard-952de0cb.css",
+    "file": "assets/dashboard-051cc503.css",
     "isEntry": true,
-    "src": "resources/views/default/scss/dashboard.scss"
+    "src": "resources/views/myai-tools/scss/dashboard.scss"
   },
   "resources/views/default/scss/landing-page.scss": {
-    "file": "assets/landing-page-dc5370af.css",
+    "file": "assets/landing-page-d79bcf8b.css",
     "isEntry": true,
     "src": "resources/views/sleek/scss/landing-page.scss"
   },
+  "resources/views/magic-works/js/app.js": {
+    "file": "assets/app-54a58d68.js",
+    "imports": [
+      "_fetch-0a44356a.js"
+    ],
+    "isEntry": true,
+    "src": "resources/views/magic-works/js/app.js"
+  },
+  "resources/views/magic-works/scss/dashboard.scss": {
+    "file": "assets/dashboard-a4cdd7d5.css",
+    "isEntry": true,
+    "src": "resources/views/magic-works/scss/dashboard.scss"
+  },
+  "resources/views/magic-works/scss/landing-page.scss": {
+    "file": "assets/landing-page-b4e3fb16.css",
+    "isEntry": true,
+    "src": "resources/views/magic-works/scss/landing-page.scss"
+  },
+  "resources/views/myai-tools/js/app.js": {
+    "file": "assets/app-abaa0f1c.js",
+    "imports": [
+      "_fetch-0a44356a.js"
+    ],
+    "isEntry": true,
+    "src": "resources/views/myai-tools/js/app.js"
+  },
+  "resources/views/myai-tools/scss/dashboard.scss": {
+    "file": "assets/dashboard-051cc503.css",
+    "isEntry": true,
+    "src": "resources/views/myai-tools/scss/dashboard.scss"
+  },
+  "resources/views/myai-tools/scss/landing-page.scss": {
+    "file": "assets/landing-page-a3914aa2.css",
+    "isEntry": true,
+    "src": "resources/views/myai-tools/scss/landing-page.scss"
+  },
   "resources/views/neura/js/app.js": {
-    "file": "assets/app-57f2f828.js",
+    "file": "assets/app-958de8ce.js",
     "imports": [
       "_fetch-0a44356a.js"
     ],
@@ -77,17 +135,17 @@
     "src": "resources/views/neura/js/app.js"
   },
   "resources/views/neura/scss/dashboard.scss": {
-    "file": "assets/dashboard-450014bb.css",
+    "file": "assets/dashboard-4f3e0f37.css",
     "isEntry": true,
     "src": "resources/views/neura/scss/dashboard.scss"
   },
   "resources/views/neura/scss/landing-page.scss": {
-    "file": "assets/landing-page-dc5370af.css",
+    "file": "assets/landing-page-d79bcf8b.css",
     "isEntry": true,
     "src": "resources/views/sleek/scss/landing-page.scss"
   },
   "resources/views/sleek/js/app.js": {
-    "file": "assets/app-aadbf4ab.js",
+    "file": "assets/app-6d4f0f0b.js",
     "imports": [
       "_fetch-0a44356a.js"
     ],
@@ -95,12 +153,12 @@
     "src": "resources/views/sleek/js/app.js"
   },
   "resources/views/sleek/scss/dashboard.scss": {
-    "file": "assets/dashboard-ffcebd73.css",
+    "file": "assets/dashboard-14d28f66.css",
     "isEntry": true,
     "src": "resources/views/sleek/scss/dashboard.scss"
   },
   "resources/views/sleek/scss/landing-page.scss": {
-    "file": "assets/landing-page-dc5370af.css",
+    "file": "assets/landing-page-d79bcf8b.css",
     "isEntry": true,
     "src": "resources/views/sleek/scss/landing-page.scss"
   }

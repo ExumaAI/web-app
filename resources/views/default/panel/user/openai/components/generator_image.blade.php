@@ -5,6 +5,51 @@
         'all' => 'All',
         'favorite' => 'Favorite',
     ];
+
+    $ai_tools = [
+        [
+            'title' => 'Sketch to Image',
+            'desc' => 'Transform your ideas into reality.',
+            'icon' =>
+                '<svg width="22" height="17" viewBox="0 0 22 17" fill="none" stroke="#2C3E50" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"> <path d="M1.5 11.5C3.5 14.5 5.5 15.5 8.5 15.5C11.5 15.5 15.5 12.5 15.5 8.5C15.5 4.5 12.5 1.5 9.5 1.5C6.5 1.5 4.5 3 4.5 5.5C4.5 8 6.5 10.5 10.5 10.5C14.5 10.5 18.908 8.047 20.5 5.5"/> </svg>',
+            'color' => '#F1F1F0',
+        ],
+        [
+            'title' => 'Reimagine',
+            'desc' => 'Generate similar variants easily.',
+            'icon' =>
+                '<svg width="20" height="19" viewBox="0 0 20 19" fill="none" stroke="#3C5C66" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"> <path d="M16.5 17.5L14.5 15.5V3.5C14.5 2.379 15.379 1.5 16.5 1.5C17.621 1.5 18.5 2.379 18.5 3.5V15.5L16.5 17.5ZM16.5 17.5H3.5C2.96957 17.5 2.46086 17.2893 2.08579 16.9142C1.71071 16.5391 1.5 16.0304 1.5 15.5C1.5 14.9696 1.71071 14.4609 2.08579 14.0858C2.46086 13.7107 2.96957 13.5 3.5 13.5H7.5C8.03043 13.5 8.53914 13.2893 8.91421 12.9142C9.28929 12.5391 9.5 12.0304 9.5 11.5C9.5 10.9696 9.28929 10.4609 8.91421 10.0858C8.53914 9.71071 8.03043 9.5 7.5 9.5H4.5M14.5 5.5H18.5"/> </svg>',
+            'color' => '#C2EBF8',
+        ],
+        [
+            'title' => 'Upscale',
+            'desc' => 'Enlarge your images by 4x easily.',
+            'icon' =>
+                '<svg width="21" height="17" viewBox="0 0 21 17" fill="none" stroke="#4A9180" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"> <path d="M9.5 15.5H3.5C2.96957 15.5 2.46086 15.2893 2.08579 14.9142C1.71071 14.5391 1.5 14.0304 1.5 13.5V3.5C1.5 2.96957 1.71071 2.46086 2.08579 2.08579C2.46086 1.71071 2.96957 1.5 3.5 1.5H17.5C18.0304 1.5 18.5391 1.71071 18.9142 2.08579C19.2893 2.46086 19.5 2.96957 19.5 3.5V7.5M12.5 11.5C12.5 11.2348 12.6054 10.9804 12.7929 10.7929C12.9804 10.6054 13.2348 10.5 13.5 10.5H18.5C18.7652 10.5 19.0196 10.6054 19.2071 10.7929C19.3946 10.9804 19.5 11.2348 19.5 11.5V14.5C19.5 14.7652 19.3946 15.0196 19.2071 15.2071C19.0196 15.3946 18.7652 15.5 18.5 15.5H13.5C13.2348 15.5 12.9804 15.3946 12.7929 15.2071C12.6054 15.0196 12.5 14.7652 12.5 14.5V11.5Z"/> </svg>',
+            'color' => '#EDF4F2',
+        ],
+        [
+            'title' => 'Replace BG',
+            'desc' => 'Change the background of anyimage.',
+            'icon' =>
+                '<svg width="19" height="17" viewBox="0 0 19 17" fill="none" stroke="#887B38" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"> <path d="M3.5 14.2084C2.96957 14.2084 2.46086 14.0065 2.08579 13.647C1.71071 13.2876 1.5 12.8001 1.5 12.2917M1.5 8.45841V6.54175M1.5 2.70841C1.5 2.20008 1.71071 1.71257 2.08579 1.35313C2.46086 0.993682 2.96957 0.791748 3.5 0.791748M7.5 0.791748H9.5M13.5 0.791748C14.0304 0.791748 14.5391 0.993682 14.9142 1.35313C15.2893 1.71257 15.5 2.20008 15.5 2.70841M15.5 6.54175V8.45841M15.5 12.2917V16.1251M17.5 14.2084H13.5M9.5 14.2084H7.5"/> </svg>',
+            'color' => '#FEF3DE',
+        ],
+        [
+            'title' => 'Remove BG',
+            'desc' => 'Extract the main object/subject.',
+            'icon' =>
+                '<svg width="19" height="21" viewBox="0 0 19 21" fill="none" stroke="#55B084" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"> <path d="M1.5 5.5H17.5M7.5 9.5V15.5M11.5 9.5V15.5M2.5 5.5L3.5 17.5C3.5 18.0304 3.71071 18.5391 4.08579 18.9142C4.46086 19.2893 4.96957 19.5 5.5 19.5H13.5C14.0304 19.5 14.5391 19.2893 14.9142 18.9142C15.2893 18.5391 15.5 18.0304 15.5 17.5L16.5 5.5M6.5 5.5V2.5C6.5 2.23478 6.60536 1.98043 6.79289 1.79289C6.98043 1.60536 7.23478 1.5 7.5 1.5H11.5C11.7652 1.5 12.0196 1.60536 12.2071 1.79289C12.3946 1.98043 12.5 2.23478 12.5 2.5V5.5"/> </svg>',
+            'color' => '#DEFFEF',
+        ],
+        [
+            'title' => 'Remove Text',
+            'desc' => 'Change or remove text.',
+            'icon' =>
+                '<svg width="17" height="17" viewBox="0 0 17 17" fill="none" stroke="#552A61" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"> <path d="M1.5 8.50002H15.5M12.5 3.00002C12.2732 2.55998 11.7536 2.17167 11.0265 1.89902C10.2994 1.62638 9.40837 1.48565 8.5 1.50002H7.5C6.57174 1.50002 5.6815 1.86877 5.02513 2.52515C4.36875 3.18153 4 4.07177 4 5.00002C4 5.92828 4.36875 6.81852 5.02513 7.4749C5.6815 8.13128 6.57174 8.50002 7.5 8.50002H9.5C10.4283 8.50002 11.3185 8.86877 11.9749 9.52515C12.6313 10.1815 13 11.0718 13 12C13 12.9283 12.6313 13.8185 11.9749 14.4749C11.3185 15.1313 10.4283 15.5 9.5 15.5H8C7.09163 15.5144 6.20056 15.3737 5.4735 15.101C4.74644 14.8284 4.22675 14.4401 4 14"/> </svg>',
+            'color' => '#F7DEFE',
+        ],
+    ];
 @endphp
 
 <x-card
@@ -508,6 +553,76 @@
 
     @include('panel.user.openai_chat.components.prompt_library_modal')
 </x-card>
+
+@if (Route::has('dashboard.user.photo-studio.index') && setting('photo_studio', 1) == 1)
+    <div
+        class="mb-10 space-y-8"
+        x-data="{ toolsShow: true }"
+    >
+        <div class="flex items-center gap-8">
+            <span class="h-px grow bg-border"></span>
+            <button
+                class="flex shrink-0 items-center gap-2.5 text-2xs font-medium"
+                @click="toolsShow = !toolsShow"
+            >
+                <span>
+                    <span
+                        class="hidden"
+                        :class="{ hidden: toolsShow }"
+                    >
+                        @lang('Show AI Tools')
+                    </span>
+                    <span :class="{ hidden: !toolsShow }">
+                        @lang('Hide AI Tools')
+                    </span>
+                </span>
+                <x-tabler-chevron-down
+                    class="size-4 rotate-180 transition-transform"
+                    ::class="{ 'rotate-180': toolsShow }"
+                />
+            </button>
+            <span class="h-px grow bg-border"></span>
+        </div>
+
+        <div
+            class="lqd-img-gen-tools grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3"
+            :class="{ hidden: !toolsShow, grid: toolsShow }"
+        >
+            @foreach ($ai_tools as $tool)
+                <x-card
+                    class="lqd-img-gen-tool bg-card-background hover:-translate-y-1 hover:shadow-lg hover:shadow-black/5"
+                    size="sm"
+                    variant="outline"
+                    roundness="sm"
+                >
+                    <div class="flex items-center gap-4">
+                        <div
+                            class="size-11 inline-flex shrink-0 items-center justify-center rounded-lg"
+                            style="background-color: {{ $tool['color'] }}"
+                        >
+                            {!! $tool['icon'] !!}
+                        </div>
+                        <div>
+                            <h4 class="mb-1 text-lg">
+                                {{ __($tool['title']) }}
+                            </h4>
+                            <p class="mb-0 text-2xs text-heading-foreground/60">
+                                {{ __($tool['desc']) }}
+                            </p>
+                        </div>
+                    </div>
+                    <a
+                        class="absolute inset-0 z-1 overflow-hidden text-start -indent-96"
+                        href="{{ route('dashboard.user.photo-studio.index') }}"
+                    >
+                        {{ $tool['title'] }}
+                    </a>
+                </x-card>
+            @endforeach
+        </div>
+    </div>
+
+@endif
 
 <div
     id="generator_sidebar_table"

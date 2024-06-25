@@ -40,7 +40,7 @@
                         <td>
                             <img
                                 class="size-20 rounded-lg object-cover object-center"
-                                src="/{{ $entry->image }}"
+                                src="{{ custom_theme_url($entry->image) }}"
                                 alt="{{ $entry->title }}"
                             >
                         </td>

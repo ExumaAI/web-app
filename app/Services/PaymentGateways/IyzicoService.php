@@ -61,8 +61,8 @@ class IyzicoService
             foreach ($plans as $plan) {
                 self::saveProduct($plan);
             }
-            // Create webhook of iyzico
-            // TODO: $tmp = self::createWebhook();
+            // Create webhook of iyzico later
+            // $tmp = self::createWebhook();
         } catch (\Exception $ex) {
             Log::error(self::$GATEWAY_CODE.'-> saveAllProducts(): '.$ex->getMessage());
 
@@ -1231,7 +1231,7 @@ class IyzicoService
         if ($activeSub != null) {
             $plan = PaymentPlans::where('id', $activeSub->plan_id)->first();
             if ($activeSub->stripe_status == 'iyzico_approved') {
-                // TODO: we can renew from here or from command
+                // later we can renew from here or from command
                 return true;
             } else {
                 $subscriptionRequest = json_decode(json_encode([

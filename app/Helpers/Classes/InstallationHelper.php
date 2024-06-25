@@ -5,8 +5,9 @@ namespace App\Helpers\Classes;
 use App\Models;
 use App\Models\OpenAIGenerator;
 use App\Services\Common\MenuService;
-use Database\Seeders\MenuSeeder;
 use Database\Seeders\AIModelSeeder;
+use Database\Seeders\MenuSeeder;
+use Database\Seeders\SocialAccountsSeeder;
 use Database\Seeders\TokenSeeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -487,7 +488,7 @@ class InstallationHelper
                     ],
                 ],
             ],
-			[
+            [
                 'table' => 'ai_models',
                 'sql' => [
                     [
@@ -501,7 +502,7 @@ class InstallationHelper
                     ],
                 ],
             ],
-			[
+            [
                 'table' => 'tokens',
                 'sql' => [
                     [
@@ -509,6 +510,47 @@ class InstallationHelper
                         'callback' => function () {
                             try {
                                 app(TokenSeeder::class)->run();
+                            } catch (\Exception $exception) {
+                            }
+                        },
+                    ],
+                ],
+            ],
+            [
+                'table' => 'social_media_accounts',
+                'sql' => [
+                    [
+                        'condition' => true,
+                        'callback' => function () {
+                            try {
+                                app(SocialAccountsSeeder::class)->run();
+                            } catch (\Exception $exception) {
+                            }
+                        },
+                    ],
+                ],
+            ],
+            [
+                'table' => 'menus',
+                'sql' => [
+                    [
+                        'condition' => true,
+                        'callback' => function () {
+                            try {
+                                Models\Common\Menu::query()
+                                    ->where([
+                                        'key' => 'chat_training_extension',
+                                    ])->update([
+                                        'label' => 'Chatbot Training',
+                                    ]);
+                                Models\Common\Menu::query()
+                                    ->where([
+                                        'key' => 'api_integration',
+                                    ])->update([
+                                        'route' => 'default',
+                                    ]);
+
+                                app(MenuService::class)->regenerate();
                             } catch (\Exception $exception) {
                             }
                         },

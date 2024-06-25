@@ -1,3 +1,4 @@
+@includeWhen(setting('single_page_checkout', 0), 'panel.user.finance.partials.singlePageCheckout')
 <div
     class="mb-5 rounded-lg border px-4"
     x-data="{ inputShow: false }"
@@ -31,7 +32,7 @@
         <x-button
             onclick="applyCoupon();"
             variant="link"
-			href="javascript:void(0);"
+            href="javascript:void(0);"
         >
             {{ __('Apply') }}
             <x-tabler-circle-arrow-right-filled class="size-5" />

@@ -49,7 +49,7 @@ class TeamController extends Controller
             'user_id' => auth()->id(),
         ], [
             'name' => $user->fullName(),
-            'allow_seats' => $allow_seats ?: 0
+            'allow_seats' => $allow_seats ?: 0,
         ]);
     }
 
@@ -58,7 +58,7 @@ class TeamController extends Controller
         if (Helper::appIsDemo()) {
             return response()->json([
                 'status' => 'error',
-                'message' => trans('This feature is disabled in demo mode.')
+                'message' => trans('This feature is disabled in demo mode.'),
             ]);
         }
 
@@ -89,7 +89,7 @@ class TeamController extends Controller
             'filter' => 'all',
             'team' => $team,
             'member' => $teamMember,
-            'user' =>$teamMember->user,
+            'user' => $teamMember->user,
             'remaining_words' => $teamMember->used_image_credit ?: 0,
             'remaining_images' => $teamMember->remaining_words ?: 0,
         ]);
@@ -100,11 +100,11 @@ class TeamController extends Controller
         if (Helper::appIsDemo()) {
             return response()->json([
                 'status' => 'error',
-                'message' => trans('This feature is disabled in demo mode.')
+                'message' => trans('This feature is disabled in demo mode.'),
             ]);
         }
 
-        $request['allow_unlimited_credits'] = (boolean) $request->get('allow_unlimited_credits', false);
+        $request['allow_unlimited_credits'] = (bool) $request->get('allow_unlimited_credits', false);
 
         $user = $team->user;
 
@@ -116,19 +116,18 @@ class TeamController extends Controller
             'status' => 'required',
             'remaining_images' => $request['allow_unlimited_credits']
                 ? 'sometimes|nullable|numeric'
-                : 'required|numeric|max:' . $manager_remaining_images,
+                : 'required|numeric|max:'.$manager_remaining_images,
             'remaining_words' => $request['allow_unlimited_credits']
                 ? 'sometimes|nullable|numeric'
-                : 'required|numeric|max:' . $manager_remaining_words,
+                : 'required|numeric|max:'.$manager_remaining_words,
             'allow_unlimited_credits' => 'sometimes|nullable|boolean',
         ]);
-
 
         $teamMember->update($data);
 
         return to_route('dashboard.user.team.index')->with([
             'type' => 'success',
-            'message' => __('Team member updated successfully.')
+            'message' => __('Team member updated successfully.'),
         ]);
     }
 
@@ -137,21 +136,21 @@ class TeamController extends Controller
         if (Helper::appIsDemo()) {
             return response()->json([
                 'status' => 'error',
-                'message' => trans('This feature is disabled in demo mode.')
+                'message' => trans('This feature is disabled in demo mode.'),
             ]);
         }
 
         abort_if(auth()->id() !== $team->user_id, 404);
 
         if ($teamMember->user) {
-            $teamMember->user->update([ 'team_id' => null, 'team_member_id' => null]);
+            $teamMember->user->update(['team_id' => null, 'team_member_id' => null]);
         }
 
         $teamMember->delete();
 
         return back()->with([
             'type' => 'success', // success, error, warning, info,
-            'message' => trans('Team member deleted successfully.')
+            'message' => trans('Team member deleted successfully.'),
         ]);
     }
 }

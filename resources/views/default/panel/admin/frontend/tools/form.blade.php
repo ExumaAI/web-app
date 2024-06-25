@@ -37,6 +37,38 @@
             required
         >{{ $item != null ? $item->description : null }}</x-forms.input>
 
+        <x-forms.input
+            id="buy_link"
+            label="{{ __('Buy Link Text') }}"
+            name="buy_link"
+            size="lg"
+            value="{{ $item != null ? $item->buy_link : null }}"
+        />
+
+        <x-forms.input
+            id="buy_link_url"
+            label="{{ __('Buy Link URL') }}"
+            name="buy_link_url"
+            size="lg"
+            value="{{ $item != null ? $item->buy_link_url : null }}"
+        />
+
+        <x-forms.input
+            id="learn_more_link"
+            label="{{ __('Learn More Link Text') }}"
+            name="learn_more_link"
+            size="lg"
+            value="{{ $item != null ? $item->learn_more_link : null }}"
+        />
+
+        <x-forms.input
+            id="learn_more_link_url"
+            label="{{ __('Learn More Link URL') }}"
+            name="learn_more_link_url"
+            size="lg"
+            value="{{ $item != null ? $item->learn_more_link_url : null }}"
+        />
+
         <x-button
             id="item_button"
             size="lg"

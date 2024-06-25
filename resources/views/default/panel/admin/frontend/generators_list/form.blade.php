@@ -36,6 +36,14 @@
         />
 
         <x-forms.input
+            id="icon"
+            label="{{ __('Icon') }}"
+            name="icon"
+            size="lg"
+            value="{{ $item != null ? $item->icon : null }}"
+        />
+
+        <x-forms.input
             id="title"
             label="{{ __('Title') }}"
             name="title"

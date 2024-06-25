@@ -25,6 +25,8 @@ class AIController extends Controller
 
     protected $settings;
 
+    protected $settings_two;
+
     const STABLEDIFFUSION = 'stablediffusion';
 
     const STORAGE_S3 = 's3';

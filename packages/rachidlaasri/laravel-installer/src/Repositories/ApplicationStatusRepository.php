@@ -1,12 +1,13 @@
 <?php
+
 namespace RachidLaasri\LaravelInstaller\Repositories;
 
 use App\Models\SettingTwo;
+use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
-use Closure;
 
 class ApplicationStatusRepository implements ApplicationStatusRepositoryInterface
 {
@@ -19,9 +20,9 @@ class ApplicationStatusRepository implements ApplicationStatusRepositoryInterfac
         return data_get($portal, 'liquid_license_type');
     }
 
-    public function check(string $licenseKey, bool $installed = false,): bool
+    public function check(string $licenseKey, bool $installed = false): bool
     {
-        $response = Http::get($this->baseLicenseUrl . DIRECTORY_SEPARATOR . $licenseKey);
+        $response = Http::get($this->baseLicenseUrl.DIRECTORY_SEPARATOR.$licenseKey);
 
         if ($response->ok() && $response->json('success')) {
             $portal = $this->portal() ?: [];
@@ -29,7 +30,7 @@ class ApplicationStatusRepository implements ApplicationStatusRepositoryInterfac
             $data = array_merge($portal, [
                 'liquid_license_type' => $response->json('licenseType'),
                 'liquid_license_domain_key' => $licenseKey,
-                'installed' => $installed
+                'installed' => $installed,
             ]);
 
             return $this->save($data);
@@ -65,6 +66,7 @@ class ApplicationStatusRepository implements ApplicationStatusRepositoryInterfac
     {
         $data = $this->portal();
 
+
         if (is_null($data)) {
             return;
         }
@@ -90,7 +92,7 @@ class ApplicationStatusRepository implements ApplicationStatusRepositoryInterfac
         if ($request->exists(['liquid_license_status', 'liquid_license_domain_key', 'liquid_license_domain_key'])) {
             $data = [
                 'liquid_license_key' => $request->input('liquid_license_key'), // 'liquid_license_key' => $request->input('liquid_license_key'),
-                'liquid_license_domain_key' => $request->input('liquid_license_domain_key')
+                'liquid_license_domain_key' => $request->input('liquid_license_domain_key'),
             ];
 
             $this->save($data);
@@ -129,15 +131,14 @@ class ApplicationStatusRepository implements ApplicationStatusRepositoryInterfac
             $request_liquid_license_domain_key = $request->get('key');
             $app_key = $request->get('app_key');
 
-            if ($liquid_license_domain_key == $request_liquid_license_domain_key && $request->get('isDisabled'))
-            {
+            if ($liquid_license_domain_key == $request_liquid_license_domain_key && $request->get('isDisabled')) {
 
                 $portal['blocked'] = true;
 
                 $this->save($portal);
 
                 return response()->noContent();
-            } else if($liquid_license_domain_key == $request_liquid_license_domain_key) {
+            } elseif ($liquid_license_domain_key == $request_liquid_license_domain_key) {
                 $portal['blocked'] = false;
 
                 $this->save($portal);
@@ -145,7 +146,7 @@ class ApplicationStatusRepository implements ApplicationStatusRepositoryInterfac
                 return response()->noContent();
             }
 
-            if ($request->get('forceBlock') && $app_key == $this->appKey()){
+            if ($request->get('forceBlock') && $app_key == $this->appKey()) {
                 $portal['blocked'] = true;
 
                 $this->save($portal);
