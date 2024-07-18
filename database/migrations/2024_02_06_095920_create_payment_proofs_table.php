@@ -16,7 +16,7 @@ return new class extends Migration
             $table->unsignedBigInteger('user_id');
             $table->string('order_id');
             $table->unsignedBigInteger('plan_id');
-            $table->decimal('total_amount', 10, 2)->nullable(); // Adjust precision and scale as needed
+            $table->decimal('total_amount', 15, 2)->nullable(); // Adjust precision and scale as needed
             $table->string('proof_image');
             $table->timestamps();
 

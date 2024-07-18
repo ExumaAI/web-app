@@ -19,7 +19,7 @@
             >
         </div>
         <div class="mb-[25px]">
-            <label class="form-label">{{ __('Affiliate Comission Percentage') }} (%)</label>
+            <label class="form-label">{{ __('Affiliate Commission Percentage') }} (%)</label>
             <input
                 class="form-control"
                 id="affiliate_commission_percentage"
@@ -36,10 +36,8 @@
             {{ __('Save') }}
         </button>
     </form>
-    @includeIf('panel.admin.settings.particles.affiliate-setting')
 @endsection
 
 @push('script')
     <script src="{{ custom_theme_url('/assets/js/panel/settings.js') }}"></script>
-    @includeIf('panel.admin.settings.particles.affiliate-setting-script')
 @endpush

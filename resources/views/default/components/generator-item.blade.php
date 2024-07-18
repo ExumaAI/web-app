@@ -12,7 +12,7 @@
         $plan_type = strtolower($plan->plan_type);
     }
 
-    if (env('APP_STATUS') == 'Demo') {
+    if ($app_is_demo) {
         if ($item->premium == 1 && $plan_type === 'regular') {
             $upgrade = true;
         }

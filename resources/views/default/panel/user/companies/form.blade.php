@@ -281,7 +281,7 @@
             <div class="add-more-placeholder"></div>
         @endif
 
-        @if (env('APP_STATUS') == 'Demo')
+        @if ($app_is_demo)
             <x-button
                 type="button"
                 onclick="return toastr.info('This feature is disabled in Demo version.');"

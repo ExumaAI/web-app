@@ -2,6 +2,7 @@
 
 namespace App\Services\PaymentGateways;
 
+use App\Actions\CreateActivity;
 use App\Events\PaypalWebhookEvent;
 // use App\Models\Subscriptions;
 use App\Models\Coupon;
@@ -67,7 +68,7 @@ class PayPalService
     {
         $gateway = Gateways::where('code', self::$GATEWAY_CODE)->where('is_active', 1)->first() ?? abort(404);
         $provider = self::getPaypalProvider($gateway);
-		
+
         try {
             DB::beginTransaction();
             $currency = Currency::where('id', $gateway->currency)->first()->code;
@@ -295,7 +296,7 @@ class PayPalService
             $plan->total_images == -1 ? ($user->remaining_images = -1) : ($user->remaining_images += $plan->total_images);
             $user->save();
 
-            createActivity($user->id, __('Subscribed'), $plan->name.' '.__('Plan'), null);
+            CreateActivity::for($user, __('Subscribed'), $plan->name.' '.__('Plan'));
 
 			\App\Models\Usage::getSingle()->updateSalesCount($total);
 
@@ -396,7 +397,7 @@ class PayPalService
             $plan->total_images == -1 ? ($user->remaining_images = -1) : ($user->remaining_images += $plan->total_images);
             $user->save();
 
-            createActivity($user->id, __('Purchased'), $plan->name.' '.__('Plan'), null);
+            CreateActivity::for($user, __('Purchased'), $plan->name.' '.__('Plan'));
 			\App\Models\Usage::getSingle()->updateSalesCount($total);
             DB::commit();
 
@@ -520,7 +521,7 @@ class PayPalService
                 $user->remaining_words = $recent_words < 0 ? 0 : $recent_words;
                 $user->remaining_images = $recent_images < 0 ? 0 : $recent_images;
                 $user->save();
-                createActivity($user->id, 'Cancelled', 'Subscription plan', null);
+                CreateActivity::for($user, __('Cancelled'), 'Subscription plan');
 
                 return back()->with(['message' => __('Your subscription is cancelled succesfully.'), 'type' => 'success']);
             } else {
@@ -535,7 +536,7 @@ class PayPalService
                     $user->remaining_images = $recent_images < 0 ? 0 : $recent_images;
                     $user->save();
 
-                    createActivity($user->id, 'Cancelled', 'Subscription plan', null);
+                    CreateActivity::for($user, __('Cancelled'), 'Subscription plan');
                     if ($internalUser != null) {
                         return back()->with(['message' => __('User subscription is cancelled succesfully.'), 'type' => 'success']);
                     }

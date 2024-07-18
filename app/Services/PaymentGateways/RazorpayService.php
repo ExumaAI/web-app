@@ -2,6 +2,7 @@
 
 namespace App\Services\PaymentGateways;
 
+use App\Actions\CreateActivity;
 use App\Helpers\Classes\Helper;
 use App\Models\GatewayProducts;
 use App\Models\Gateways;
@@ -379,7 +380,8 @@ class RazorpayService implements BaseGatewayService
                 $user->remaining_words = $recent_words < 0 ? 0 : $recent_words;
                 $user->remaining_images = $recent_images < 0 ? 0 : $recent_images;
                 $user->save();
-                createActivity($user->id, 'Cancelled', 'Subscription plan', null);
+
+                CreateActivity::for($user, 'Cancelled', 'Subscription plan');
 
                 return back()->with(['message' => __('Your subscription is cancelled succesfully.'), 'type' => 'success']);
             }

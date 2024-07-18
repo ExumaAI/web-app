@@ -280,7 +280,7 @@
                                     {{ __('Delete Video') }}
                                 </x-button>
                                 <div class="w-full md:!w-[30%]">
-                                    <div class="rounded-lg bg-black/[3%] p-2.5 dark:bg-white/[3%]">
+                                    <div class="lqd-modal-img-info rounded-lg bg-black/[3%] p-2.5 dark:bg-white/[3%]">
                                         <p class="!mb-1">@lang('Date')</p>
                                         <p
                                             class="mb-0 opacity-60"
@@ -289,7 +289,7 @@
                                     </div>
                                 </div>
                                 <div class="w-full md:!w-[30%]">
-                                    <div class="rounded-lg bg-black/[3%] p-2.5 dark:bg-white/[3%]">
+                                    <div class="lqd-modal-img-info rounded-lg bg-black/[3%] p-2.5 dark:bg-white/[3%]">
                                         <p class="!mb-1">@lang('Resolution')</p>
                                         <p
                                             class="mb-0 opacity-60"
@@ -298,7 +298,7 @@
                                     </div>
                                 </div>
                                 <div class="w-full md:!w-[30%]">
-                                    <div class="rounded-lg bg-black/[3%] p-2.5 dark:bg-white/[3%]">
+                                    <div class="lqd-modal-img-info rounded-lg bg-black/[3%] p-2.5 dark:bg-white/[3%]">
                                         <p class="!mb-1">@lang('Credit')</p>
                                         <p
                                             class="mb-0 opacity-60"

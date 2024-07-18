@@ -14,17 +14,24 @@
         !(route('dashboard.user.openai.generator.workbook', 'ai_vision') == url()->current()) &&
         !(route('dashboard.user.openai.generator.workbook', 'ai_chat_image') == url()->current()) &&
         !(route('dashboard.user.openai.generator.workbook', 'ai_pdf') == url()->current()))
-    @if (Route::has('dashboard.user.openai.webchat.workbook'))
-        @if (!(route('dashboard.user.openai.webchat.workbook') == url()->current()))
-            <script src="{{ custom_theme_url('/assets/js/panel/openai_chatbot.js') }}"></script>
-        @endif
-    @else
+    @if (! Route::has('dashboard.user.openai.webchat.workbook') || (Route::has('dashboard.user.openai.webchat.workbook') && route('dashboard.user.openai.webchat.workbook') !== url()->current()))
         <script src="{{ custom_theme_url('/assets/js/panel/openai_chatbot.js') }}"></script>
     @endif
 @endif
 
 <script>
     var magicai_localize = {
+        @foreach (json_decode(file_get_contents(base_path('lang/en.json')), true) as $key => $value)
+            @php
+                $safeKey = preg_replace('/[^a-zA-Z0-9_]/', '_', strtolower($key));
+                if (is_numeric(substr($safeKey, 0, 1))) {
+                    $safeKey = '_' . $safeKey;
+                }
+            @endphp
+            {{ $safeKey }}: @json($value),
+        @endforeach
+    };
+    var magicai_localize_second_part = {
         signup: @json(__('Sign Up')),
         please_wait: @json(__('Please Wait...')),
         sign_in: @json(__('Sign In')),
@@ -76,8 +83,21 @@
         workbook_saved: @json(__('Workbook saved succesfully')),
         code_copied: @json(__('Code copied to clipboard')),
         content_copied: @json(__('Content copied to clipboard')),
-
+        search: @json(__('Search...')),
+        what_would_you_like_to_do: @json(__('What would you like to do?')),
+        rewrite: @json(__('Rewrite')),
+        summarize: @json(__('Summarize')),
+        make_it_longer: @json(__('Make it Longer')),
+        make_it_shorter: @json(__('Make it Shorter')),
+        improve_writing: @json(__('Improve Writing')),
+        translate_to: @json(__('Translate to')),
+        search: @json(__('Search')),
+        simplify: @json(__('Simplify')),
+        change_style_to: @json(__('Change Style to')),
+        change_tone_to: @json(__('Change Tone to')),
+        fix_grammatical_mistakes: @json(__('Fix Grammatical Mistakes')),
     }
+    Object.assign(magicai_localize, magicai_localize_second_part);
 </script>
 
 <!-- PAGES JS-->

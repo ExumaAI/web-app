@@ -2,6 +2,7 @@
 
 namespace App\Listeners;
 
+use App\Actions\CreateActivity;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Facades\Log;
@@ -45,7 +46,7 @@ class BankTransferListener implements ShouldQueue
                     $order->user->remaining_images = 0;
                     $order->user->save();
                     # sent mail if required here later
-                    createActivity($order->user->id, __('Subscription Expired') , $order->plan->name. ' '. __('Plan'), null);
+                    CreateActivity::for($order->user, __('Subscription Expired'), $order->plan->name. ' '. __('Plan'));
                 }
             }else if($status == 'bank_renewed'){
 
@@ -70,7 +71,7 @@ class BankTransferListener implements ShouldQueue
                     $order->plan->total_images == -1? ($order->user->remaining_images = -1) : ($order->user->remaining_images = $order->plan->total_images);
                     $order->user->save();
                     # sent mail if required here later
-                    createActivity($order->user->id, $msg , $order->plan->name. ' '. __('Plan'), null);
+                    CreateActivity::for($order->user, $msg, $order->plan->name. ' '. __('Plan'));
                 }
             }
 

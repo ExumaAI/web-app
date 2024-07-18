@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\MaintenanceMiddleware;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\IndexController;
 use App\Http\Controllers\InstallationController;
@@ -11,13 +12,15 @@ use App\Http\Controllers\magicaiUpdaterController;
 use App\Http\Controllers\TestController;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Config;
+use RachidLaasri\LaravelInstaller\Middleware\ApplicationCheckLicense;
 use RachidLaasri\LaravelInstaller\Middleware\ApplicationStatus;
 use App\Http\Controllers\Common\SitemapController;
 
 Route::get('/test', [TestController::class, 'test']);
 
 Route::group(['prefix' => LaravelLocalization::setLocale(), 'middleware' => [ 'checkInstallation', 'localeSessionRedirect', 'localizationRedirect', 'localeViewPath' ]], function() {
-    Route::get('/', [IndexController::class, 'index'])->name('index');
+    Route::get('/', [IndexController::class, 'index'])
+        ->name('index');
     
     Route::get('/privacy-policy', [PageController::class, 'pagePrivacy']);
     Route::get('/terms', [PageController::class, 'pageTerms']);
@@ -32,7 +35,7 @@ Route::group(['prefix' => LaravelLocalization::setLocale(), 'middleware' => [ 'c
 });
 Route::get('/sitemap.xml', [SitemapController::class, "index"]);
 
-Route::get('/activate', [IndexController::class, 'activate']);
+Route::get('/activate', [IndexController::class, 'activate'])->withoutMiddleware(ApplicationCheckLicense::class);
 
 Route::get('/confirm/email/{email_confirmation_code}', [MailController::class, 'emailConfirmationMail']);
 // Route::get('/confirm/email/{password_reset_code}', [MailController::class, 'emailPasswordResetEmail']);

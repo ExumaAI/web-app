@@ -2,11 +2,15 @@
 
 namespace RachidLaasri\LaravelInstaller\Repositories;
 
-use Illuminate\Http\Request;
 use Closure;
+use Illuminate\Http\Request;
 
 interface ApplicationStatusRepositoryInterface
 {
+    public function financePage(): string;
+
+    public function financeLicense(): bool;
+
     public function licenseType(): ?string;
 
     public function check(string $licenseKey, bool $installed = false): bool;

@@ -69,7 +69,7 @@
                                                 </x-alert>
                                                 <a
                                                     class="btn btn-primary mb-2 mt-2 w-full"
-                                                    href="{{ route('dashboard.admin.settings.openai.test') }}"
+                                                    href="{{ route('dashboard.user.settings.openai.test') }}"
                                                     target="_blank"
                                                 >
                                                     {{ __('After Saving Setting, Click Here to Test Your Api Keys') }}
@@ -127,7 +127,7 @@
                                                 </x-alert>
                                                 <a
                                                     class="btn btn-primary mb-2 mt-2 w-full"
-                                                    href="{{ route('dashboard.admin.settings.anthropic.test') }}"
+                                                    href="{{ route('dashboard.user.settings.anthropic.test') }}"
                                                     target="_blank"
                                                 >
                                                     {{ __('After Saving Setting, Click Here to Test Your Api Keys') }}
@@ -185,7 +185,7 @@
                                                 </x-alert>
                                                 <a
                                                     class="btn btn-primary mb-2 mt-2 w-full"
-                                                    href="{{ route('dashboard.admin.settings.gemini.test') }}"
+                                                    href="{{ route('dashboard.user.settings.gemini.test') }}"
                                                     target="_blank"
                                                 >
                                                     {{ __('After Saving Setting, Click Here to Test Your Api Keys') }}
@@ -243,7 +243,7 @@
                                                 </x-alert>
                                                 <a
                                                     class="btn btn-primary mb-2 mt-2 w-full"
-                                                    href="{{ route('dashboard.admin.settings.openai.test') }}"
+                                                    href="{{ route('dashboard.user.settings.openai.test') }}"
                                                     target="_blank"
                                                 >
                                                     {{ __('After Saving Setting, Click Here to Test Your Api Keys') }}

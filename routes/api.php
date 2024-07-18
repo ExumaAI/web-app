@@ -150,4 +150,27 @@ Route::middleware('auth:api')->group(function () {
         Route::get("/all-openai", "App\Http\Controllers\Api\DocumentsApiController@getOpenAIList"); # returns all openai generators without user check
         Route::get("/openai-filters", "App\Http\Controllers\Api\DocumentsApiController@getOpenAIFilters");
     });
+
+    Route::prefix('extensions')->group(function () {
+        Route::get("/", "App\Http\Controllers\Api\ExtensionController@extensionIndex");
+
+        /// Extension Routes for API
+        $files = glob(base_path('routes/extapiroutes/*.php'));
+        for ($i = 0; $i < count($files); $i++) {
+            include $files[$i];
+        }
+
+    });
+
+
+    Route::prefix('brandvoice')->group(function () {   
+        Route::get("/", "App\Http\Controllers\Api\BrandController@index");
+        Route::get("/{id}", "App\Http\Controllers\Api\BrandController@index");
+        Route::post("/", "App\Http\Controllers\Api\BrandController@store");
+        Route::delete("/{id}", "App\Http\Controllers\Api\BrandController@delete");
+   
+    });
+    
+
+
 });

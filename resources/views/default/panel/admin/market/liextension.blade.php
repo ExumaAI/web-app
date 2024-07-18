@@ -29,32 +29,31 @@
                         data-installed="{{ $extension->installed }}"
                         data-name="{{ $extension->name }}"
                     >
-                        <div class="flex grow flex-wrap">
-                            <div class="flex shrink-0 items-center gap-7 rounded-xl">
-                                <img
-                                    src="{{ $extension->image_url }}"
-                                    width="53"
-                                    height="53"
-                                    alt="{{ $extension->name }}"
-                                >
-                                <div class="w-full">
-                                    <div class="mb-4 flex flex-wrap gap-4">
-                                        <h3 class="m-0 text-xl font-semibold">
-                                            {{ $extension->name }}
-                                        </h3>
-                                        <p class="flex items-center gap-2 text-2xs font-medium">
-                                            <span @class([
-                                                'size-2 inline-block rounded-full',
-                                                'bg-green-500' => $extension->installed,
-                                                'bg-foreground/10' => !$extension->installed,
-                                            ])></span>
-                                            {{ $extension->installed ? __('Installed') : __('Not Installed') }}
-                                        </p>
-                                    </div>
-                                    <p class="text-base leading-normal">
-                                        {{ $extension->description }}
+                        <div class="flex grow items-center gap-7 lg:basis-2/3">
+                            <img
+                                class="shrink-0"
+                                src="{{ $extension->image_url }}"
+                                width="53"
+                                height="53"
+                                alt="{{ $extension->name }}"
+                            >
+                            <div class="grow">
+                                <div class="mb-4 flex flex-wrap gap-4">
+                                    <h3 class="m-0 text-xl font-semibold">
+                                        {{ $extension->name }}
+                                    </h3>
+                                    <p class="flex items-center gap-2 text-2xs font-medium">
+                                        <span @class([
+                                            'size-2 inline-block rounded-full',
+                                            'bg-green-500' => $extension->installed,
+                                            'bg-foreground/10' => !$extension->installed,
+                                        ])></span>
+                                        {{ $extension->installed ? __('Installed') : __('Not Installed') }}
                                     </p>
                                 </div>
+                                <p class="text-base leading-normal">
+                                    {{ $extension->description }}
+                                </p>
                             </div>
                         </div>
 

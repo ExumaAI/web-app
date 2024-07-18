@@ -20,8 +20,10 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('settings_two', function (Blueprint $table) {
-            $table->dropColumn('ai_image_storage');
-        });
+        if (Schema::hasTable('settings_two')) {
+            Schema::table('settings_two', function (Blueprint $table) {
+                $table->dropColumn('ai_image_storage');
+            });
+        }
     }
 };

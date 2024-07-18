@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\EmailConfirmation;
 use App\Jobs\SendPasswordResetEmail;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
@@ -13,13 +15,12 @@ use App\Jobs\SendConfirmationEmail;
 
 class MailController extends Controller
 {
-    public function emailConfirmationMail($email_confirmation_code){
+    public function emailConfirmationMail($email_confirmation_code): RedirectResponse
+    {
         $user = User::where('email_confirmation_code', $email_confirmation_code)->firstOrFail();
-        $user->email_confirmation_code = null;
-        $user->email_confirmed = 1;
-        $user->status = 1;
-        $user->save();
-		dispatch(new SendConfirmationEmail($user));
+
+        EmailConfirmation::forUser($user)->confirm();
+
         return redirect()->route('login')->with(['message' => __('E-Mail confirmed succesfully.'), 'type' => 'success']);
     }
 
@@ -28,15 +29,18 @@ class MailController extends Controller
 		$request->validate([
 			'email' => 'required|email',
 		]);
+
         $user = User::where('email', $request->email)->first();
-        if ($user != null){
-            $user->password_reset_code = Str::random(67);
-            $user->save();
+
+        if ($user){
+            $user->update([
+                'password_reset_code' => Str::random(67),
+            ]);
             dispatch(new SendPasswordResetEmail($user));
             return back()->with(['message' => __('Password reset mail sent succesfully'),'type' => 'success' ]);
-        }else{
-            return back()->with(['message' => __('Password reset mail sent succesfully'),'type' => 'success' ]);
         }
+
+        return back()->with(['message' => __('Password reset mail sent succesfully'),'type' => 'success' ]);
     }
 
     public function passwordResetCallback($password_reset_code){

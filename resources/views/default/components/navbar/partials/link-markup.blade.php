@@ -8,15 +8,22 @@
     $label_base_class = 'lqd-nav-link-label flex grow gap-2 items-center transition-[opacity,transform,visbility] [&_.lqd-nav-item-badge]:ms-auto';
     $letter_icon_base_class = 'lqd-nav-link-letter-icon inline-flex size-6 shrink-0 items-center justify-center rounded-md bg-primary text-4xs text-primary-foreground';
 
+    $target = '_self';
+
     // setting href
     if (!empty($href) && $href !== '#') {
-        if (is_string($href)) {
+        if (is_string($href) && Route::has($href)) {
             $href = !empty($slug) ? route($href, $slug) : route($href);
+        }else {
+            $target = '_blank';
         }
+
+
         if ($localizeHref) {
             $href = LaravelLocalization::localizeUrl($href);
         }
     }
+
 
     // if (empty(trim($activeCondition)) && !empty($href)) {
     //     $activeCondition = $href === url()->current();
@@ -29,7 +36,7 @@
 
 <a
     {{ $attributes->withoutTwMergeClasses()->twMerge($base_class, $attributes->get('class')) }}
-    href="{{ $href }}"
+    href="{{ $href }}" target="{{ $target }}"
     @if ($dropdownTrigger) @click.prevent="toggleDropdownOpen()" @endif
     @if ($app_is_not_demo && ($activeCondition && !empty(trim($activeCondition)))) x-init="$el.parentElement.offsetTop > window.innerHeight && $el.closest('.lqd-navbar-inner').scrollTo({ top: (($el.parentElement.offsetHeight + $el.parentElement.offsetTop) / 2) })" @endif
     @if ($triggerType === 'modal') @click.prevent="toggleModal()" @endif

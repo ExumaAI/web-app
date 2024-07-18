@@ -4,6 +4,7 @@ namespace RachidLaasri\LaravelInstaller\Controllers;
 
 use App\Repositories\ExtensionRepository;
 use App\Services\Extension\ExtensionService;
+use App\Services\Theme\ThemeService;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;
 use Illuminate\Foundation\Application;
@@ -21,9 +22,9 @@ class SubscriptionController extends Controller
     {
         $subscription = $this->extensionRepository->subscription();
 
-        $payment = $subscription['payment'];
+        $payment = data_get($subscription, 'payment');
 
-        $data = $subscription['data'];
+        $data =  data_get($subscription, 'data');
 
         return view('vendor.installer.subscription', [
             'payment' => $payment,
@@ -36,6 +37,14 @@ class SubscriptionController extends Controller
         if ($key == $this->extensionRepository->domainKey()) {
 
             app(ExtensionService::class)->uninstall($slug);
+
+            $themes = [
+                'sleek','creative','classic', 'dark'
+            ];
+
+            if (in_array($slug, $themes)) {
+                app(ThemeService::class)->install('default');
+            }
 
             return response()
                 ->json([

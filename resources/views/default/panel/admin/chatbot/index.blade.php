@@ -1,7 +1,7 @@
 @extends('panel.layout.app', ['disable_tblr' => true])
 
 @section('title', $title)
-@section('titlebar_subtitle', __('Train MagicAI on your own data (website or PDF) and make your AI content exclusive.'))
+@section('titlebar_subtitle', __('Train AI on your own data (website or PDF) and make your AI content exclusive.'))
 @section('titlebar_actions')
     <div class="space-x-1.5">
         <x-button

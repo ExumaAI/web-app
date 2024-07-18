@@ -4,12 +4,17 @@ namespace App\Repositories;
 
 use App\Helpers\Classes\Helper;
 use App\Models\Extension;
+use App\Models\SettingTwo;
 use App\Repositories\Contracts\ExtensionRepositoryInterface;
+use Closure;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 use RachidLaasri\LaravelInstaller\Repositories\ApplicationStatusRepository;
 
 class ExtensionRepository implements ExtensionRepositoryInterface
 {
+    public const APP_VERSION = 6.5;
+
     public const API_URL = 'https://magicmarket.projecthub.ai/api/';
 
     public function licensed(array $data): array
@@ -29,9 +34,12 @@ class ExtensionRepository implements ExtensionRepositoryInterface
 
     public function all(bool $isTheme = false)
     {
+        $appVersion = $this->appVersion();
+
         $response = $this->request('get', 'extension', [
             'is_theme' => $isTheme,
-            'is_beta' => true,
+            'is_beta' => false,
+            'app_version' => $appVersion ?: 6.5
         ]);
 
         if ($response->ok()) {
@@ -91,6 +99,31 @@ class ExtensionRepository implements ExtensionRepositoryInterface
         }, function ($http) use ($fullUrl, $body) {
             return $http->get($fullUrl, $body);
         });
+    }
+
+    public function check($request, Closure $next)
+    {
+        $domain = $request->getHost();
+
+        $check = cache()->remember('check_license_domain_'.$domain, 60 * 60 * 24, function () {
+            return $this
+                ->request('post', 'check')
+                ->json('licensed');
+        });
+
+        if (! $check) {
+            if (Storage::disk('local')->exists('portal')) {
+                Storage::disk('local')->delete('portal');
+            }
+
+            SettingTwo::first()->update(['liquid_license_domain_key' => null]);
+
+            cache()->delete('check_license_domain_'.$domain);
+
+            return redirect()->route('LaravelInstaller::license')->with(['message' => 'License for this domain is invalid. Please contact support.']);
+        }
+
+        return $next($request);
     }
 
     public function mergedInstalled(array $data): array
@@ -157,5 +190,16 @@ class ExtensionRepository implements ExtensionRepositoryInterface
 
             return '';
         });
+    }
+
+    public function appVersion(): bool|string|int
+    {
+        $file = base_path('version.txt');
+
+        if (file_exists($file)) {
+            return file_get_contents($file);
+        }
+
+        return self::APP_VERSION;
     }
 }

@@ -28,7 +28,7 @@ return new class extends Migration
             $table->string('footer_text')->default('Unlock your business potential by letting the AI work and generate money for you.');
             $table->string('footer_button_text')->default('Join our community');
             $table->string('footer_button_url')->default('https://codecanyon.net/item/magicai-openai-content-text-image-chat-code-generator-as-saas/45408109');
-            $table->string('footer_copyright')->default('2023 MagicAI. All images are for demo purposes.');
+            $table->string('footer_copyright')->default('All images are for demo purposes.');
             $table->timestamps();
         });
     }

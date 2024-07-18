@@ -1,5 +1,6 @@
 @php
-    $href = $item['route_slug'] && $item['route'] ? route($item['route'], $item['route_slug']) : route($item['route'] ?: 'default');
+    $href = \App\Helpers\Classes\Helper::hasRoute($item['route']) && $item['route_slug'] ? route($item['route'], $item['route_slug']) : route($item['route'] ?: 'default');
+
     $is_active = $href === url()->current();
 
     if (!$is_active) {
@@ -33,9 +34,15 @@
     />
     <x-navbar.dropdown.dropdown open="{{ $is_active }}">
         @foreach ($item['children'] as $child)
+
+
+
             @if (data_get($child, 'show_condition', true) && data_get($item, 'is_active'))
                 @php
-                    $child_href = $child['route_slug'] ? route($child['route'], $child['route_slug']) : route($child['route']);
+                    $child_href =
+                        $child['route_slug'] && \App\Helpers\Classes\Helper::hasRoute($child['route'])
+                            ? route($child['route'], $child['route_slug'])
+                            : route(\App\Helpers\Classes\Helper::hasRoute($child['route']) ? $child['route'] : 'default');
                     $child_is_active = $child_href === url()->current();
                 @endphp
 

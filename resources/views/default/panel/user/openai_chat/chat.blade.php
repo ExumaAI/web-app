@@ -104,7 +104,7 @@
         <div class="lqd-chat-user-bubble mb-2 flex flex-row-reverse content-end gap-2 lg:ms-auto">
             <span
                 class="size-6 inline-block shrink-0 rounded-full bg-cover bg-center"
-                style="background-image: url({{ custom_theme_url(Auth::user()->avatar, true) }})"
+                style="background-image: url({{ url(Auth::user()->avatar, true) }})"
             >
                 <span class="sr-only">
                     @lang('You'):
@@ -128,7 +128,7 @@
         <div class="lqd-chat-ai-bubble group mb-2 flex content-start gap-2">
             <span
                 class="size-6 inline-block shrink-0 rounded-full bg-cover bg-center"
-                style="background-image: url('{{ !empty($chat->category->image) ? custom_theme_url($chat->category->image, true) : custom_theme_url('assets/img/auth/default-avatar.png') }}')"
+                style="background-image: url('{{ !empty($chat->category->image) ? custom_theme_url($chat->category->image, true) : url(custom_theme_url('/assets/img/auth/default-avatar.png')) }}')"
             >
                 <span class="sr-only">
                     @lang('AI Assistant'):

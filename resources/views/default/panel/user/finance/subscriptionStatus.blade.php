@@ -105,6 +105,7 @@
 
     <div class="mt-6 flex flex-wrap items-center justify-center gap-4">
         <x-button
+                data-name="{{\App\Enums\Introduction::SELECT_PLAN}}"
             class="hover:bg-primary"
             variant="ghost-shadow"
             href="{{ LaravelLocalization::localizeUrl(route('dashboard.user.payment.subscription')) }}"

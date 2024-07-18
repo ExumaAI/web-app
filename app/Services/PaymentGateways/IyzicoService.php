@@ -2,6 +2,7 @@
 
 namespace App\Services\PaymentGateways;
 
+use App\Actions\CreateActivity;
 use App\Events\IyzicoWebhookEvent;
 use App\Models\Coupon;
 use App\Models\Currency;
@@ -641,7 +642,7 @@ class IyzicoService
                 // delete custom settings since we do not need it anymore
                 $customSettings->delete();
 				\App\Models\Usage::getSingle()->updateSalesCount($newDiscountedPrice);
-                createActivity($user->id, __('Subscribed'), $plan->name.' '.__('Plan'), null);
+                CreateActivity::for($user, __('Subscribed'), $plan->name.' '.__('Plan'));
             } else {
                 // lifetime plan
                 $checkoutRequest = [
@@ -741,7 +742,7 @@ class IyzicoService
                         // delete custom settings since we do not need it anymore
                         $customSettings->delete();
 						\App\Models\Usage::getSingle()->updateSalesCount($newDiscountedPrice);
-                        createActivity($user->id, __('Subscribed'), $plan->name.' '.__('Plan'), null);
+                        CreateActivity::for($user, __('Subscribed'), $plan->name.' '.__('Plan'));
                     }
                 }
             }
@@ -1012,7 +1013,7 @@ class IyzicoService
                 // delete custom settings since we do not need it anymore
                 $customSettings->delete();
 				\App\Models\Usage::getSingle()->updateSalesCount($newDiscountedPrice);
-                createActivity($user->id, __('Purchased'), $plan->name.' '.__('Token Pack'), null);
+                CreateActivity::for($user, __('Purchased'), $plan->name.' '.__('Token Pack'));
             }
             DB::commit();
 
@@ -1046,7 +1047,7 @@ class IyzicoService
                     $user->remaining_words = $recent_words < 0 ? 0 : $recent_words;
                     $user->remaining_images = $recent_images < 0 ? 0 : $recent_images;
                     $user->save();
-                    createActivity($user->id, 'Cancelled', 'Subscription plan', null);
+                    CreateActivity::for($user, __('Cancelled'), 'Subscription plan');
                     if ($internalUser != null) {
                         return back()->with(['message' => __('User subscription is cancelled succesfully.'), 'type' => 'success']);
                     }
@@ -1066,7 +1067,7 @@ class IyzicoService
                         $user->remaining_words = $recent_words < 0 ? 0 : $recent_words;
                         $user->remaining_images = $recent_images < 0 ? 0 : $recent_images;
                         $user->save();
-                        createActivity($user->id, __('Cancelled'), $plan->name, null);
+                        CreateActivity::for($user, __('Cancelled'), $plan->name);
                         if ($internalUser != null) {
                             return back()->with(['message' => __('User subscription is cancelled succesfully.'), 'type' => 'success']);
                         }

@@ -12,7 +12,7 @@
                     </p>
                     <div class="flex grow justify-end gap-2">
                         <div
-                            class="data-audio flex grow"
+                            class="data-audio flex grow items-center"
                             data-audio="/{{ $entry->input }}"
                         >
                             <button type="button">

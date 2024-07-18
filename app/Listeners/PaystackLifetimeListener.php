@@ -2,6 +2,7 @@
 
 namespace App\Listeners;
 
+use App\Actions\CreateActivity;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
 use App\Events\PaystackLifetimeEvent;
@@ -55,7 +56,7 @@ class PaystackLifetimeListener
                     $order->plan->total_images == -1? ($order->user->remaining_images = -1) : ($order->user->remaining_images = $order->plan->total_images);
                     $order->user->save();
                     # sent mail if required here later
-                    createActivity($order->user->id, $msg , $order->plan->name. ' '. __('Plan'), null);
+                    CreateActivity::for($order->user, $msg, $order->plan->name. ' '. __('Plan'));
                 }
             }
         }catch(\Exception $ex){

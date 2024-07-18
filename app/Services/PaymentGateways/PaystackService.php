@@ -2,6 +2,7 @@
 
 namespace App\Services\PaymentGateways;
 
+use App\Actions\CreateActivity;
 use App\Events\PaystackWebhookEvent;
 use App\Models\Coupon;
 use App\Models\Currency;
@@ -338,7 +339,7 @@ class PaystackService
 
                 $user->save();
 
-                createActivity($user->id, __('Subscribed'), $plan->name.' '.__('Plan'), null);
+                CreateActivity::for($user, __('Subscribed'), $plan->name.' '.__('Plan'));
 				\App\Models\Usage::getSingle()->updateSalesCount($total);
                 DB::commit();
 
@@ -469,7 +470,7 @@ class PaystackService
             $plan->total_words == -1 ? ($user->remaining_words = -1) : ($user->remaining_words += $plan->total_words);
             $plan->total_images == -1 ? ($user->remaining_images = -1) : ($user->remaining_images += $plan->total_images);
             $user->save();
-            createActivity($user->id, __('Purchased'), $plan->name.' '.__('Token Pack'), null);
+            CreateActivity::for($user, __('Purchased'), $plan->name.' '.__('Token Pack'));
 			\App\Models\Usage::getSingle()->updateSalesCount($newDiscountedPrice);
             DB::commit();
 
@@ -684,7 +685,7 @@ class PaystackService
                     $user->remaining_words = $recent_words < 0 ? 0 : $recent_words;
                     $user->remaining_images = $recent_images < 0 ? 0 : $recent_images;
                     $user->save();
-                    createActivity($user->id, 'Cancelled', 'Subscription plan', null);
+                    CreateActivity::for($user, 'Cancelled', 'Subscription plan');
 
                     return back()->with(['message' => __('Your subscription is cancelled succesfully.'), 'type' => 'success']);
                 } else {
@@ -701,7 +702,7 @@ class PaystackService
                 $user->remaining_words = $recent_words < 0 ? 0 : $recent_words;
                 $user->remaining_images = $recent_images < 0 ? 0 : $recent_images;
                 $user->save();
-                createActivity($user->id, 'Cancelled', 'Subscription plan', null);
+                CreateActivity::for($user, 'Cancelled', 'Subscription plan');
 
                 return back()->with(['message' => __('Your subscription is cancelled succesfully.'), 'type' => 'success']);
             }

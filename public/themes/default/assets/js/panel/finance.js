@@ -19,6 +19,14 @@ function prepaidSave( plan_id ) {
 		formData.append('openaiItems[]', items[i]);
 	}
 
+	let aiChatModelItems = $('[name="aiChatModelItems[]"]:checked').map(function(i, e) {
+		return e.value;
+	});
+
+	for (let i = 0; i < aiChatModelItems.length; i++) {
+		formData.append('aiChatModelItems[]', aiChatModelItems[i]);
+	}
+
 	formData.append( 'name', $( "#name" ).val() );
 	formData.append( 'price', $( "#price" ).val() );
 	formData.append( 'is_featured', $( "#is_featured" ).val() );
@@ -91,6 +99,14 @@ function subscriptionSave( plan_id ) {
 		formData.append('openaiItems[]', items[i]);
 	}
 
+	let aiChatModelItems = $('[name="aiChatModelItems[]"]:checked').map(function(i, e) {
+		 return e.value;
+	});
+
+	for (let i = 0; i < aiChatModelItems.length; i++) {
+		formData.append('aiChatModelItems[]', aiChatModelItems[i]);
+	}
+
 	formData.append( 'name', $( "#name" ).val() );
 	formData.append( 'price', $( "#price" ).val() );
 	formData.append( 'frequency', $( "#frequency" ).val() );
@@ -131,9 +147,9 @@ function subscriptionSave( plan_id ) {
 		contentType: false,
 		processData: false,
 		success: function ( data ) {
-			toastr.success(magicai_localize?.plan_saved ||'Plan Saved Succesfully. Redirecting...')
+			toastr.success(magicai_localize?.plan_saved ||'Plan Saved Succesfully. Redirecting...');
 			setTimeout( function () {
-				location.href = '/dashboard/admin/finance/plans'
+				location.href = '/dashboard/admin/finance/plans';
 			}, 1000 );
 
 		},

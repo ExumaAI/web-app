@@ -6,6 +6,7 @@ use App\Helpers\Classes\Helper;
 use App\Helpers\Classes\InstallationHelper;
 use App\Models\Setting;
 use App\Models\User;
+use App\Services\Common\MenuService;
 use App\Services\Extension\ExtensionService;
 use App\Services\Theme\ThemeService;
 use Exception;
@@ -16,7 +17,6 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
-use App\Services\Common\MenuService;
 
 class InstallationController extends Controller
 {
@@ -72,7 +72,7 @@ class InstallationController extends Controller
             'DB_DATABASE='.$request->database_name."\n".
             'DB_USERNAME='.$request->database_username."\n".
             'DB_PASSWORD="'.$request->database_password.'"'."\n\n".
-            'BROADCAST_DRIVER='.'log'."\n".
+            'BROADCAST_DRIVER='.'pusher'."\n".
             'CACHE_DRIVER='.'file'."\n".
             'SESSION_DRIVER='.'file'."\n".
             'QUEUE_DRIVER='.'sync'."\n\n".
@@ -88,9 +88,9 @@ class InstallationController extends Controller
             'MAIL_ENCRYPTION='.$request->mail_encryption."\n\n".
             'MAIL_FROM_ADDRESS='.$request->mail_from_address."\n\n".
             'MAIL_FROM_NAME='.$request->mail_from_name."\n\n".
-            'PUSHER_APP_ID='.'null'."\n".
-            'PUSHER_APP_KEY='.'null'."\n".
-            'PUSHER_APP_SECRET='.'null';
+            'PUSHER_APP_ID='.''."\n".
+            'PUSHER_APP_KEY='.''."\n".
+            'PUSHER_APP_SECRET='.'';
 
         try {
             $envPath = base_path('.env');
@@ -185,7 +185,7 @@ class InstallationController extends Controller
 
     public function updateManual()
     {
-        $version = '6.20';
+        $version = '6.52';
 
         /*
         Yeni gelen tabloları migrate ediyoruz.
@@ -195,10 +195,10 @@ class InstallationController extends Controller
             '--force' => true,
         ]);
 
-        # Run the installation
+        // Run the installation
         InstallationHelper::runInstallation();
 
-        File::put(base_path() . '/version.txt', $version);
+        File::put(base_path().'/version.txt', $version);
 
         $settings = Setting::first();
         $settings->script_version = $version;
@@ -213,7 +213,7 @@ class InstallationController extends Controller
             return back()
                 ->with([
                     'message' => __('This feature is disabled in Demo version.'),
-                    'type' => 'error'
+                    'type' => 'error',
                 ]);
         }
 
@@ -222,10 +222,10 @@ class InstallationController extends Controller
 
             if ($data['status']) {
                 return redirect()->back()
-					->with([
-						'message' => $data['message'],
-						'type' => 'success'
-					]);
+                    ->with([
+                        'message' => $data['message'],
+                        'type' => 'success',
+                    ]);
             } else {
                 return response()
                     ->error(
@@ -248,7 +248,7 @@ class InstallationController extends Controller
             return back()
                 ->with([
                     'message' => __('This feature is disabled in Demo version.'),
-                    'type' => 'error'
+                    'type' => 'error',
                 ]);
         }
 
@@ -300,9 +300,10 @@ class InstallationController extends Controller
         }
     }
 
-	public function menuClearCach() {
-		app(MenuService::class)->regenerate();
-		return redirect()->back()->with(['message' => __('Menu cache cleared successfully.'), 'type' => 'success']);
-	}
+    public function menuClearCach()
+    {
+        app(MenuService::class)->regenerate();
 
+        return redirect()->back()->with(['message' => __('Menu cache cleared successfully.'), 'type' => 'success']);
+    }
 }

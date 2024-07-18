@@ -14,6 +14,7 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Queue\Middleware\WithoutOverlapping;
 
 class SendConfirmationEmail implements ShouldQueue
 {
@@ -35,4 +36,9 @@ class SendConfirmationEmail implements ShouldQueue
         Mail::to($this->user->email)
             ->send(new ConfirmationEmail($this->user, $this->settings, $this->template));
     }
+
+	public function middleware(): array
+	{
+		return [new WithoutOverlapping($this->user->id)];
+	}
 }

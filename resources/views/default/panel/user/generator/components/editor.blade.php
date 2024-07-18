@@ -64,6 +64,16 @@
     name="_prompt"
 >
 
+@php
+    $lang_with_flags = [];
+    foreach (LaravelLocalization::getSupportedLocales() as $lang => $properties) {
+        $lang_with_flags[] = [
+            'lang' => $lang,
+            'name' => $properties['native'],
+            'flag' => country2flag(substr($properties['regional'], strrpos($properties['regional'], '_') + 1)),
+        ];
+    }
+@endphp
 @push('script')
     <script>
         @if (setting('default_ai_engine', 'openai') == 'anthropic')
@@ -72,6 +82,7 @@
             const stream_type = '{!! $settings_two->openai_default_stream_server !!}';
         @endif
         const openai_model = '{{ $setting->openai_default_model }}';
+        const lang_with_flags = @json($lang_with_flags);
     </script>
     <script src="{{ custom_theme_url('/assets/libs/beautify-html.min.js') }}"></script>
     <script src="{{ custom_theme_url('/assets/libs/ace/src-min-noconflict/ace.js') }}"></script>
@@ -145,7 +156,7 @@
 
             formData.append('prompt', $('#ai_prompt_id').val() ||
                 'Continue writing from the end of the content. Maintain the same tone, style, and subject matter as the preceding text. Ensure that the continuation flows naturally and stays true to the original content. Expand on the ideas presented and provide a coherent and engaging continuation.'
-                );
+            );
 
             formData.append('content', content);
 

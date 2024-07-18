@@ -11,6 +11,15 @@ use Illuminate\Support\Facades\DB;
 
 class Helper
 {
+    public static function hasRoute($route = null): bool
+    {
+        if ($route && \Route::has($route)) {
+            return true;
+        }
+
+        return false;
+    }
+
     public static function arrayMerge($merge = true, array $array = [], array ...$mergeArray): array
     {
         if ($merge) {

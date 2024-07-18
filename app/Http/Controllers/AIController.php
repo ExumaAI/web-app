@@ -1148,12 +1148,21 @@ class AIController extends Controller
  						}
 						$payload = $multipart;
 					}
-
 					try {
                         if(
                             ($engine == 'sd3' || $engine == 'sd3-turbo') &&
                             ($stable_type == 'text-to-image' || $stable_type == 'image-to-image')
                         ) {
+
+                            if ($engine == 'sd3-turbo') {
+                                $engine = 'sd3';
+
+                                $sd3Payload[] = [
+                                    'name' => 'model',
+                                    'contents' => 'sd3-large-turbo'
+                                ];
+                            }
+
                             $response = $client->post("$engine", [
                                 "headers" => [
                                     "accept" => "application/json",
@@ -1652,7 +1661,7 @@ class AIController extends Controller
 			'messages' => [
 				[
 					'role' => 'system',
-					'content' => 'You are a helpful language detection assistant. Must detect the content language and return it only az language code. For example: "en_US"',
+					'content' => 'You are a helpful language detection assistant. Must detect the content language and return it only '.app()->getLocale().' language code. For example: "en_US"',
 				],
 				[
 					'role' => 'user',
@@ -1660,7 +1669,9 @@ class AIController extends Controller
 				]
 			],
 		]);
+
 		$languageCode = $detect->choices[0]->message->content;
+
 		$completion = FacadesOpenAI::chat()->create([
 			'model' => $chat_bot,
 			'messages' => [

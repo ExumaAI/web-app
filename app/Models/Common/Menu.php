@@ -22,7 +22,8 @@ class Menu extends Model
         'type',
         'extension',
         'letter_icon',
-        'letter_icon_bg'
+        'letter_icon_bg',
+        'custom_menu',
     ];
 
     protected $casts = [

@@ -33,7 +33,7 @@ class Usage extends Model
         $this->this_week_word_count += $count;
 
         // Check if a week has passed since the last update
-        if ($this->updated_at && Carbon::now()->diffInWeeks($this->updated_at) >= 1) {
+        if (Carbon::now()->diffInWeeks($this->updated_at) >= 1) {
             // Move this week counts to last week counts
             $this->last_week_word_count = $this->this_week_word_count;
             $this->this_week_word_count = 0;
@@ -59,18 +59,16 @@ class Usage extends Model
     }
 
 	// Define method to update user count
-	public function updateUserCount($count)
+	public function updateUserCount($count = 0)
 	{
 		$this->total_user_count += $count;
-		$this->this_week_user_count += $count;
-
 		// Check if a week has passed since the last update
-		if ($this->updated_at && Carbon::now()->diffInWeeks($this->updated_at) >= 1) {
+		if (Carbon::now()->diffInWeeks($this->updated_at) >= 1) {
 			// Move this week counts to last week counts
 			$this->last_week_user_count = $this->this_week_user_count;
 			$this->this_week_user_count = 0;
 		}
-
+		$this->this_week_user_count += $count;
 		$this->save();
 	}
 

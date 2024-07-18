@@ -49,3 +49,34 @@
         });
     </script>
 @endif
+
+<script>
+    function getProductByBrand(brand_id) {
+        var brand_id = brand_id;
+        var product_element = $('#brand_voice_prod');
+        if (brand_id == '') {
+            product_element.empty();
+            product_element.append('<option value="">Select Product</option>');
+        } else {
+            $.ajax({
+                url: '/dashboard/user/brand/get-products/' + brand_id,
+                type: 'get',
+                success: function(response) {
+                    product_element.empty();
+                    if (response.length == 0) {
+                        product_element.append('<option value="">Select Product</option>');
+                    } else {
+                        $.each(response, function(index, value) {
+                            product_element.append('<option value="' + value.id + '">' + value.name + '</option>');
+                        });
+                    }
+                }
+            });
+        }
+    }
+
+    function setBrandVoice() {
+        toastr.success('Brand voice selected');
+        $('#brandVoiceModal').modal('hide');
+    }
+</script>

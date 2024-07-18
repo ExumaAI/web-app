@@ -9,7 +9,7 @@ use Illuminate\Foundation\Bus\DispatchesJobs;
 
 /**
  * @OA\Info(
- *    title="MagicAI  ApplicationAPI",
+ *    title="API",
  *    version="1.0.0",
  * )
  */

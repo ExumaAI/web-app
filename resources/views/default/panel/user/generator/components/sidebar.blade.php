@@ -354,6 +354,7 @@
                                                 @ajax:before="document.querySelector('#document_title').value = ''; $el.classList.add('loading')"
                                                 @ajax:success="setGeneratorStep(1)"
                                                 @ajax:after="$el.classList.remove('loading')"
+                                                oncontextmenu="return false"
                                             ></a>
                                         @endif
                                     </div> <!-- .lqd-generator-item -->

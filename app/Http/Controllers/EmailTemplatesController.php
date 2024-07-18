@@ -4,11 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Helpers\Classes\Helper;
 use App\Jobs\SendEmail;
-use App\Jobs\SendTeamInviteEmail;
 use App\Models\EmailTemplates;
 use App\Models\Extension;
-use Illuminate\Http\Request;
+use App\Models\Subscriptions;
 use App\Models\User;
+use Illuminate\Http\Request;
 
 class EmailTemplatesController extends Controller
 {
@@ -22,7 +22,7 @@ class EmailTemplatesController extends Controller
         }
 
         return view('panel.email.list', [
-            'list' => EmailTemplates::orderBy('id', 'asc')->get(), 'installedExtension' => $installedExtension
+            'list' => EmailTemplates::orderBy('id', 'asc')->get(), 'installedExtension' => $installedExtension,
         ]);
     }
 
@@ -32,7 +32,7 @@ class EmailTemplatesController extends Controller
             'action' => route('dashboard.email-templates.update', $id),
             'method' => 'PUT',
             'template' => EmailTemplates::query()->findOrFail($id),
-            'title' => 'Edit Email Template'
+            'title' => 'Edit Email Template',
         ]);
     }
 
@@ -41,7 +41,7 @@ class EmailTemplatesController extends Controller
         if (Helper::appIsDemo()) {
             return response()->json([
                 'status' => 'error',
-                'message' => trans('This feature is disabled in demo mode.')
+                'message' => trans('This feature is disabled in demo mode.'),
             ]);
         }
 
@@ -52,7 +52,7 @@ class EmailTemplatesController extends Controller
         $data = $request->validate([
             'title' => $template->system ? 'sometimes|nullable' : 'required',
             'subject' => 'required',
-            'content' => 'required'
+            'content' => 'required',
         ]);
 
         $template->update($data);
@@ -60,7 +60,7 @@ class EmailTemplatesController extends Controller
         return redirect()
             ->route('dashboard.email-templates.index')
             ->with([
-                'message' => __('Updated Successfully'), 'type' => 'success'
+                'message' => __('Updated Successfully'), 'type' => 'success',
             ]);
     }
 
@@ -69,7 +69,7 @@ class EmailTemplatesController extends Controller
         if (Helper::appIsDemo()) {
             return response()->json([
                 'status' => 'error',
-                'message' => trans('This feature is disabled in demo mode.')
+                'message' => trans('This feature is disabled in demo mode.'),
             ]);
         }
 
@@ -77,7 +77,7 @@ class EmailTemplatesController extends Controller
 
         if ($template->getAttribute('system')) {
             return back()->with([
-                'message' => __('Deleted Successfully'), 'type' => 'danger'
+                'message' => __('Deleted Successfully'), 'type' => 'danger',
             ]);
         }
 
@@ -90,7 +90,7 @@ class EmailTemplatesController extends Controller
     {
         return view('panel.email.send', [
             'template' => EmailTemplates::query()->findOrFail($id),
-            'title' => 'Send Email'
+            'title' => 'Send Email',
         ]);
     }
 
@@ -99,13 +99,11 @@ class EmailTemplatesController extends Controller
         $template = EmailTemplates::query()
             ->findOrFail($id);
 
-        $request['all_customers'] = (bool) $request->get('all_customers');
-
         $request->validate([
-            'receivers' => $request['all_customers'] ? 'sometimes' : 'required',
+            'receivers' => $request['customer_group'] != 'none' ? 'sometimes' : 'required',
         ]);
 
-        $arrayReceivers = Helper::multi_explode([",", "\n", "\r", ";", " ", "|"], $request->get('receivers'));
+        $arrayReceivers = Helper::multi_explode([',', "\n", "\r", ';', ' ', '|'], $request->get('receivers'));
 
         $array = [];
 
@@ -117,8 +115,23 @@ class EmailTemplatesController extends Controller
 
         $users = [];
 
-        if ($request['all_customers']) {
+        if ($request['customer_group'] == 'all_customer') {
             $users = User::query()
+                ->pluck('name', 'email')
+                ->toArray();
+        } elseif ($request['customer_group'] == 'active_purchasers') {
+            $users = User::query()
+                ->whereIn('id', $this->active_purchasers_ids())
+                ->pluck('name', 'email')
+                ->toArray();
+        } elseif ($request['customer_group'] == 'cancelled') {
+            $users = User::query()
+                ->whereIn('id', $this->cancelled())
+                ->pluck('name', 'email')
+                ->toArray();
+        } elseif ($request['customer_group'] == 'signed_up_but_purchase') {
+            $users = User::query()
+                ->whereDoesntHave('subscriptions')
                 ->pluck('name', 'email')
                 ->toArray();
         } else {
@@ -138,7 +151,7 @@ class EmailTemplatesController extends Controller
 
         return back()->with([
             'message' => __('Emails are being sent'),
-            'type' => 'success'
+            'type' => 'success',
         ]);
     }
 
@@ -147,12 +160,28 @@ class EmailTemplatesController extends Controller
         $data = array_map(function ($item, $key) {
             return [
                 'email' => $key,
-                'name' => $item
+                'name' => $item,
             ];
         }, $data, array_keys($data));
 
         return array_filter($data, function ($value) {
             return $value['email'] ?? false;
         });
+    }
+
+    public function active_purchasers_ids()
+    {
+        return Subscriptions::query()->whereIn('stripe_status', [
+            'active', 'trialing', 'bank_approved', 'bank_renewed', 'free_approved',
+            'stripe_approved', 'paypal_approved', 'iyzico_approved', 'paystack_approved',
+        ])->pluck('user_id')->toArray();
+    }
+
+    public function cancelled()
+    {
+        return Subscriptions::query()->whereNotIn('stripe_status', [
+            'trialing', 'trial', 'active', 'trialing', 'bank_approved', 'bank_renewed', 'free_approved',
+            'stripe_approved', 'paypal_approved', 'iyzico_approved', 'paystack_approved',
+        ])->pluck('user_id')->toArray();
     }
 }

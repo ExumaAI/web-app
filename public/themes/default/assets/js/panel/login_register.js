@@ -32,6 +32,11 @@ function LoginForm() {
 
 	formData.append('plan', plan);
 
+	let recaptcha = $('#recaptcha').val();
+	if (recaptcha == 1 && typeof grecaptcha !== 'undefined') {
+		let recaptchaResponse = grecaptcha.getResponse();
+		formData.append('g-recaptcha-response', recaptchaResponse);
+	}
 	// Ajax Post
 	$.ajax({
 		type: 'post',
@@ -88,6 +93,13 @@ function RegisterForm() {
 		formData.append('affiliate_code', $('#affiliate_code').val());
 	} else {
 		formData.append('affiliate_code', null);
+	}
+
+	let recaptcha = $('#recaptcha').val();
+
+	if (recaptcha == 1 && typeof grecaptcha !== 'undefined') {
+		let recaptchaResponse = grecaptcha.getResponse();
+		formData.append('g-recaptcha-response', recaptchaResponse);
 	}
 
 	$.ajax({

@@ -94,7 +94,7 @@
                         </x-lqd-icon>
                         <div class="lqd-statistic-info grow">
                             <p class="lqd-statistic-title mb-1 text-2xs font-medium text-heading-foreground/50">
-                                {{ __('Total sales') }}
+                                {{ __('Total Sales') }}
                             </p>
                             <h3 class="lqd-statistic-change m-0 flex items-center gap-2 text-xl">
                                 @if (currencyShouldDisplayOnRight($currencySymbol))
@@ -127,11 +127,11 @@
                         </x-lqd-icon>
                         <div class="lqd-statistic-info grow">
                             <p class="lqd-statistic-title mb-1 text-2xs font-medium text-heading-foreground/50">
-                                {{ __('New users') }}
+                                {{ __('Total Users') }}
                             </p>
                             <h3 class="lqd-statistic-change m-0 flex items-center gap-2 text-xl">
-                                {{ cache('users_this_week') }}
-                                <x-change-indicator value="{{ floatval($users_change) }}" />
+                                {{ cache('total_users') }}
+                                {{-- <x-change-indicator value="{{ floatval($users_change) }}" /> --}}
                             </h3>
                         </div>
                     </div>
@@ -320,6 +320,7 @@
 
                     @php
                         $values_sum = array_sum(array_column($user_behavior_data, 'value'));
+                        $values_sum = $values_sum == 0 ? 1 : $values_sum;
                     @endphp
 
                     <div id="user-behaviour-chart">
@@ -584,6 +585,10 @@
     <script>
         (() => {
             "use strict";
+
+            function mapRange(value, in_min, in_max, out_min, out_max) {
+                return ((value - in_min) * (out_max - out_min)) / (in_max - in_min) + out_min;
+            }
 
             @php
                 $daily_usages = json_decode(cache('daily_usages'));
@@ -859,30 +864,32 @@
             const data = @json($popular_plans_data);
             const dataLength = data.length;
             const series = [];
+            let minBubbleRadius = 40;
+            let maxBubbleRadius = 90;
 
             // first, add invisible data in all 4 corners to prevent overflow hidden
             series.push({
                 name: '',
                 data: [
-                    [0, 0, 0]
+                    [-2, -2, 0]
                 ],
                 color: '#ffffff00'
             }, {
                 name: '',
                 data: [
-                    [dataLength, 0, 0]
+                    [dataLength + 2, -2, 0]
                 ],
                 color: '#ffffff00'
             }, {
                 name: '',
                 data: [
-                    [dataLength, dataLength, 0]
+                    [dataLength + 2, dataLength + 2, 0]
                 ],
                 color: '#ffffff00'
             }, {
                 name: '',
                 data: [
-                    [0, dataLength, 0]
+                    [-2, dataLength + 2, 0]
                 ],
                 color: '#ffffff00'
             });
@@ -892,40 +899,46 @@
             let biggestValue = data[0];
             for (let i = 1; i < dataLength; i++) {
                 if (data[i]?.value > biggestValue?.value) {
-                    biggestValue = data[i];
+                    const cache = data[i];
+                    biggestValue = cache;
+                    data.splice(1, i);
+                    data.unshift(cache);
                 }
             }
 
             // Calculate the coordinates for the biggest value
-            let centerX = dataLength <= 1 ? 0.5 : Math.round(dataLength / 2);
+            let centerX = dataLength <= 1 ? 0.5 : Math.round((dataLength / 2) - 0.5);
             let centerY = dataLength <= 1 ? 0.5 : Math.round(dataLength / 2);
 
             // Add the biggest value in the middle of the chart
             series.push({
                 name: biggestValue?.label,
                 data: [
-                    [centerX, centerY, biggestValue?.value]
+                    [centerX, centerY, mapRange(biggestValue?.value, 0, biggestValue?.value, minBubbleRadius, maxBubbleRadius)]
                 ],
                 color: biggestValue?.color
             });
 
             // Calculate the remaining coordinates
             let angle = 0;
-            let angleIncrement = (2 * Math.PI) / (dataLength - 1);
+            let angleIncrement = (2 * Math.PI) / dataLength;
             for (let i = 0; i < dataLength; i++) {
-                if (data[i]?.label !== biggestValue?.label) {
-                    let radius = Math.min(dataLength - 1.5, Math.random() * (dataLength - 1.5) + 1);
-                    let x = Math.min(dataLength - 1.5, centerX + radius * Math.cos(angle));
-                    let y = Math.min(dataLength - 1.5, centerY + radius * Math.sin(angle));
-                    series.push({
-                        name: data[i]?.label,
-                        data: [
-                            [x, y, data[i]?.value]
-                        ],
-                        color: data[i]?.color
-                    });
-                    angle += Math.min(dataLength - 1.5, angleIncrement);
-                }
+                if (data[i]?.label === biggestValue?.label) continue;
+
+                let radius = Math.random() + 2;
+                let x = centerX + radius * Math.cos(angle);
+                let y = Math.min(dataLength + 1, centerY + radius * Math.sin(angle) + 1);
+                let value = data[i]?.value;
+
+                series.push({
+                    name: data[i]?.label,
+                    data: [
+                        [x, y, mapRange(value, 0, biggestValue?.value, minBubbleRadius, maxBubbleRadius)]
+                    ],
+                    color: data[i]?.color
+                });
+
+                angle += angleIncrement;
             }
 
             const popularPlansChartOptions = {
@@ -951,17 +964,34 @@
                 },
                 dataLabels: {
                     enabled: true,
+                    formatter: function(val, opts, e, o, v) {
+                        if (typeof val === 'undefined' || opts.seriesIndex <= 3) {
+                            return '';
+                        }
+
+                        let total = 0;
+                        for (let i = 0; i < dataLength; i++) {
+                            total += data[i]?.value;
+                        }
+
+                        let percentage = Math.round((data[opts.seriesIndex - 4]?.value / total) * 100);
+                        if (isNaN(percentage)) {
+                            percentage = 0;
+                        }
+                        return `${percentage}%`;
+                    },
                     style: {
+                        fontFamily: 'var(--font-heading)',
                         fontSize: '18px',
-                        fontWeight: 700,
-                        colors: ['hsl(var--foreground)'],
+                        fontWeight: 600,
+                        colors: ['hsl(var(--foreground))'],
                     },
                 },
                 plotOptions: {
                     bubble: {
                         zScaling: false,
-                        minBubbleRadius: 40,
-                        maxBubbleRadius: 175,
+                        minBubbleRadius,
+                        maxBubbleRadius,
                     }
                 },
                 grid: {
@@ -1166,6 +1196,9 @@
                         horizontal: 0,
                         vertical: 0
                     }
+                },
+                stroke: {
+                    colors: ['hsl(var(--border))']
                 },
                 responsive: [{
                     breakpoint: 501,

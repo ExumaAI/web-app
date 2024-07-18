@@ -459,17 +459,6 @@ if (!function_exists('hex_to_hsl')) {
     }
 }
 
-
-function createActivity($user_id, $activity_type, $activity_title, $url){
-    $activityEntry = new Activity();
-    $activityEntry->user_id = $user_id;
-    $activityEntry->activity_type = $activity_type;
-    $activityEntry->activity_title = $activity_title;
-    $activityEntry->url = $url;
-    $activityEntry->save();
-
-}
-
 function percentageChange($old, $new, int $precision = 1){
     if ($old == 0) {
         $old++;
@@ -1433,4 +1422,18 @@ function adjustHistory($history) {
     }
 
     return $adjustedHistory;
+}
+
+
+if (! function_exists('viewName')) {
+    function viewName(string $viewName): string
+    {
+        return $viewName;
+    }
+}
+
+function showTeamFunctionality(): bool
+{
+	$checkPlan = PaymentPlans::query()->where('is_team_plan', 1)->first();
+	return \App\Helpers\Classes\Helper::setting('team_functionality') && ! auth()?->user()?->getAttribute('team_id') && $checkPlan;
 }

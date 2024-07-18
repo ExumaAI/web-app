@@ -1,7 +1,7 @@
 @php
     $plan = Auth::user()->activePlan();
     $plan_type = 'regular';
-    $team = Auth::user()->getAttribute('team');
+    // $team = Auth::user()->getAttribute('team');
     $teamManager = Auth::user()->getAttribute('teamManager');
 
     if ($plan != null) {
@@ -45,6 +45,31 @@
 
 @endphp
 
+@push('css')
+    <style>
+        @if (setting('announcement_background_color'))
+            .lqd-card.lqd-announcement-card {
+                background-color: {{ setting('announcement_background_color') }};
+            }
+        @endif
+        @if (setting('announcement_background_image'))
+            .lqd-card.lqd-announcement-card {
+                background-image: url({{ setting('announcement_background_image') }});
+            }
+        @endif
+        @if (setting('announcement_background_color_dark'))
+            .theme-dark .lqd-card.lqd-announcement-card {
+                background-color: {{ setting('announcement_background_color_dark') }};
+            }
+        @endif
+        @if (setting('announcement_background_image_dark'))
+            .theme-dark .lqd-card.lqd-announcement-card {
+                background-image: url({{ setting('announcement_background_image_dark') }});
+            }
+        @endif
+    </style>
+@endpush
+
 @extends('panel.layout.app', ['disable_tblr' => true])
 @section('title', __('Dashboard'))
 @section('titlebar_title')
@@ -74,11 +99,72 @@
 @endsection
 
 @section('content')
-    <div class="flex flex-wrap justify-between gap-8 pt-10">
+    <div class="flex flex-wrap justify-between gap-8 py-5">
         <div
-            class="w-full"
+            class="grid w-full grid-cols-1 gap-10"
             id="all"
         >
+            @if (setting('announcement_active', 0) && !auth()->user()->dash_notify_seen)
+                <div
+                    class="lqd-announcement"
+                    x-data="{ show: true }"
+                    x-ref="announcement"
+                >
+                    <script>
+                        const announcementDismissed = localStorage.getItem('lqd-announcement-dismissed');
+                        if (announcementDismissed) {
+                            document.querySelector('.lqd-announcement').style.display = 'none';
+                        }
+                    </script>
+
+                    <x-card
+                        class="lqd-announcement-card relative bg-cover bg-center"
+                        size="lg"
+                        x-ref="announcementCard"
+                    >
+                        <div class="flex flex-wrap items-center justify-between gap-4">
+                            <div>
+                                <h3 class="mb-3">
+                                    @lang(setting('announcement_title', 'Welcome'))
+                                </h3>
+                                <p class="mb-4">
+                                    @lang(setting('announcement_description', 'We are excited to have you here. Explore the marketplace to find the best AI models for your needs.'))
+                                </p>
+                                <div class="flex flex-wrap gap-2">
+                                    <x-button
+                                        class="font-medium"
+                                        href="{{ setting('announcement_url', '#') }}"
+                                    >
+                                        <x-tabler-plus class="size-4" />
+                                        {{ setting('announcement_button_text', 'Try it Now') }}
+                                    </x-button>
+                                    <x-button
+                                        class="font-medium"
+                                        href="javascript:void(0)"
+                                        variant="ghost-shadow"
+                                        hover-variant="danger"
+                                        @click.prevent="{{ $app_is_demo ? 'toastr.info(\'This feature is disabled in Demo version.\')' : ' dismiss()' }}"
+                                    >
+                                        @lang('Dismiss')
+                                    </x-button>
+                                </div>
+                            </div>
+                            @if (setting('announcement_image_dark'))
+                                <img
+                                    class="announcement-img announcement-img-dark peer hidden w-28 shrink-0 dark:block"
+                                    src="{{ setting('announcement_image_dark', '/upload/images/speaker.png') }}"
+                                    alt="@lang(setting('announcement_title', 'Welcome to MagicAI!'))"
+                                >
+                            @endif
+                            <img
+                                class="announcement-img announcement-img-light w-28 shrink-0 dark:peer-[&.announcement-img-dark]:hidden"
+                                src="{{ setting('announcement_image', '/upload/images/speaker.png') }}"
+                                alt="@lang(setting('announcement_title', 'Welcome to MagicAI!'))"
+                            >
+                        </div>
+                    </x-card>
+                </div>
+            @endif
             <x-card size="lg">
                 <h3 class="mb-6 flex items-center gap-3">
                     {{-- blade-formatter-disable --}}
@@ -114,14 +200,14 @@
         @endif
 
         <x-card
-            class="{{ $setting['feature_affilates'] ? 'lg:w-[48%]' : 'lg:w-full' }} w-full text-center"
+            class="{{ showTeamFunctionality() ? 'lg:w-[48%]' : 'lg:w-full' }} w-full text-center"
             id="plan"
             size="lg"
         >
             @include('panel.user.finance.subscriptionStatus')
         </x-card>
 
-        @if ($setting['feature_affilates'])
+        @if (showTeamFunctionality())
             <x-card
                 class="w-full lg:w-[48%]"
                 id="team"
@@ -167,7 +253,10 @@
                                 @lang('Invite Friends')
                             </x-button>
                         @else
-                            <x-button type="submit">
+                            <x-button
+                                data-name="{{ \App\Enums\Introduction::AFFILIATE_SEND }}"
+                                type="submit"
+                            >
                                 @lang('Invite Friends')
                             </x-button>
                         @endif
@@ -244,12 +333,13 @@
                 class="lqd-docs-container group"
                 data-view-mode="grid"
             >
-                <div class="lqd-docs-list grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-                    @foreach (Auth::user()->openai()->orderBy('updated_at', 'desc')->take(4)->get() as $entry)
+                <div class="lqd-docs-list grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-5">
+                    @foreach (Auth::user()->openai()->orderBy('updated_at', 'desc')->take(5)->get() as $entry)
                         @if ($entry->generator != null)
                             <x-documents.item
                                 :$entry
                                 style="extended"
+                                trim="100"
                                 hide-fav
                             />
                         @endif
@@ -354,3 +444,48 @@
     </div>
 </div>
 @endsection
+
+@push('script')
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+
+        if (window.innerWidth >= 768) {
+            const steps = @json(\App\Models\Introduction::getFormattedSteps());
+
+            @if (auth()->user()->tour_seen == 0 && \App\Models\Setting::first()->tour_seen == 1)
+                introJs().setOptions({
+                    showBullets: false,
+                    steps: steps.map(step => {
+                        step.element = document.querySelector(step.element);
+                        return step;
+                    })
+                }).oncomplete(function() {
+                    fetch('/dashboard/user/mark-tour-seen', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        },
+                        body: JSON.stringify({})
+                    });
+                }).start();
+            @endif
+        }
+    });
+
+    function dismiss() {
+        // localStorage.setItem('lqd-announcement-dismissed', true);
+        document.querySelector('.lqd-announcement').style.display = 'none';
+        $.ajax({
+            url: '{{ route('dashboard.user.dash_notify_seen') }}',
+            type: 'POST',
+            data: {
+                _token: '{{ csrf_token() }}'
+            },
+            success: function(response) {
+                /* console.log(response); */
+            }
+        });
+    }
+</script>
+@endpush

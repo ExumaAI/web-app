@@ -49,4 +49,23 @@ class Chatbot extends Model
         return $this->hasMany(ChatbotData::class, 'chatbot_id', 'id')
             ->where('status', 'trained');
     }
+
+    public function domains(): HasMany
+    {
+        return $this->hasMany(Domain::class);
+    }
+
+    public function canNewDomainAdd(): bool
+    {
+        if ($this->domains->isEmpty()) {
+            return true;
+        }
+
+        return $this->supportsMultipleDomains();
+    }
+
+    public function supportsMultipleDomains(): bool
+    {
+        return true; // @todo: implement this
+    }
 }

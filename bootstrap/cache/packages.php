@@ -108,6 +108,17 @@
       0 => 'Laravel\\Tinker\\TinkerServiceProvider',
     ),
   ),
+  'livewire/livewire' => 
+  array (
+    'providers' => 
+    array (
+      0 => 'Livewire\\LivewireServiceProvider',
+    ),
+    'aliases' => 
+    array (
+      'Livewire' => 'Livewire\\Livewire',
+    ),
+  ),
   'mcamara/laravel-localization' => 
   array (
     'providers' => 
@@ -217,6 +228,13 @@
     'aliases' => 
     array (
       'PayPal' => 'Srmklive\\PayPal\\Facades\\PayPal',
+    ),
+  ),
+  'wire-elements/wire-extender' => 
+  array (
+    'providers' => 
+    array (
+      0 => 'WireElements\\WireExtender\\WireExtenderServiceProvider',
     ),
   ),
   'yajra/laravel-datatables-oracle' => 

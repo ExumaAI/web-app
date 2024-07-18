@@ -22,7 +22,9 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('extensions', function (Blueprint $table) {
-            $table->dropColumn('licensed');
+            if (Schema::hasColumn('extensions', 'licensed')) {
+                $table->dropColumn('licensed');
+            }
         });
     }
 };

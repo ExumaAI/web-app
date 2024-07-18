@@ -2,6 +2,8 @@
 
 namespace App\Repositories\Contracts;
 
+use Closure;
+
 interface ExtensionRepositoryInterface extends PortalRepositoryInterface
 {
     public function licensed(array $data);
@@ -12,11 +14,13 @@ interface ExtensionRepositoryInterface extends PortalRepositoryInterface
 
     public function subscription();
 
-    public function all(bool $isTheme =false);
+    public function all(bool $isTheme = false);
 
     public function find(string $slug);
 
     public function install(string $slug, string $version);
 
     public function request(string $method, string $route, array $body = []);
+
+    public function check($request, Closure $next);
 }

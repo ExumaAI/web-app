@@ -71,25 +71,21 @@ class SettingsController extends Controller
                 }
             }
 
-            if ($request->has('chat_setting_for_customer') || $request->has('default_ai_engine') ) {
-
-                setting([
-                    'chat_setting_for_customer' => $request->chat_setting_for_customer,
-                    'default_ai_engine' => $request->default_ai_engine,
-                ])->save();
-            }
-
-            if ($request->has('default_aw_image_engine')) {
-                setting([
-                    'default_aw_image_engine' => $request->default_aw_image_engine,
-                ])->save();
-            }
-
-            if ($request->has('photo_studio')) {
-                setting([
-                    'photo_studio' => $request->photo_studio,
-                ])->save();
-            }
+			$inputs = [];
+			$fields = [
+				'chat_setting_for_customer',
+				'default_ai_engine',
+				'default_aw_image_engine',
+				'photo_studio'
+			];
+			foreach ($fields as $field) {
+				if ($request->has($field)) {
+					$inputs[$field] = $request->$field;
+				}
+			}
+			if (!empty($inputs)) {
+				setting($inputs)->save();
+			}
 
             $settings->site_name = $request->site_name;
             $settings->site_url = $request->site_url;
@@ -97,6 +93,8 @@ class SettingsController extends Controller
             $settings->default_country = $request->default_country;
             $settings->default_currency = $request->default_currency;
             $settings->register_active = $request->register_active;
+            $settings->login_with_otp = $request->login_with_otp;
+            $settings->tour_seen = $request->tour_seen;
             $settings->google_analytics_code = $request->google_analytics_code;
             $settings->meta_keywords = $request->meta_keywords;
             $settings->dashboard_code_before_head = $request->dashboard_code_before_head;
@@ -126,11 +124,24 @@ class SettingsController extends Controller
             $settings->github_active = $request->github_active ?? 0;
             $settings->free_plan = $request->free_plan ?? '0,0';
             $settings->mobile_payment_active = $request->mobile_payment_active ?? 0;
+            $settings->recaptcha_login = $request->recaptcha_login;
+            $settings->recaptcha_register = $request->recaptcha_register;
+            $settings->recaptcha_sitekey = $request->recaptcha_sitekey;
+            $settings->recaptcha_secretkey = $request->recaptcha_secretkey;
             $settings->save();
 
-            setting(['user_prompt_library' => $request->user_prompt_library])->save();
-            setting(['user_ai_image_prompt_library' => $request->user_ai_image_prompt_library])->save();
-            setting(['user_ai_writer_custom_templates' => $request->user_ai_writer_custom_templates])->save();
+			setting(
+				[
+					'notification_active' => $request->notification_active,
+					'pusher_app_id' => $request->pusher_app_id,
+					'pusher_app_key' => $request->pusher_app_key,
+					'pusher_app_secret' => $request->pusher_app_secret,
+					'pusher_app_cluster' => $request->pusher_app_cluster,
+					'user_prompt_library' => $request->user_prompt_library,
+					'user_ai_image_prompt_library' => $request->user_ai_image_prompt_library,
+					'user_ai_writer_custom_templates' => $request->user_ai_writer_custom_templates
+				]
+			)->save();
 
             $this->toggleOpenaiTemplateStatus($settings);
 
@@ -734,6 +745,23 @@ class SettingsController extends Controller
     public function tts()
     {
         return view('panel.admin.settings.tts');
+    }
+
+    public function synthesia()
+    {
+        return view('panel.admin.settings.synthesia');
+    }
+
+    public function synthesiaSave(Request $request)
+    {
+        $settings = Setting::first();
+
+        if (Helper::appIsNotDemo()) {
+            $settings->synthesia_secret_key = $request->synthesia_secret_key;
+            $settings->save();
+        }
+
+        return response()->json([], 200);
     }
 
     public function ttsSave(Request $request)

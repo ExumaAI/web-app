@@ -16,6 +16,10 @@ class DatabaseSeeder extends Seeder
         # run installation
         InstallationHelper::runInstallation();
 
+        $this->call(
+            IntroductionSeeder::class
+        );
+
 //        $this->call(
 //            MenuSeeder::class
 //        );

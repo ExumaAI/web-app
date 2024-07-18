@@ -15,7 +15,7 @@
 		--font-body: 'Golos Text';
 		--font-heading: 'Onest';
 
-		--headings-font-family: theme(fontFamily.heading);
+		--headings-font-family: theme('fontFamily.heading');
 		--headings-line-height: 1.25rem;
 		--headings-font-weight: 600;
 		--headings-text-transform: ;
@@ -182,4 +182,4 @@
 	}
 }
 
-@import '../scss/single-page/single-page.scss'
+@import '../scss/single-page/single-page.scss';

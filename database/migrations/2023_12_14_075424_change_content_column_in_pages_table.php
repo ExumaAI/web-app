@@ -11,9 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('pages', function (Blueprint $table) {
-            $table->longText('content')->change();
-        });
+        if (Schema::hasTable('pages')) {
+            Schema::table('pages', function (Blueprint $table) {
+                $table->longText('content')->change();
+            });
+        }
     }
 
     /**
@@ -21,8 +23,10 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('pages', function (Blueprint $table) {
-            $table->text('content')->change();
-        });
+        if (Schema::hasTable('pages')) {
+            Schema::table('pages', function (Blueprint $table) {
+                $table->text('content')->change();
+            });
+        }
     }
 };

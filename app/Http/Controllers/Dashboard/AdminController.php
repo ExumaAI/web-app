@@ -2,19 +2,22 @@
 
 namespace App\Http\Controllers\Dashboard;
 
+use App\Actions\CreateActivity;
+use App\Actions\EmailConfirmation;
 use App\Helpers\Classes\Helper;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Finance\PaymentProcessController;
 use App\Jobs\SendConfirmationEmail;
+use App\Models\AccountDeletionReqs;
 use App\Models\Activity;
 use App\Models\Chatbot\Chatbot;
 use App\Models\ChatCategory;
 use App\Models\Clients;
 use App\Models\Coupon;
-use App\Models\Currency;
 use App\Models\CustomSettings;
 use App\Models\Faq;
 use App\Models\Favourite;
+use App\Models\Finance\AiChatModelPlan;
 use App\Models\FrontendForWho;
 use App\Models\FrontendFuture;
 use App\Models\FrontendGenerators;
@@ -29,37 +32,35 @@ use App\Models\OpenaiGeneratorChatCategory;
 use App\Models\OpenaiGeneratorFilter;
 use App\Models\PaymentPlans;
 use App\Models\Setting;
+use App\Models\SocialMediaAccounts;
 use App\Models\Testimonials;
+use App\Models\Usage;
 use App\Models\User;
+use App\Models\UserActivity;
 use App\Models\UserAffiliate;
 use App\Models\UserOpenai;
-use App\Models\UserOpenaiChatMessage;
 use App\Models\UserOrder;
-use App\Models\UserActivity;
-use App\Models\Usage;
 use App\Services\CountryCodeService;
 use App\Services\UsersExportService;
 use Carbon\Carbon;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Str;
-use App\Models\SocialMediaAccounts;
 use Illuminate\View\View;
-use Illuminate\Http\RedirectResponse;
-use App\Models\AccountDeletionReqs;
-use Laravel\Cashier\Subscription as Subscriptions;
 
 class AdminController extends Controller
 {
     public function index()
     {
         $settings = Setting::first();
-		// Cache::flush();
+
+        // Cache::flush();
+
         $requiredCaches = [
             'sales_this_week',
             'sales_previous_week',
@@ -71,132 +72,132 @@ class AdminController extends Controller
             'users_previous_week',
             'daily_sales',
             'daily_usages',
-			'daily_users',
+            'daily_users',
             'top_countries',
             'total_users',
             'total_sales',
             'total_usage',
-			'popular_tools_data',
-			'popular_plans_data',
-			'user_behavior_data',
+            'popular_tools_data',
+            'popular_plans_data',
+            'user_behavior_data',
         ];
         $missingCaches = array_filter($requiredCaches, function ($cacheKey) {
             return ! Cache::has($cacheKey);
         });
 
-		$activeStatuses = [
-			'active',
-			'trialing',
-			'bank_approved',
-			'bank_renewed',
-			'free_approved',
-			'stripe_approved',
-			'paypal_approved',
-			'iyzico_approved',
-			'paystack_approved'
-		];
-		$popular_plans_data = [];
-		$most_used_last_openai_tools = [];
-		$plan_names_colors = [
-			'monthly' => [
-				'label' => 'Monthly',
-				'color' => '#06D4404D',
-			],
-			'yearly' => [
-				'label' => 'Yearly',
-				'color' => '#8185F44D',
-			],
-			'lifetime_monthly' => [
-				'label' => 'Lifetime Monthly',
-				'color' => '#2C36490D',
-			],
-			'lifetime_yearly' => [
-				'label' => 'Lifetime Yearly',
-				'color' => '#42f5b0',
-			],
-			'prepaid' => [
-				'label' => 'Prepaid',
-				'color' => '#60CAF94D',
-			],
-		];
-		$plan_counts = [
-			'monthly' => 0,
-			'yearly' => 0,
-			'lifetime_monthly' => 0,
-			'lifetime_yearly' => 0,
-			'prepaid' => 0,
-		];	
-		
-		$random_colors = ['#74DB84', '#74A9DB', '#DB9374', '#8185F44D', '#E3E8E8', '#C674DB'];
+        $activeStatuses = [
+            'Success',
+            'Approved',
+        ];
+        $popular_plans_data = [];
+        $most_used_last_openai_tools = [];
+        $plan_names_colors = [
+            'monthly' => [
+                'label' => 'Monthly',
+                'color' => '#06D4404D',
+            ],
+            'yearly' => [
+                'label' => 'Yearly',
+                'color' => '#8185F44D',
+            ],
+            'lifetime_monthly' => [
+                'label' => 'Lifetime Monthly',
+                'color' => '#74DB84',
+            ],
+            'lifetime_yearly' => [
+                'label' => 'Lifetime Yearly',
+                'color' => '#42f5b0',
+            ],
+            'prepaid' => [
+                'label' => 'Prepaid',
+                'color' => '#60CAF94D',
+            ],
+        ];
+        $plan_counts = [
+            'monthly' => 0,
+            'yearly' => 0,
+            'lifetime_monthly' => 0,
+            'lifetime_yearly' => 0,
+            'prepaid' => 0,
+        ];
+
+        $random_colors = ['#74DB84', '#74A9DB', '#DB9374', '#8185F44D', '#E3E8E8', '#C674DB'];
+
         if (! empty($missingCaches)) {
             $cacheDuration = now()->addMinutes(5);
 
             $daily_sales = json_encode(UserOrder::select(DB::raw('sum(price) as sums'), DB::raw("DATE_FORMAT(created_at,'%Y-%m-%d') as days"))->groupBy('days')->get());
             $top_countries = json_encode(User::select('country', DB::raw('count(*) as total'))->groupBy('country')->get());
-			$daily_usages = json_encode(UserOpenai::select(DB::raw('SUM(IF(credits=1,credits,0)) as sumsImage'), DB::raw('SUM(IF(credits>1,credits,0)) as sumsWord'), DB::raw("DATE_FORMAT(created_at,'%Y-%m-%d') as days"))->groupBy('days')->get());
-			$daily_users = json_encode(User::select(DB::raw('count(*) as total'), DB::raw("DATE_FORMAT(created_at,'%Y-%m-%d') as days"))->groupBy('days')->get());
-			$activeSubs = Subscriptions::whereIn('stripe_status', $activeStatuses)->get();
-			foreach ($activeSubs as $sub) {
-				$plan = PaymentPlans::where('id', $sub->plan_id)->first();
-				if ($plan != null) {
-					$key = $plan->type == 'subscription' ? $plan->frequency : $plan->type;
-					if (array_key_exists($key, $plan_counts)) {
-						$plan_counts[$key]++;
-					}
-				}
-			}
-			foreach ($plan_counts as $key => $count) {
-				if ($count > 0) {
-					$popular_plans_data[] = [
-						'label' => $plan_names_colors[$key]['label'],
-						'value' => $count,
-						'color' => $plan_names_colors[$key]['color'],
-					];
-				}
-			}
-		
-			$most_used_last_openai_tools = UserOpenai::select('openai_id', DB::raw('COUNT(*) as total'))
-				->groupBy('openai_id')
-				->orderBy('total', 'desc')
-				->limit(5)
-				->get();
-			$most_used_last_openai_tools = $most_used_last_openai_tools->map(function ($item, $key) use ($random_colors) {
-				$color = $random_colors[$key];
-				$openai = OpenAIGenerator::where('id', $item->openai_id)->first();
-				$percentage =  round(($item->total / UserOpenai::count()) * 100);
-				return [
-					'label' => $openai->title,
-					'value' => $percentage,
-					'color' => $color,
-				];
-			});	
 
-			$activities = UserActivity::all();
-			$mobileCount = 0;
-			$desktopCount = 0;
-			foreach ($activities as $activity) {
-				if ($this::isMobileDevice($activity->connection)) {
-					$mobileCount++;
-				} else {
-					$desktopCount++;
-				}
-			}
-			$userBehaviorData = [
-				[
-					'label' => 'Mobile',
-					'value' => $mobileCount,
-					'color' => 'hsl(var(--primary))',
-				],
-				[
-					'label' => 'Desktop',
-					'value' => $desktopCount,
-					'color' => 'hsl(var(--secondary))',
-				],
-			];
+            $daily_usages = json_encode(UserOpenai::select(DB::raw('SUM(IF(credits=1,credits,0)) as sumsImage'), DB::raw('SUM(IF(credits>1,credits,0)) as sumsWord'), DB::raw("DATE_FORMAT(created_at,'%Y-%m-%d') as days"))->groupBy('days')->get());
+            $daily_users = json_encode(User::select(DB::raw('count(*) as total'), DB::raw("DATE_FORMAT(created_at,'%Y-%m-%d') as days"))->groupBy('days')->get());
+            $approvedOrders = UserOrder::whereIn('status', $activeStatuses)->get();
+            foreach ($approvedOrders as $order) {
+                $plan = PaymentPlans::where('id', $order->plan_id)->first();
+                if ($plan != null) {
+                    $key = $plan->type == 'subscription' ? $plan->frequency : $plan->type;
+                    if (array_key_exists($key, $plan_counts)) {
+                        $plan_counts[$key]++;
+                    }
+                }
+            }
+            foreach ($plan_counts as $key => $count) {
+                if ($count > 0) {
+                    $popular_plans_data[] = [
+                        'label' => $plan_names_colors[$key]['label'],
+                        'value' => $count,
+                        'color' => $plan_names_colors[$key]['color'],
+                    ];
+                } else {
+                    $popular_plans_data[] = [
+                        'label' => $plan_names_colors[$key]['label'],
+                        'value' => 0,
+                        'color' => '#2C36490D',
+                    ];
+                }
+            }
 
+            $most_used_last_openai_tools = UserOpenai::select('openai_id', DB::raw('COUNT(*) as total'))
+                ->groupBy('openai_id')
+                ->orderBy('total', 'desc')
+                ->limit(5)
+                ->get();
+            $most_used_last_openai_tools = $most_used_last_openai_tools->map(function ($item, $key) use ($random_colors) {
+                $color = $random_colors[$key];
+                $openai = OpenAIGenerator::where('id', $item->openai_id)->first();
+                $percentage = round(($item->total / UserOpenai::count()) * 100);
 
+                return [
+                    'label' => $openai ? $openai?->title : 'Unknown',
+                    'value' => $percentage,
+                    'color' => $color,
+                ];
+            });
 
-			Cache::putMany([
+            $activities = UserActivity::all();
+            $mobileCount = 0;
+            $desktopCount = 0;
+            foreach ($activities as $activity) {
+                if ($this::isMobileDevice($activity->connection)) {
+                    $mobileCount++;
+                } else {
+                    $desktopCount++;
+                }
+            }
+            $userBehaviorData = [
+                [
+                    'label' => 'Mobile',
+                    'value' => $mobileCount,
+                    'color' => 'hsl(var(--primary))',
+                ],
+                [
+                    'label' => 'Desktop',
+                    'value' => $desktopCount,
+                    'color' => 'hsl(var(--secondary))',
+                ],
+            ];
+            Cache::putMany([
+
                 'sales_this_week' => Usage::getSingle()->this_week_sales,
                 'sales_previous_week' => Usage::getSingle()->last_week_sales,
                 'words_this_week' => Usage::getSingle()->this_week_word_count,
@@ -208,13 +209,13 @@ class AdminController extends Controller
                 'daily_sales' => $daily_sales,
                 'total_sales' => Usage::getSingle()->total_sales,
                 'daily_usages' => $daily_usages,
-				'daily_users' => $daily_users,
+                'daily_users' => $daily_users,
                 'total_usage' => Usage::getSingle()->total_word_count + Usage::getSingle()->total_image_count,
                 'top_countries' => $top_countries,
                 'total_users' => Usage::getSingle()->total_user_count,
-				'popular_tools_data' => $most_used_last_openai_tools,
-				'popular_plans_data' => $popular_plans_data,
-				'user_behavior_data' => $userBehaviorData,
+                'popular_tools_data' => $most_used_last_openai_tools,
+                'popular_plans_data' => $popular_plans_data,
+                'user_behavior_data' => $userBehaviorData,
             ], $cacheDuration);
         }
 
@@ -231,21 +232,20 @@ class AdminController extends Controller
         return view('panel.admin.index', compact('activity', 'latestOrders', 'gatewayError'));
     }
 
-	private function isMobileDevice($userAgent)
-	{
-		$mobileDevices = [
-			'Mobile', 'Android', 'Silk/', 'Kindle', 'BlackBerry', 'Opera Mini', 'Opera Mobi'
-		];
+    private function isMobileDevice($userAgent)
+    {
+        $mobileDevices = [
+            'Mobile', 'Android', 'Silk/', 'Kindle', 'BlackBerry', 'Opera Mini', 'Opera Mobi',
+        ];
 
-		foreach ($mobileDevices as $device) {
-			if (strpos($userAgent, $device) !== false) {
-				return true;
-			}
-		}
+        foreach ($mobileDevices as $device) {
+            if (strpos($userAgent, $device) !== false) {
+                return true;
+            }
+        }
 
-		return false;
-	}
-
+        return false;
+    }
 
     //USER MANAGEMENT
     public function users(Request $request)
@@ -274,9 +274,10 @@ class AdminController extends Controller
         return view('panel.admin.users.components.users-table', compact('users'));
     }
 
-	public function usersActivity()
+    public function usersActivity()
     {
         $users = UserActivity::orderBy('created_at', 'desc')->paginate(25);
+
         return view('panel.admin.users.activity', compact('users'));
     }
 
@@ -297,18 +298,18 @@ class AdminController extends Controller
     }
 
     public function usersDashboard()
-	{
+    {
         $totalUser = User::count();
-		$oneWeekAgo = Carbon::now()->subWeek();
-		$newUsersLastWeek = User::where('created_at', '>=', $oneWeekAgo)->count();
-		$newUsersPercentage = $totalUser > 0 ? ($newUsersLastWeek / $totalUser) * 100 : 0;
-		$today = Carbon::today();
-		$todayVisitor = UserActivity::whereDate('created_at', $today)->count();
-		$onlineUsers = 0;
-		$users = User::all();
+        $oneWeekAgo = Carbon::now()->subWeek();
+        $newUsersLastWeek = User::where('created_at', '>=', $oneWeekAgo)->count();
+        $newUsersPercentage = $totalUser > 0 ? ($newUsersLastWeek / $totalUser) * 100 : 0;
+        $today = Carbon::today();
+        $todayVisitor = UserActivity::whereDate('created_at', $today)->count();
+        $onlineUsers = 0;
+        $users = User::all();
 
         foreach ($users as $user) {
-            if (Cache::has('user-is-online-' . $user->id)) {
+            if (Cache::has('user-is-online-'.$user->id)) {
                 $onlineUsers++;
             }
         }
@@ -319,7 +320,7 @@ class AdminController extends Controller
                 return [
                     'code' => CountryCodeService::getCountryCode($country->country),
                     'name' => $country->country,
-                    'value' => $country->count
+                    'value' => $country->count,
                 ];
             })
             ->filter(function ($country) {
@@ -332,18 +333,18 @@ class AdminController extends Controller
             DB::raw('DAY(created_at) as day'),
             DB::raw('COUNT(*) as count')
         )->whereMonth('created_at', $currentMonth)
-		->whereYear('created_at', $currentYear)
-		->groupBy(DB::raw('DAY(created_at)'))
-		->orderBy('day')
-		->get();
+            ->whereYear('created_at', $currentYear)
+            ->groupBy(DB::raw('DAY(created_at)'))
+            ->orderBy('day')
+            ->get();
 
         $yearlyData = User::select(
             DB::raw('MONTH(created_at) as month'),
             DB::raw('COUNT(*) as count')
         )->whereYear('created_at', $currentYear)
-		->groupBy(DB::raw('MONTH(created_at)'))
-		->orderBy('month')
-		->get();
+            ->groupBy(DB::raw('MONTH(created_at)'))
+            ->orderBy('month')
+            ->get();
 
         $daysInMonth = Carbon::now()->daysInMonth;
         $data = array_fill(1, $daysInMonth, 0);
@@ -355,6 +356,7 @@ class AdminController extends Controller
             $data[$record->day] = $record->count;
         }
         $totalYearCount = User::whereYear('created_at', $currentYear)->count();
+
         return view('panel.admin.users.dashboard', compact(['totalUser', 'newUsersPercentage', 'todayVisitor', 'onlineUsers', 'countryData', 'data', 'totalYearCount', 'monthlyUserCounts']));
     }
 
@@ -364,19 +366,19 @@ class AdminController extends Controller
 
         $selectedAiList = Helper::setting('free_open_ai_items') ?? [];
 
-		$groupedAiList = $openAiList->groupBy('filters');
-		$checkedGroups = [];
-		foreach ($groupedAiList as $key => $items) {
-			$hasCheckedItems = $items->contains(function ($item) use ($selectedAiList) {
-				return in_array($item->slug, $selectedAiList);
-			});
+        $groupedAiList = $openAiList->groupBy('filters');
+        $checkedGroups = [];
+        foreach ($groupedAiList as $key => $items) {
+            $hasCheckedItems = $items->contains(function ($item) use ($selectedAiList) {
+                return in_array($item->slug, $selectedAiList);
+            });
 
-			if ($hasCheckedItems) {
-				$checkedGroups[$key] = true;
-			}
-		}
+            if ($hasCheckedItems) {
+                $checkedGroups[$key] = true;
+            }
+        }
 
-        return view('panel.admin.finance.free-feature', compact('checkedGroups','openAiList', 'selectedAiList'));
+        return view('panel.admin.finance.free-feature', compact('checkedGroups', 'openAiList', 'selectedAiList'));
     }
 
     public function freeFeatureSave(Request $request)
@@ -469,7 +471,7 @@ class AdminController extends Controller
             $user->save();
         }
 
-        dispatch(new SendConfirmationEmail($user));
+        EmailConfirmation::forUser($user)->send();
 
         return back()->with(['message' => __('Created Successfully'), 'type' => 'success']);
     }
@@ -515,7 +517,7 @@ class AdminController extends Controller
     //OPENAI MANAGEMENT
     public function openAIList()
     {
-        $list = OpenAIGenerator::where('custom_template', '!=' ,1)
+        $list = OpenAIGenerator::where('custom_template', '!=', 1)
             ->orderByRaw("CASE WHEN slug LIKE 'ai\_%' THEN 0 ELSE 1 END, title ASC")
             ->get();
 
@@ -607,7 +609,7 @@ class AdminController extends Controller
         } else {
             $item = new ChatCategory();
         }
-		$item->user_id = auth()->user()->id;
+        $item->user_id = auth()->user()->id;
         $item->name = $request->name;
         $item->save();
     }
@@ -699,9 +701,9 @@ class AdminController extends Controller
             $template = new OpenaiGeneratorChatCategory();
         }
 
-		if ($request->chatbot_id == 'undefined') {
-			$request->chatbot_id = null;
-		}
+        if ($request->chatbot_id == 'undefined') {
+            $request->chatbot_id = null;
+        }
 
         if ($request->hasFile('avatar')) {
             $path = 'upload/images/chatbot/';
@@ -765,7 +767,7 @@ class AdminController extends Controller
         } else {
             $template = OpenAIGenerator::where('id', $id)->firstOrFail();
         }
-		// dd($template);
+        // dd($template);
         $filters = OpenaiGeneratorFilter::orderBy('name', 'desc')->get();
 
         return view('panel.admin.openai.custom.form', compact('template', 'filters'));
@@ -827,66 +829,64 @@ class AdminController extends Controller
     //     $template->save();
     // }
 
-	public function openAICustomAddOrUpdateSave(Request $request)
-	{
-		if ($request->template_id != 'undefined') {
-			$template = OpenAIGenerator::where('id', $request->template_id)->firstOrFail();
-		} else {
-			$template = new OpenAIGenerator();
-		}
+    public function openAICustomAddOrUpdateSave(Request $request)
+    {
+        if ($request->template_id != 'undefined') {
+            $template = OpenAIGenerator::where('id', $request->template_id)->firstOrFail();
+        } else {
+            $template = new OpenAIGenerator();
+        }
 
-		// Set basic template attributes
-		$template->title = $request->title;
-		$template->description = $request->description;
-		$template->image = $request->image;
-		$template->color = $request->color;
-		$template->prompt = $request->prompt;
-		$template->filters = $request->filters;
-		$template->premium = $request->premium;
-		$template->active = 1;
-		$template->slug = Str::slug($request->title) . '-' . Str::random(6);
-		$template->type = 'text';
-		$template->custom_template = 1;
+        // Set basic template attributes
+        $template->title = $request->title;
+        $template->description = $request->description;
+        $template->image = $request->image;
+        $template->color = $request->color;
+        $template->prompt = $request->prompt;
+        $template->filters = $request->filters;
+        $template->premium = $request->premium;
+        $template->active = 1;
+        $template->slug = Str::slug($request->title).'-'.Str::random(6);
+        $template->type = 'text';
+        $template->custom_template = 1;
 
-		// Process input data by type
-		$inputDataByType = json_decode($request->input_data_by_type, true);
+        // Process input data by type
+        $inputDataByType = json_decode($request->input_data_by_type, true);
 
-		$allquestions = [];
-		foreach ($inputDataByType as $inputType => $inputs) {
-			foreach ($inputs as $input) {
-				// Save input data as arrays
-				$inputArray = [
-					'name' => Str::slug($input['inputName']),
-					'question' => $input['inputName'],
-					'description' => $input['inputDescription'],
-					'type' => $inputType
-				];
-				// If input type is select, include select list values
-				if ($inputType === 'select') {
-					$inputArray['selectListValues'] = $input['selectListValues'];
-				}
+        $allquestions = [];
+        foreach ($inputDataByType as $inputType => $inputs) {
+            foreach ($inputs as $input) {
+                // Save input data as arrays
+                $inputArray = [
+                    'name' => Str::slug($input['inputName']),
+                    'question' => $input['inputName'],
+                    'description' => $input['inputDescription'],
+                    'type' => $inputType,
+                ];
+                // If input type is select, include select list values
+                if ($inputType === 'select') {
+                    $inputArray['selectListValues'] = $input['selectListValues'];
+                }
 
-				// Save input data array into questions array
-				$allquestions[] = $inputArray;
-			}
-		}
-		$questions = json_encode($allquestions, JSON_UNESCAPED_SLASHES);
-		$template->questions = $questions;
+                // Save input data array into questions array
+                $allquestions[] = $inputArray;
+            }
+        }
+        $questions = json_encode($allquestions, JSON_UNESCAPED_SLASHES);
+        $template->questions = $questions;
 
-		// Save template
-		$template->save();
+        // Save template
+        $template->save();
 
-		// Save new filters
-		foreach (explode(',', $request->filters) as $filter) {
-			if (OpenaiGeneratorFilter::where('name', $filter)->first() == null) {
-				$newFilter = new OpenaiGeneratorFilter();
-				$newFilter->name = $filter;
-				$newFilter->save();
-			}
-		}
-	}
-
-
+        // Save new filters
+        foreach (explode(',', $request->filters) as $filter) {
+            if (OpenaiGeneratorFilter::where('name', $filter)->first() == null) {
+                $newFilter = new OpenaiGeneratorFilter();
+                $newFilter->name = $filter;
+                $newFilter->save();
+            }
+        }
+    }
 
     //Openai Categories
     public function openAICategoriesList()
@@ -951,49 +951,64 @@ class AdminController extends Controller
     }
 
     public function paymentPlansSubscriptionNewOrEdit($id = null)
-	{
+    {
 
-		$activeGateways = Gateways::where('is_active', 1)->get();
-		if ($activeGateways->count() > 0) {
-			$isActiveGateway = 1;
-		} else {
-			$isActiveGateway = 0;
-		}
+        $activeGateways = Gateways::where('is_active', 1)->get();
+        if ($activeGateways->count() > 0) {
+            $isActiveGateway = 1;
+        } else {
+            $isActiveGateway = 0;
+        }
 
-		$generatedData = null;
-		if ($id != null) {
-			$generatedData = GatewayProducts::where('plan_id', $id)->get();
-		}
+        $generatedData = null;
+        if ($id != null) {
+            $generatedData = GatewayProducts::where('plan_id', $id)->get();
+        }
 
-		$openAiList = OpenAIGenerator::query()->get();
+        $openAiList = OpenAIGenerator::query()->get();
 
-		if ($id == null) {
-			$selectedAiList = [];
+        $models = \App\Models\AiModel::query()
+            ->where('is_selected', 1)
+            ->whereHas('tokens', function ($query) {
+                $query->where('type', 'word');
+            })
+            ->get();
 
-			return view('panel.admin.finance.plans.SubscriptionNewOrEdit', compact('isActiveGateway', 'openAiList', 'selectedAiList'));
-		} else {
-			$subscription = PaymentPlans::where('id', $id)->firstOrFail();
+        $selectedModels = AiChatModelPlan::query()
+            ->where('plan_id', $id)
+            ->pluck('ai_model_id')
+            ->toArray();
 
-			$selectedAiList = $subscription->open_ai_items ?: [];
+        if ($id == null) {
+            $selectedAiList = [];
 
-			$openAiList = OpenAIGenerator::all();
+            return view('panel.admin.finance.plans.SubscriptionNewOrEdit', compact('isActiveGateway', 'openAiList', 'selectedAiList',  'models', 'selectedModels'));
+        } else {
+            $subscription = PaymentPlans::where('id', $id)->firstOrFail();
 
-			$groupedAiList = $openAiList->groupBy('filters');
+            $selectedAiList = $subscription->open_ai_items ?: [];
 
-			$checkedGroups = [];
-			foreach ($groupedAiList as $key => $items) {
-				$hasCheckedItems = $items->contains(function ($item) use ($selectedAiList) {
-					return in_array($item->slug, $selectedAiList);
-				});
+            $openAiList = OpenAIGenerator::all();
 
-				if ($hasCheckedItems) {
-					$checkedGroups[$key] = true;
-				}
-			}
+            $groupedAiList = $openAiList->groupBy('filters');
 
-			return view('panel.admin.finance.plans.SubscriptionNewOrEdit', compact('checkedGroups','subscription', 'selectedAiList', 'isActiveGateway', 'generatedData', 'openAiList'));
-		}
-	}
+            $checkedGroups = [];
+            foreach ($groupedAiList as $key => $items) {
+                $hasCheckedItems = $items->contains(function ($item) use ($selectedAiList) {
+                    return in_array($item->slug, $selectedAiList);
+                });
+
+                if ($hasCheckedItems) {
+                    $checkedGroups[$key] = true;
+                }
+            }
+
+
+
+
+            return view('panel.admin.finance.plans.SubscriptionNewOrEdit', compact('checkedGroups', 'subscription', 'selectedAiList', 'isActiveGateway', 'generatedData', 'openAiList', 'models', 'selectedModels'));
+        }
+    }
 
     public function paymentPlansDelete($id)
     {
@@ -1019,50 +1034,64 @@ class AdminController extends Controller
 
         $openAiList = OpenAIGenerator::query()->get();
 
+        $models = \App\Models\AiModel::query()
+            ->where('is_selected', 1)
+            ->whereHas('tokens', function ($query) {
+                $query->where('type', 'word');
+            })
+            ->get();
+
+        $selectedModels = AiChatModelPlan::query()
+            ->where('plan_id', $id)
+            ->pluck('ai_model_id')
+            ->toArray();
+
         if ($id == null) {
             $selectedAiList = [];
 
-            return view('panel.admin.finance.plans.PrepaidNewOrEdit', compact('openAiList', 'selectedAiList', 'isActiveGateway'));
+            return view('panel.admin.finance.plans.PrepaidNewOrEdit', compact('openAiList', 'selectedAiList', 'isActiveGateway', 'models', 'selectedModels'));
         } else {
             $subscription = PaymentPlans::where('id', $id)->first();
             $selectedAiList = $subscription->open_ai_items ?: [];
 
-			$openAiList = OpenAIGenerator::all();
+            $openAiList = OpenAIGenerator::all();
 
-			$groupedAiList = $openAiList->groupBy('filters');
-			$checkedGroups = [];
-			foreach ($groupedAiList as $key => $items) {
-				$hasCheckedItems = $items->contains(function ($item) use ($selectedAiList) {
-					return in_array($item->slug, $selectedAiList);
-				});
+            $groupedAiList = $openAiList->groupBy('filters');
+            $checkedGroups = [];
+            foreach ($groupedAiList as $key => $items) {
+                $hasCheckedItems = $items->contains(function ($item) use ($selectedAiList) {
+                    return in_array($item->slug, $selectedAiList);
+                });
 
-				if ($hasCheckedItems) {
-					$checkedGroups[$key] = true;
-				}
-			}
-            return view('panel.admin.finance.plans.PrepaidNewOrEdit', compact('checkedGroups','openAiList', 'selectedAiList', 'subscription', 'isActiveGateway', 'generatedData'));
+                if ($hasCheckedItems) {
+                    $checkedGroups[$key] = true;
+                }
+            }
+
+
+            return view('panel.admin.finance.plans.PrepaidNewOrEdit', compact('checkedGroups', 'openAiList', 'selectedAiList', 'subscription', 'isActiveGateway', 'generatedData', 'models', 'selectedModels'));
         }
     }
 
     public function paymentPlansSave(Request $request)
     {
-		$requireUpdate = false;
-		$newPlan = false;
+        $requireUpdate = false;
+        $newPlan = false;
         if ($request->plan_id != 'undefined') {
             $plan = PaymentPlans::where('id', $request->plan_id)->firstOrFail();
         } else {
             $plan = new PaymentPlans();
-			$newPlan = true;
+            $newPlan = true;
         }
 
         if ($request->type == 'subscription') {
-			if ($plan->price != (float) $request->price || $plan->trial_days != $request->trial_days || $plan->frequency != $request->frequency) {
-				$requireUpdate = true;
-			}
+            if ($plan->price != (float) $request->price || $plan->trial_days != $request->trial_days || $plan->frequency != $request->frequency) {
+                $requireUpdate = true;
+            }
 
             $plan->active = 1;
             $plan->name = $request->name;
-			$plan->description = $request->description;
+            $plan->description = $request->description;
             $plan->price = (float) $request->price;
             $plan->frequency = $request->frequency;
             $plan->is_featured = (int) $request->is_featured;
@@ -1084,13 +1113,13 @@ class AdminController extends Controller
             $plan->currency = currency()->code ?: 'USD';
             $plan->save();
         } else {
-			if ($plan->price != (float) $request->price) {
-				$requireUpdate = true;
-			}
+            if ($plan->price != (float) $request->price) {
+                $requireUpdate = true;
+            }
 
             $plan->active = 1;
             $plan->name = $request->name;
-			$plan->description = $request->description;
+            $plan->description = $request->description;
             $plan->price = (float) $request->price;
             $plan->is_featured = (int) $request->is_featured;
             $plan->total_words = (int) $request->total_words;
@@ -1105,15 +1134,37 @@ class AdminController extends Controller
             $plan->currency = currency()->code ?: 'USD';
             $plan->save();
         }
+
+        $this->aiChatModelSave($plan->id, $request);
+
         try {
-			if ($newPlan || $requireUpdate) {
-				$tmp = PaymentProcessController::saveGatewayProducts($plan);
-			}
+
+            if ($newPlan || $requireUpdate) {
+                $tmp = PaymentProcessController::saveGatewayProducts($plan);
+            }
         } catch (\Exception $ex) {
             Log::info($ex->getMessage());
             Log::info("AdminController->paymentPlansSave()->PaymentProcessController::saveGatewayProducts()\n".$ex->getMessage());
 
             return back()->with(['message' => $ex->getMessage(), 'type' => 'error']);
+        }
+    }
+
+
+    private function aiChatModelSave($planId, $request)
+    {
+        $models = $request->get('aiChatModelItems');
+        AiChatModelPlan::query()
+            ->where('plan_id', $planId)
+            ->delete();
+        if ($models && is_array($models)) {
+            foreach ($models as $model) {
+                AiChatModelPlan::query()
+                    ->create([
+                        'plan_id' => $planId,
+                        'ai_model_id' => $model,
+                    ]);
+            }
         }
     }
 
@@ -1233,20 +1284,20 @@ class AdminController extends Controller
         } else {
             $howitWorks = new HowitWorks();
         }
-		$howitWorks->bg_color = $request->bg_color;
-		if ($request->file('bg_image')) {
-			$file = $request->file('bg_image');
-			$filename = date('YmdHi').$file->getClientOriginalName();
-			$file->move(public_path('howitWorks'), $filename);
-			$howitWorks->bg_image = $filename;
-		}
-		$howitWorks->text_color = $request->text_color;
-		if ($request->file('image')) {
-			$file = $request->file('image');
-			$filename = date('YmdHi').$file->getClientOriginalName();
-			$file->move(public_path('howitWorks'), $filename);
-			$howitWorks->image = $filename;
-		}
+        $howitWorks->bg_color = $request->bg_color;
+        if ($request->file('bg_image')) {
+            $file = $request->file('bg_image');
+            $filename = date('YmdHi').$file->getClientOriginalName();
+            $file->move(public_path('howitWorks'), $filename);
+            $howitWorks->bg_image = $filename;
+        }
+        $howitWorks->text_color = $request->text_color;
+        if ($request->file('image')) {
+            $file = $request->file('image');
+            $filename = date('YmdHi').$file->getClientOriginalName();
+            $file->move(public_path('howitWorks'), $filename);
+            $howitWorks->image = $filename;
+        }
         $howitWorks->order = (int) $request->order;
         $howitWorks->title = $request->title;
         $howitWorks->save();
@@ -1532,6 +1583,24 @@ class AdminController extends Controller
             $fSettings->footer_button_text = $request->footer_button_text;
             $fSettings->footer_button_url = $request->footer_button_url;
             $fSettings->footer_copyright = $request->footer_copyright;
+            $fSettings->footer_text_color = $request->footer_text_color;
+			// hero_image
+			if ($request->hasFile('hero_image')) {
+				$path = 'upload/';
+				$image = $request->file('hero_image');
+				$image_name = Str::random(4).'-'.Str::slug($settings->site_name).'-hero-image.'.$image->getClientOriginalExtension();
+
+				$imageTypes = ['jpg', 'jpeg', 'png', 'svg', 'webp'];
+				if (! in_array(Str::lower($image->getClientOriginalExtension()), $imageTypes)) {
+					$data = [
+						'errors' => ['The file extension must be jpg, jpeg, png, webp or svg.'],
+					];
+					return response()->json($data, 419);
+				}
+
+				$image->move($path, $image_name);
+				$fSettings->hero_image = "/".$path.$image_name;
+			}
             $fSettings->save();
 
             $fSecSettings = FrontendSectionsStatusses::first();
@@ -1555,6 +1624,7 @@ class AdminController extends Controller
                 'logo_collapsed_2x' => 'collapsed-2x',
                 'logo_collapsed_dark_2x' => 'collapsed-dark-2x',
             ];
+
 
             foreach ($logo_types as $logo => $logo_prefix) {
 
@@ -1620,7 +1690,7 @@ class AdminController extends Controller
             $settings = FrontendSectionsStatusses::first();
             $settings->features_active = $request->features_active;
             $settings->features_title = $request->features_title;
-			$settings->features_subtitle = $request->features_subtitle;
+            $settings->features_subtitle = $request->features_subtitle;
             $settings->features_description = $request->features_description;
 
             $settings->generators_active = $request->generators_active;
@@ -1635,28 +1705,28 @@ class AdminController extends Controller
 
             $settings->tools_active = $request->tools_active;
             $settings->tools_title = $request->tools_title;
-			$settings->tools_subtitle = $request->tools_subtitle;
+            $settings->tools_subtitle = $request->tools_subtitle;
             $settings->tools_description = $request->tools_description;
 
-			$settings->custom_templates_learn_more_link = $request->custom_templates_learn_more_link;
-			$settings->custom_templates_learn_more_link_url = $request->custom_templates_learn_more_link_url;
+            $settings->custom_templates_learn_more_link = $request->custom_templates_learn_more_link;
+            $settings->custom_templates_learn_more_link_url = $request->custom_templates_learn_more_link_url;
 
             $settings->how_it_works_active = $request->how_it_works_active;
             $settings->how_it_works_title = $request->how_it_works_title;
-			$settings->how_it_works_subtitle = $request->how_it_works_subtitle;
-			$settings->how_it_works_description = $request->how_it_works_description;
-			$settings->how_it_works_link = $request->how_it_works_link;
-			$settings->how_it_works_link_label = $request->how_it_works_link_label;
+            $settings->how_it_works_subtitle = $request->how_it_works_subtitle;
+            $settings->how_it_works_description = $request->how_it_works_description;
+            $settings->how_it_works_link = $request->how_it_works_link;
+            $settings->how_it_works_link_label = $request->how_it_works_link_label;
 
             $settings->testimonials_active = $request->testimonials_active;
             $settings->testimonials_title = $request->testimonials_title;
-			$settings->testimonials_description = $request->testimonials_description;
+            $settings->testimonials_description = $request->testimonials_description;
             $settings->testimonials_subtitle_one = $request->testimonials_subtitle_one;
             $settings->testimonials_subtitle_two = $request->testimonials_subtitle_two;
 
             $settings->pricing_active = $request->pricing_active;
             $settings->pricing_title = $request->pricing_title;
-			$settings->pricing_subtitle = $request->pricing_subtitle;
+            $settings->pricing_subtitle = $request->pricing_subtitle;
             $settings->pricing_description = $request->pricing_description;
             $settings->pricing_save_percent = $request->pricing_save_percent;
 
@@ -1699,34 +1769,36 @@ class AdminController extends Controller
 
     }
 
-	public function authSettings()
+    public function authSettings()
     {
-		$settings = Setting::first();
-		$auth = json_decode($settings->auth_view_options);
+        $settings = Setting::first();
+        $auth = json_decode($settings->auth_view_options);
+
         return view('panel.admin.frontend.auth', compact('auth'));
     }
-	public function authSettingsSave(Request $request)
+
+    public function authSettingsSave(Request $request)
     {
         if (Helper::appIsNotDemo()) {
             $settings = Setting::first();
-			$old_auth = json_decode($settings->auth_view_options);
+            $old_auth = json_decode($settings->auth_view_options);
 
-			$auth = [
-				'login_enabled' => $request->login_enabled ?? 0,
-			];
-			// move image to correct location
-			if ($request->hasFile('login_image')) {
-				$path = 'upload/images/auth/';
-				$image = $request->file('login_image');
-				$image_name = Str::random(4).'-login-image.'.$image->getClientOriginalExtension();
-				$image->move($path, $image_name);
-				$auth['login_image'] = $path.$image_name;
-			}else{
-				$auth['login_image'] = $old_auth?->login_image?? null;
-			}
+            $auth = [
+                'login_enabled' => $request->login_enabled ?? 0,
+            ];
+            // move image to correct location
+            if ($request->hasFile('login_image')) {
+                $path = 'upload/images/auth/';
+                $image = $request->file('login_image');
+                $image_name = Str::random(4).'-login-image.'.$image->getClientOriginalExtension();
+                $image->move($path, $image_name);
+                $auth['login_image'] = $path.$image_name;
+            } else {
+                $auth['login_image'] = $old_auth?->login_image ?? null;
+            }
 
-			$settings->auth_view_options = json_encode($auth);
-			$settings->save();
+            $settings->auth_view_options = json_encode($auth);
+            $settings->save();
         }
     }
 
@@ -1799,10 +1871,10 @@ class AdminController extends Controller
         }
         $item->title = $request->title;
         $item->description = $request->description;
-		$item->buy_link = $request->buy_link;
-		$item->buy_link_url = $request->buy_link_url;
-		$item->learn_more_link = $request->learn_more_link;
-		$item->learn_more_link_url = $request->learn_more_link_url;
+        $item->buy_link = $request->buy_link;
+        $item->buy_link_url = $request->buy_link_url;
+        $item->learn_more_link = $request->learn_more_link;
+        $item->learn_more_link_url = $request->learn_more_link_url;
 
         if ($request->hasFile('image')) {
             $path = 'upload/images/frontent/tools/';
@@ -1965,7 +2037,7 @@ class AdminController extends Controller
         $item->menu_title = $request->menu_title;
         $item->subtitle_one = $request->subtitle_one;
         $item->subtitle_two = $request->subtitle_two;
-		$item->icon = $request->icon;
+        $item->icon = $request->icon;
         $item->title = $request->title;
         $item->text = $request->text;
         $item->image_title = $request->image_title;
@@ -1982,41 +2054,49 @@ class AdminController extends Controller
         return back()->with(['message' => __('Item deleted succesfully'), 'type' => 'success']);
     }
 
-	// socialmedia, socialmediaSave
-	public function socialmedia() : View
-	{
-		$socialmedia = SocialMediaAccounts::get();
-		return view('panel.admin.frontend.socialmedia', compact('socialmedia'));
-	}
-	public function socialmediaSave(Request $request) : RedirectResponse
-	{
-		if (Helper::appIsNotDemo()) {
-			$accounts = SocialMediaAccounts::get();
-			foreach ($accounts as $account) {
-				$account->subtitle = $request->input('subtitle_'. $account->key);
-				$account->icon = $request->input('icon_'. $account->key);
-				$account->link = $request->input('link_'.$account->key);
-				$account->is_active = $request->has('is_active_'.$account->key);
-				$account->save();
-			}
-		}
-		return back()->with(['message' => __('Social media accounts saved successfully.'), 'type' => 'success']);
-	}
-	public function deletionRequests() : View
-	{
-		$deletionRequests = AccountDeletionReqs::orderBy('created_at', 'desc')->get();
-		return view('panel.admin.settings.deletion_requests', compact('deletionRequests'));
-	}
-	public function deletionRequest($id) 
-	{
-		if (Helper::appIsNotDemo() && auth()->user()->isAdmin()) {
-			$deletionRequest = AccountDeletionReqs::where('user_id', $id)->firstOrFail();
-			createActivity($deletionRequest->user->id, 'Deleted', $deletionRequest->user->fullName() . ' deleted his/her account.', null);
-        	$deletionRequest->user->delete();
-			return response()->json([
-				'status' => true,
-				'message' => __('User deleted successfully'),
-			], 200);
-		}
-	}
+
+    // socialmedia, socialmediaSave
+    public function socialmedia(): View
+    {
+        $socialmedia = SocialMediaAccounts::get();
+
+        return view('panel.admin.frontend.socialmedia', compact('socialmedia'));
+    }
+
+    public function socialmediaSave(Request $request): RedirectResponse
+    {
+        if (Helper::appIsNotDemo()) {
+            $accounts = SocialMediaAccounts::get();
+            foreach ($accounts as $account) {
+                $account->subtitle = $request->input('subtitle_'.$account->key);
+                $account->icon = $request->input('icon_'.$account->key);
+                $account->link = $request->input('link_'.$account->key);
+                $account->is_active = $request->has('is_active_'.$account->key);
+                $account->save();
+            }
+        }
+
+        return back()->with(['message' => __('Social media accounts saved successfully.'), 'type' => 'success']);
+    }
+
+    public function deletionRequests(): View
+    {
+        $deletionRequests = AccountDeletionReqs::orderBy('created_at', 'desc')->get();
+
+        return view('panel.admin.settings.deletion_requests', compact('deletionRequests'));
+    }
+
+    public function deletionRequest($id)
+    {
+        if (Helper::appIsNotDemo() && auth()->user()->isAdmin()) {
+            $deletionRequest = AccountDeletionReqs::where('user_id', $id)->firstOrFail();
+            CreateActivity::for($deletionRequest->user, 'Deleted', $deletionRequest->user->fullName() . ' deleted his/her account.');
+            $deletionRequest->user->delete();
+
+            return response()->json([
+                'status' => true,
+                'message' => __('User deleted successfully'),
+            ], 200);
+        }
+    }
 }

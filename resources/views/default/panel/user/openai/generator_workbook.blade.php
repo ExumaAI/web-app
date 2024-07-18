@@ -405,6 +405,16 @@
         name="_prompt"
     >
 @endsection
+@php
+    $lang_with_flags = [];
+    foreach (LaravelLocalization::getSupportedLocales() as $lang => $properties) {
+        $lang_with_flags[] = [
+            'lang' => $lang,
+            'name' => $properties['native'],
+            'flag' => country2flag(substr($properties['regional'], strrpos($properties['regional'], '_') + 1)),
+        ];
+    }
+@endphp
 @push('script')
     <script>
         @if (setting('default_ai_engine', 'openai') == 'anthropic')
@@ -414,6 +424,7 @@
         @endif
         const openai_model = '{{ $setting->openai_default_model }}';
         const default_ai_engine = '{{ setting('default_ai_engine', 'openai') }}'
+        const lang_with_flags = @json($lang_with_flags);
     </script>
     <script src="{{ custom_theme_url('/assets/libs/beautify-html.min.js') }}"></script>
     <script src="{{ custom_theme_url('/assets/libs/ace/src-min-noconflict/ace.js') }}"></script>

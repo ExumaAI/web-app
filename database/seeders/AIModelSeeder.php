@@ -37,6 +37,7 @@ class AIModelSeeder extends Seeder
             ['aiEngine' => AIEngine::OPEN_AI, 'key' => 'gpt-4-turbo', 'title' => 'GPT-4 Turbo (Updated Knowleddge cutoff of April 2023, 128k)'],
 			['aiEngine' => AIEngine::OPEN_AI, 'key' => 'gpt-4o', 'title' => 'GPT-4o Most advanced, multimodal flagship model that’s cheaper and faster than GPT-4 Turbo.  (Updated Knowleddge cutoff of Oct 2023, 128k)'],
             # Anthropic
+			['aiEngine' => AIEngine::ANTHROPIC, 'key' => 'claude-3-5-sonnet-20240620', 'title' => 'Claude 3.5 Sonnet'],
             ['aiEngine' => AIEngine::ANTHROPIC, 'key' => 'claude-3-sonnet-20240229', 'title' => 'Claude 3 Sonnet'],
             ['aiEngine' => AIEngine::ANTHROPIC, 'key' => 'claude-3-opus-20240229', 'title' => 'Claude 3 Opus'],
             ['aiEngine' => AIEngine::ANTHROPIC, 'key' => 'claude-3-haiku-20240307', 'title' => 'Claude 3 Haiku'],
@@ -72,6 +73,8 @@ class AIModelSeeder extends Seeder
             ['aiEngine' => AIEngine::CLIPDROP, 'key' => 'clipdrop', 'title' => 'Clipdrop for Photo Studio'],
             # Plagiarism Check
             ['aiEngine' => AIEngine::PLAGIARISM_CHECK, 'key' => 'plagiarismcheck', 'title' => 'Plagiarism Check'],
+            # Synthesia
+            ['aiEngine' => AIEngine::SYNTHESIA, 'key' => 'synthesia', 'title' => 'Synthesia'],
 
         ];
         /** @formatter:on */

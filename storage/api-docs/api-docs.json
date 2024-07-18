@@ -1834,8 +1834,8 @@
                 "tags": [
                     "General (Helpers)"
                 ],
-                "summary": "Get default logo",
-                "description": "Returns default logo from settings.",
+                "summary": "Get logo path",
+                "description": "Returns logo path from settings.",
                 "operationId": "getLogo",
                 "responses": {
                     "200": {
@@ -2103,6 +2103,114 @@
                         }
                     }
                 }
+            }
+        },
+        "/api/brandvoice": {
+            "get": {
+                "tags": [
+                    "Brand Voice"
+                ],
+                "summary": "List of companies",
+                "description": "Returns list of companies",
+                "operationId": "index",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of company to get. If null, returns all companies",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "passport": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Brand Voice"
+                ],
+                "summary": "Update / Create a company",
+                "description": "Update / Create a company",
+                "operationId": "store",
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "passport": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Brand Voice"
+                ],
+                "summary": "Delete a company",
+                "description": "Delete a company by id",
+                "operationId": "delete",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of company to delete",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "passport": []
+                    }
+                ]
             }
         },
         "/api/aichat/chat-templates": {
@@ -2668,6 +2776,355 @@
                     },
                     "412": {
                         "description": "Precondition Failed"
+                    }
+                },
+                "security": [
+                    {
+                        "passport": []
+                    }
+                ]
+            }
+        },
+        "/api/extensions/ai-social-media": {
+            "get": {
+                "tags": [
+                    "Extensions"
+                ],
+                "summary": "Test route for the AI Social Automation extension.",
+                "description": "Returns a message to confirm that the extension is installed and working.",
+                "operationId": "testRoute",
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "passport": []
+                    }
+                ]
+            }
+        },
+        "/api/extensions/ai-social-media/save-publish-data": {
+            "post": {
+                "tags": [
+                    "Extensions ( AI Social Media )"
+                ],
+                "summary": "Save the data for the post task.",
+                "description": "Save the data for the post task.",
+                "operationId": "savePublishData",
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "passport": []
+                    }
+                ]
+            }
+        },
+        "/api/extensions/ai-social-media/time-info": {
+            "get": {
+                "tags": [
+                    "Extensions ( AI Social Media )"
+                ],
+                "summary": "Get the current time information.",
+                "description": "Returns the current system time and timezone.",
+                "operationId": "getCurrentTimeInfo",
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "passport": []
+                    }
+                ]
+            }
+        },
+        "/api/extensions/ai-social-media/campaigns": {
+            "get": {
+                "tags": [
+                    "Extensions ( AI Social Media )"
+                ],
+                "summary": "List of campaigns created by the user.",
+                "description": "Returns a list of campaigns created by the user.",
+                "operationId": "campaignList",
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "passport": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Extensions ( AI Social Media )"
+                ],
+                "summary": "Update or create a campaign.",
+                "description": "Update or create a campaign.",
+                "operationId": "campaignAddOrUpdateSave",
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "passport": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Extensions ( AI Social Media )"
+                ],
+                "summary": "Delete a campaign",
+                "description": "Delete a campaign by id",
+                "operationId": "campaignDelete",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of campaign to delete",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "passport": []
+                    }
+                ]
+            }
+        },
+        "/api/extensions/ai-social-media/campaign-detail/{id}": {
+            "get": {
+                "tags": [
+                    "Extensions ( AI Social Media )"
+                ],
+                "summary": "Get a campaign",
+                "description": "Get a campaign by id",
+                "operationId": "campaignGet",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of campaign",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "passport": []
+                    }
+                ]
+            }
+        },
+        "/api/extensions/ai-social-media/generate-content": {
+            "post": {
+                "tags": [
+                    "Extensions ( AI Social Media )"
+                ],
+                "summary": "Generate a social media post for the given platform.",
+                "description": "Uses step data information to generate a social media post",
+                "operationId": "genPost",
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "passport": []
+                    }
+                ]
+            }
+        },
+        "/api/extensions/ai-social-media/platforms": {
+            "get": {
+                "tags": [
+                    "Extensions ( AI Social Media )"
+                ],
+                "summary": "List of platforms connected to the AI Social Automation extension.",
+                "description": "Returns connection information for the Twitter and LinkedIn platforms.",
+                "operationId": "platformList",
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "passport": []
+                    }
+                ]
+            }
+        },
+        "/api/extensions/ai-social-media/platform": {
+            "delete": {
+                "tags": [
+                    "Extensions ( AI Social Media )"
+                ],
+                "summary": "",
+                "description": "Removes connection information for the given platforms.",
+                "operationId": "disconnect",
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "404": {
+                        "description": "Invalid platform"
+                    }
+                },
+                "security": [
+                    {
+                        "passport": []
+                    }
+                ]
+            },
+            "patch": {
+                "tags": [
+                    "Extensions ( AI Social Media )"
+                ],
+                "summary": "",
+                "description": "Update connection information for the given platforms.",
+                "operationId": "updatePlatform",
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
                     }
                 },
                 "security": [

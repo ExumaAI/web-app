@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Actions\EmailConfirmation;
 use App\Helpers\Classes\Helper;
 use App\Http\Controllers\Controller;
+use App\Http\Middleware\isAdmin;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Validation\Rules\Password;
@@ -54,7 +57,7 @@ class AuthController extends Controller
             'email' => ['required', 'string', 'email', 'max:255', 'unique:' . User::class],
             'password' => ['required', 'confirmed', Password::defaults()],
         ]);
-    
+
         if ($validator->fails()) {
             return response()->json(['error' => $validator->errors()], 422);
         }
@@ -179,7 +182,7 @@ class AuthController extends Controller
         if ($user !== null) {
             $user->password_reset_code = Str::random(67);
             $user->save();
-            
+
             // Dispatch the job to send the password reset email asynchronously
             dispatch(new SendPasswordResetEmail($user));
 
@@ -272,22 +275,22 @@ class AuthController extends Controller
      *      ),
      * )
     */
-    public function resend(Request $request)
+    public function resend(Request $request): JsonResponse
     {
         $request->validate([
             'email' => 'required|email',
         ]);
 
-        $user = User::where('email', $request->email)->first();
+        $user = User::where('email', $request->email)->firstOrFail();
 
-        if ($user && $user->email_confirmed !== 1 && $user->type !== 'admin') {
-            dispatch(new SendConfirmationEmail($user));
+        if (! $user->isConfirmed() && ! $user->isAdmin()) {
+            EmailConfirmation::forUser($user)->resend();
             return response()->json(['message' => __('Confirmation email resent successfully')], 200);
         }
 
         return response()->json(['error' => __('Email not found or already verified')], 403);
     }
-   
+
     /**
      * Get actively supported login methods.
      *
@@ -311,7 +314,7 @@ class AuthController extends Controller
      *      ),
      * )
     */
-    public function getSupportedLoginMethods()
+    public function getSupportedLoginMethods(): JsonResponse
     {
         $setting = Setting::first();
 

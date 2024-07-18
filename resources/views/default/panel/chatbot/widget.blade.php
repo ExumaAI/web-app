@@ -1,5 +1,6 @@
 @php
     $page = isset($page) ? $page : 'dashboard';
+
     $chatbot = App\Models\Chatbot\Chatbot::query()
         ->where('id', $settings_two->chatbot_template)
         ->first();
@@ -9,9 +10,13 @@
     }
 
     $ipAddress = isset($_SERVER['HTTP_CF_CONNECTING_IP']) ? $_SERVER['HTTP_CF_CONNECTING_IP'] : request()->ip();
+
     $db_ip_address = App\Models\RateLimit::query()->where('ip_address', $ipAddress)->where('type', 'chatbot')->first();
+
     $chatbot_history = App\Models\ChatBotHistory::query()->where('ip', $ipAddress)->first();
+
     $position = $settings_two->chatbot_position ?? 'bottom-left';
+
     $chatbot_custom_dimensions = '';
 
     switch ($position) {
@@ -55,7 +60,7 @@
     >
         <img
             class="h-full w-full overflow-hidden rounded-full object-cover object-center transition-all group-[&.lqd-is-active]:-translate-y-2 group-[&.lqd-is-active]:scale-90 group-[&.lqd-is-active]:opacity-0"
-            src="{{ $chatbot->image ? '/uploads/' . $chatbot->image : custom_theme_url('/assets/img/chatbot-default.png') }}"
+            src="{{ $chatbot->image ? '/uploads/' . $chatbot->image : custom_theme_url(config('app.url').'/themes/default/assets/img/chatbot-default.png') }}"
             alt=""
         >
         <span
@@ -159,7 +164,7 @@
         <span class="lqd-chat-avatar text-dark">
             <span
                 class="avatar h-[24px] w-[24px] shrink-0"
-                style="background-image: url('{{ !empty($chat->category->image) ? '/' . $chat->category->image : asset('assets/img/auth/default-avatar.png') }}')"
+                style="background-image: url('{{ !empty($chat->category->image) ? '/' . $chat->category->image : url('/assets/img/auth/default-avatar.png') }}')"
             ></span>
         </span>
         <div

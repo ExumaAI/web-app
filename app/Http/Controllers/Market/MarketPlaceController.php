@@ -68,6 +68,9 @@ class MarketPlaceController extends Controller
 
     public function extensionActivate(Request $request, string $token)
     {
+
+        cache()->forget('check_license_domain_'.$request->getHost());
+
         $data = Helper::decodePaymentToken($token);
 
         $item = $this->extensionRepository->find($data['slug']);

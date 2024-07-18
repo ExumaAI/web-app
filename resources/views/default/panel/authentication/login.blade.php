@@ -87,6 +87,13 @@
                 <a class="text-indigo-600" href="{{ route('forgot_password') }}">{{ __('Forgot Password?') }}</a>
             </div>
         </div>
+        @if($setting->recaptcha_login == 1)
+            <!-- Google Recaptcha Widget-->
+            <div class="g-recaptcha mt-4" data-sitekey="{{config('services.recaptcha.key')}}"></div>
+        @endif
+
+        <input class="hidden" id="recaptcha" value="{{$setting->recaptcha_login}}">
+
         <x-button class="text-sm" id="LoginFormButton" size="lg" type="submit" tag="button">
             {{ __('Sign in') }}
         </x-button>

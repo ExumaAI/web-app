@@ -261,7 +261,7 @@
 
                         @endif
                     </x-card>
-                    @if (!$marketSubscription['data'] && $item['price'] != 0)
+                    @if (!$marketSubscription['data'] && $item['price'] != 0 && \App\Helpers\Classes\Helper::appIsNotDemo())
 
                     <div class="flex items-center gap-7 text-2xs text-heading-foreground">
                         <span class="block h-px grow bg-heading-foreground/10"></span>

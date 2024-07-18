@@ -181,7 +181,20 @@
     </div>
 @endsection
 
+@php
+    $lang_with_flags = [];
+    foreach (LaravelLocalization::getSupportedLocales() as $lang => $properties) {
+        $lang_with_flags[] = [
+            'lang' => $lang,
+            'name' => $properties['native'],
+            'flag' => country2flag(substr($properties['regional'], strrpos($properties['regional'], '_') + 1)),
+        ];
+    }
+@endphp
 @push('script')
+    <script>
+        const lang_with_flags = @json($lang_with_flags);
+    </script>
     <script src="{{ custom_theme_url('/assets/libs/beautify-html.min.js') }}"></script>
     <script src="{{ custom_theme_url('/assets/libs/ace/src-min-noconflict/ace.js') }}"></script>
     <script src="{{ custom_theme_url('/assets/libs/ace/src-min-noconflict/ext-language_tools.js') }}"></script>

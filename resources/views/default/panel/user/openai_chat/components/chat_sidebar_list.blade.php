@@ -50,12 +50,12 @@
                 </span>
             </div>
             <span
-                class="absolute end-4 top-1/2 flex -translate-y-1/2 gap-1 opacity-0 transition-opacity before:pointer-events-none before:absolute before:-inset-9 before:z-0 before:bg-[radial-gradient(closest-side,hsl(var(--background))_50%,transparent)] before:opacity-0 before:transition-all focus-within:opacity-100 group-hover:opacity-100 group-hover:before:opacity-90 group-[&.edit-mode]:opacity-100 max-md:opacity-100"
+                class="chat-list-item-actions absolute end-4 top-1/2 flex -translate-y-1/2 gap-1 opacity-0 transition-opacity before:pointer-events-none before:absolute before:-inset-9 before:z-0 before:bg-[radial-gradient(closest-side,hsl(var(--background))_50%,transparent)] before:opacity-0 before:transition-all focus-within:opacity-100 group-hover:opacity-100 group-hover:before:opacity-90 group-[&.edit-mode]:opacity-100 max-md:opacity-100"
             >
                 <button
                     @class([
                         'chat-item-update-title' => !$disable_actions,
-                        'flex size-7 items-center relative z-1 justify-center rounded-full border bg-background transition-all dark:bg-primary dark:border-primary hover:scale-110 group-[&.edit-mode]:bg-emerald-500 group-[&.edit-mode]:border-emerald-500 group-[&.edit-mode]:text-white',
+                        'flex size-7 items-center relative z-1 justify-center rounded-full border bg-background transition-all dark:bg-primary dark:text-primary-foreground dark:border-primary hover:scale-110 group-[&.edit-mode]:bg-emerald-500 group-[&.edit-mode]:border-emerald-500 group-[&.edit-mode]:text-white',
                     ])
                     @if ($disable_actions) onclick="return toastr.info({{ __('This feature is disabled in Demo version.') }})" @endif
                 >

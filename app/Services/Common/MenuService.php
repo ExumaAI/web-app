@@ -2,6 +2,7 @@
 
 namespace App\Services\Common;
 
+use App\Enums\Introduction;
 use App\Helpers\Classes\Helper;
 use App\Models\Common\Menu;
 use App\Models\Extension;
@@ -25,6 +26,7 @@ class MenuService
 
     public function generate(bool $active = true): array
     {
+
         return cache()->rememberForever(self::MENU_KEY, function () use ($active) {
             $items = Menu::query()
                 ->with('children')
@@ -82,6 +84,7 @@ class MenuService
         $staticData = $this->data();
 
         foreach ($items as $item) {
+
             if (isset($staticData[$item['key']])) {
 
                 $data[$item['key']] = array_merge($staticData[$item['key']], $item->toArray());
@@ -89,7 +92,7 @@ class MenuService
                 if ($item->parent_id == null and $else) {
                     $children = $item->getAttribute('children');
 
-                    $data[$item['key']]['children'] = $this->merge($children, false);
+                    $data[$item['key']]['children'] = $this->merge($children);
                 }
 
             } elseif ($else) {
@@ -104,14 +107,12 @@ class MenuService
         return $data;
     }
 
-
-
     public function data(): array
     {
         $admin = Auth::user()?->isAdmin();
 
         $setting = Setting::query()->first();
-		$settings_two = SettingTwo::query()->first();
+        $settings_two = SettingTwo::query()->first();
 
         $menu = [
             'user_label' => [
@@ -185,6 +186,7 @@ class MenuService
                 'key' => 'ai_writer',
                 'route' => 'dashboard.user.openai.list',
                 'label' => 'AI Writer',
+                'data-name' => Introduction::AI_WRITER,
                 'icon' => 'tabler-notes',
                 'svg' => null,
                 'order' => 5,
@@ -195,7 +197,7 @@ class MenuService
                 'active_condition' => [
                     'dashboard.user.openai.list', 'dashboard.user.openai.generator.*', 'dashboard.user.openai.generator.workbook',
                 ],
-                'show_condition' => (bool)Helper::setting('feature_ai_writer', null, $setting),
+                'show_condition' => (bool) Helper::setting('feature_ai_writer', null, $setting),
             ],
             'ai_video' => [
                 'parent_key' => null,
@@ -211,7 +213,7 @@ class MenuService
                 'type' => 'item',
                 'extension' => null,
                 'active_condition' => null,
-                'show_condition' => (bool)Helper::settingTwo('feature_ai_video', null, $settings_two),
+                'show_condition' => (bool) Helper::settingTwo('feature_ai_video', null, $settings_two),
             ],
             'ai_image_generator' => [
                 'parent_key' => null,
@@ -219,6 +221,7 @@ class MenuService
                 'route' => 'dashboard.user.openai.generator',
                 'route_slug' => 'ai_image_generator',
                 'label' => 'AI Image',
+                'data-name' => Introduction::AI_IMAGE,
                 'icon' => 'tabler-photo',
                 'svg' => null,
                 'order' => 7,
@@ -227,7 +230,7 @@ class MenuService
                 'type' => 'item',
                 'extension' => null,
                 'active_condition' => null,
-                'show_condition' => (bool)Helper::setting('feature_ai_image', null, $setting),
+                'show_condition' => (bool) Helper::setting('feature_ai_image', null, $setting),
             ],
             'ai_article_wizard' => [
                 'parent_key' => null,
@@ -243,9 +246,9 @@ class MenuService
                 'type' => 'item',
                 'extension' => null,
                 'active_condition' => [
-                    'dashboard.user.openai.articlewizard.new'
+                    'dashboard.user.openai.articlewizard.new',
                 ],
-                'show_condition' => (bool)Helper::setting('feature_ai_article_wizard', null, $setting),
+                'show_condition' => (bool) Helper::setting('feature_ai_article_wizard', null, $setting),
             ],
             'ai_pdf' => [
                 'parent_key' => null,
@@ -253,6 +256,7 @@ class MenuService
                 'route' => 'dashboard.user.openai.generator.workbook',
                 'route_slug' => 'ai_pdf',
                 'label' => 'AI File Chat',
+                'data-name' => Introduction::AI_PDF,
                 'icon' => 'tabler-file-pencil',
                 'svg' => null,
                 'order' => 9,
@@ -277,7 +281,7 @@ class MenuService
                 'type' => 'item',
                 'extension' => null,
                 'active_condition' => null,
-                'show_condition' => (bool)Helper::setting('feature_ai_vision', null, $setting),
+                'show_condition' => (bool) Helper::setting('feature_ai_vision', null, $setting),
             ],
             'ai_rewriter' => [
                 'parent_key' => null,
@@ -295,7 +299,7 @@ class MenuService
                 'active_condition' => [
                     'dashboard.user.openai.rewriter', 'dashboard.user.openai.rewriter.*',
                 ],
-                'show_condition' => (bool)Helper::setting('feature_ai_rewriter', null, $setting),
+                'show_condition' => (bool) Helper::setting('feature_ai_rewriter', null, $setting),
             ],
             'ai_chat_image' => [
                 'parent_key' => null,
@@ -311,7 +315,7 @@ class MenuService
                 'type' => 'item',
                 'extension' => null,
                 'active_condition' => route('dashboard.user.openai.generator.workbook', 'ai_chat_image') === url()->current(),
-                'show_condition' => (bool)Helper::setting('feature_ai_chat_image', null, $setting),
+                'show_condition' => (bool) Helper::setting('feature_ai_chat_image', null, $setting),
             ],
             'ai_chat_all' => [
                 'parent_key' => null,
@@ -329,7 +333,7 @@ class MenuService
                 'active_condition' => [
                     'dashboard.user.openai.chat.*',
                 ],
-                'show_condition' => (bool)Helper::setting('feature_ai_chat', null, $setting),
+                'show_condition' => (bool) Helper::setting('feature_ai_chat', null, $setting),
             ],
             'ai_code_generator' => [
                 'parent_key' => null,
@@ -337,6 +341,7 @@ class MenuService
                 'route' => 'dashboard.user.openai.generator.workbook',
                 'route_slug' => 'ai_code_generator',
                 'label' => 'AI Code',
+                'data-name' => Introduction::AI_CODE,
                 'icon' => 'tabler-terminal-2',
                 'svg' => null,
                 'order' => 14,
@@ -345,7 +350,7 @@ class MenuService
                 'type' => 'item',
                 'extension' => null,
                 'active_condition' => null,
-                'show_condition' => (bool)Helper::setting('feature_ai_code', null, $setting),
+                'show_condition' => (bool) Helper::setting('feature_ai_code', null, $setting),
             ],
             'ai_youtube' => [
                 'parent_key' => null,
@@ -361,7 +366,7 @@ class MenuService
                 'type' => 'item',
                 'extension' => null,
                 'active_condition' => null,
-                'show_condition' => (bool)Helper::setting('feature_ai_youtube', null, $setting),
+                'show_condition' => (bool) Helper::setting('feature_ai_youtube', null, $setting),
             ],
             'ai_rss' => [
                 'parent_key' => null,
@@ -377,7 +382,7 @@ class MenuService
                 'type' => 'item',
                 'extension' => null,
                 'active_condition' => null,
-                'show_condition' => (bool)Helper::setting('feature_ai_rss', null, $setting),
+                'show_condition' => (bool) Helper::setting('feature_ai_rss', null, $setting),
             ],
             'ai_speech_to_text' => [
                 'parent_key' => null,
@@ -393,7 +398,7 @@ class MenuService
                 'type' => 'item',
                 'extension' => null,
                 'active_condition' => null,
-                'show_condition' => (bool)Helper::setting('feature_ai_speech_to_text', null, $setting),
+                'show_condition' => (bool) Helper::setting('feature_ai_speech_to_text', null, $setting),
             ],
             'ai_voiceover' => [
                 'parent_key' => null,
@@ -409,7 +414,7 @@ class MenuService
                 'type' => 'item',
                 'extension' => null,
                 'active_condition' => null,
-                'show_condition' => (bool)Helper::setting('feature_ai_voiceover', null, $setting),
+                'show_condition' => (bool) Helper::setting('feature_ai_voiceover', null, $setting),
             ],
             'ai_voiceover_clone' => [
                 'parent_key' => null,
@@ -462,6 +467,22 @@ class MenuService
                 'extension' => null,
                 'active_condition' => null,
                 'show_condition' => true,
+            ],
+            'ai_avatar' => [
+                'parent_key' => null,
+                'key' => 'ai_avatar',
+                'route' => 'dashboard.user.ai-avatar.index',
+                'route_slug' => null,
+                'label' => 'AI Avatar',
+                'icon' => 'tabler-slideshow',
+                'svg' => null,
+                'order' => 20,
+                'is_active' => true,
+                'params' => [],
+                'type' => 'item',
+                'extension' => true,
+                'active_condition' => null,
+                'show_condition' => Route::has('dashboard.user.ai-avatar.index'),
             ],
             'api_keys' => [
                 'parent_key' => null,
@@ -611,7 +632,7 @@ class MenuService
                 'extension' => null,
                 'active_condition' => false,
                 'show_condition' => true,
-                'is_admin' => true
+                'is_admin' => true,
             ],
             'admin_label' => [
                 'parent_key' => null,
@@ -627,7 +648,7 @@ class MenuService
                 'extension' => null,
                 'active_condition' => false,
                 'show_condition' => true,
-                'is_admin' => true
+                'is_admin' => true,
             ],
             'admin_dashboard' => [
                 'parent_key' => null,
@@ -645,7 +666,7 @@ class MenuService
                     'dashboard.admin.index',
                 ],
                 'show_condition' => true,
-                'is_admin' => true
+                'is_admin' => true,
             ],
             'marketplace' => [
                 'parent_key' => null,
@@ -663,7 +684,7 @@ class MenuService
                     'dashboard.admin.marketplace.*',
                 ],
                 'show_condition' => true,
-                'is_admin' => true
+                'is_admin' => true,
             ],
             'themes' => [
                 'parent_key' => null,
@@ -681,7 +702,7 @@ class MenuService
                     'dashboard.admin.themes.*',
                 ],
                 'show_condition' => true,
-                'is_admin' => true
+                'is_admin' => true,
             ],
             'user_management' => [
                 'parent_key' => null,
@@ -699,7 +720,7 @@ class MenuService
                     'dashboard.admin.users.*',
                 ],
                 'show_condition' => true,
-                'is_admin' => true
+                'is_admin' => true,
             ],
             'user_list' => [
                 'parent_key' => 'user_management',
@@ -717,7 +738,7 @@ class MenuService
                     'dashboard.admin.users.index',
                 ],
                 'show_condition' => true,
-                'is_admin' => true
+                'is_admin' => true,
             ],
             'user_activity' => [
                 'parent_key' => 'user_management',
@@ -735,7 +756,7 @@ class MenuService
                     'dashboard.admin.users.activity',
                 ],
                 'show_condition' => true,
-                'is_admin' => true
+                'is_admin' => true,
             ],
             'user_dashboard' => [
                 'parent_key' => 'user_management',
@@ -753,9 +774,9 @@ class MenuService
                     'dashboard.admin.users.dashboard',
                 ],
                 'show_condition' => true,
-                'is_admin' => true
+                'is_admin' => true,
             ],
-			'user_deletion' => [
+            'user_deletion' => [
                 'parent_key' => 'user_management',
                 'key' => 'user_deletion',
                 'route' => 'dashboard.admin.users.deletion.reqs',
@@ -771,9 +792,26 @@ class MenuService
                     'dashboard.admin.users.deletion.reqs',
                 ],
                 'show_condition' => true,
-                'is_admin' => true
+                'is_admin' => true,
             ],
-
+            'announcements' => [
+                'parent_key' => null,
+                'key' => 'announcements',
+                'route' => 'dashboard.admin.announcements.index',
+                'label' => 'Announcements',
+                'icon' => 'tabler-speakerphone',
+                'svg' => null,
+                'order' => 35,
+                'is_active' => true,
+                'params' => [],
+                'type' => 'item',
+                'extension' => null,
+                'active_condition' => [
+                    'dashboard.admin.announcements.*',
+                ],
+                'show_condition' => true,
+                'is_admin' => true,
+            ],
             'google_adsense' => [
                 'parent_key' => null,
                 'key' => 'google_adsense',
@@ -790,7 +828,7 @@ class MenuService
                     'dashboard.admin.ads.*',
                 ],
                 'show_condition' => true,
-                'is_admin' => true
+                'is_admin' => true,
             ],
             'support_requests' => [
                 'parent_key' => null,
@@ -808,7 +846,7 @@ class MenuService
                     'dashboard.support.*',
                 ],
                 'show_condition' => true,
-                'is_admin' => true
+                'is_admin' => true,
             ],
             'templates' => [
                 'parent_key' => null,
@@ -824,7 +862,7 @@ class MenuService
                 'extension' => null,
                 'active_condition' => null,
                 'show_condition' => true,
-                'is_admin' => true
+                'is_admin' => true,
             ],
             'built_in_templates' => [
                 'parent_key' => 'templates',
@@ -842,7 +880,7 @@ class MenuService
                     'dashboard.admin.openai.list',
                 ],
                 'show_condition' => true,
-                'is_admin' => true
+                'is_admin' => true,
             ],
             'custom_templates' => [
                 'parent_key' => 'templates',
@@ -860,7 +898,7 @@ class MenuService
                     'dashboard.admin.openai.custom.list',
                 ],
                 'show_condition' => true,
-                'is_admin' => true
+                'is_admin' => true,
             ],
             'ai_writer_categories' => [
                 'parent_key' => 'templates',
@@ -878,7 +916,7 @@ class MenuService
                     'dashboard.admin.openai.categories.*',
                 ],
                 'show_condition' => true,
-                'is_admin' => true
+                'is_admin' => true,
             ],
             'chat_settings' => [
                 'parent_key' => null,
@@ -893,10 +931,10 @@ class MenuService
                 'type' => 'item',
                 'extension' => null,
                 'active_condition' => [
-                    'dashboard.admin.chatbot.*', 'dashboard.admin.openai.chat.list', 'dashboard.admin.openai.chat.addOrUpdate', 'dashboard.admin.openai.chat.category', 'dashboard.admin.openai.chat.addOrUpdateCategory',
+                    'dashboard.admin.chatbot.*', 'dashboard.admin.openai.chat.list', 'dashboard.admin.openai.chat.addOrUpdate', 'dashboard.admin.openai.chat.category', 'dashboard.admin.openai.chat.addOrUpdateCategory', 'dashboard.admin.ai-chat-model.index',
                 ],
                 'show_condition' => true,
-                'is_admin' => true
+                'is_admin' => true,
             ],
             'chat_categories' => [
                 'parent_key' => 'chat_settings',
@@ -914,7 +952,7 @@ class MenuService
                     'dashboard.admin.openai.chat.category.*', 'dashboard.admin.openai.chat.category',
                 ],
                 'show_condition' => true,
-                'is_admin' => true
+                'is_admin' => true,
             ],
             'chat_templates' => [
                 'parent_key' => 'chat_settings',
@@ -932,7 +970,7 @@ class MenuService
                     'dashboard.admin.openai.chat.*',
                 ],
                 'show_condition' => true,
-                'is_admin' => true
+                'is_admin' => true,
             ],
             'chatbot_training' => [
                 'parent_key' => 'chat_settings',
@@ -950,7 +988,25 @@ class MenuService
                     'dashboard.admin.chatbot.*',
                 ],
                 'show_condition' => true,
-                'is_admin' => true
+                'is_admin' => true,
+            ],
+            'ai_chat_models' => [
+                'parent_key' => 'chat_settings',
+                'key' => 'ai_chat_models',
+                'route' => 'dashboard.admin.ai-chat-model.index',
+                'label' => 'AI Chat Models',
+                'icon' => 'tabler-list-details',
+                'svg' => null,
+                'order' => 44,
+                'is_active' => true,
+                'params' => [],
+                'type' => 'item',
+                'extension' => null,
+                'active_condition' => [
+                    'dashboard.admin.ai-chat-model.index',
+                ],
+                'show_condition' => true,
+                'is_admin' => true,
             ],
             'floating_chat_settings' => [
                 'parent_key' => 'chat_settings',
@@ -968,6 +1024,24 @@ class MenuService
                     'dashboard.admin.chatbot.setting',
                 ],
                 'show_condition' => true,
+                'is_admin' => true,
+            ],
+            'external_chat_settings' => [
+                'parent_key' => 'chat_settings',
+                'key' => 'external_chat_settings',
+                'route' => 'dashboard.admin.chatbot.external_settings',
+                'label' => 'External Chat Settings',
+                'icon' => 'tabler-list-details',
+                'svg' => null,
+                'order' => 46,
+                'is_active' => true,
+                'params' => [],
+                'type' => 'item',
+                'extension' => null,
+                'active_condition' => [
+                    'dashboard.admin.chatbot.external_settings',
+                ],
+                'show_condition' => true,
                 'is_admin' => true
             ],
             'frontend' => [
@@ -977,7 +1051,7 @@ class MenuService
                 'label' => 'Frontend',
                 'icon' => 'tabler-device-laptop',
                 'svg' => null,
-                'order' => 46,
+                'order' => 47,
                 'is_active' => true,
                 'params' => [],
                 'type' => 'item',
@@ -986,7 +1060,7 @@ class MenuService
                     'dashboard.admin.testimonials.*', 'dashboard.admin.frontend.authsettings', 'dashboard.admin.frontend.settings', 'dashboard.admin.frontend.faq.*', 'dashboard.admin.frontend.tools.*', 'dashboard.admin.frontend.tools.*', 'dashboard.admin.frontend.future.*', 'dashboard.admin.frontend.whois.*', 'dashboard.admin.frontend.generatorlist.*', 'dashboard.admin.clients.*', 'dashboard.admin.howitWorks.*', 'dashboard.admin.whois.*', 'dashboard.admin.frontend.menusettings', 'dashboard.admin.frontend.sectionsettings',
                 ],
                 'show_condition' => true,
-                'is_admin' => true
+                'is_admin' => true,
             ],
             'frontend_settings' => [
                 'parent_key' => 'frontend',
@@ -995,7 +1069,7 @@ class MenuService
                 'label' => 'Frontend Settings',
                 'icon' => 'tabler-list-details',
                 'svg' => null,
-                'order' => 47,
+                'order' => 48,
                 'is_active' => true,
                 'params' => [],
                 'type' => 'item',
@@ -1004,7 +1078,7 @@ class MenuService
                     'dashboard.admin.frontend.settings',
                 ],
                 'show_condition' => true,
-                'is_admin' => true
+                'is_admin' => true,
             ],
             'frontend_section_settings' => [
                 'parent_key' => 'frontend',
@@ -1013,7 +1087,7 @@ class MenuService
                 'label' => 'Frontend Section Settings',
                 'icon' => 'tabler-list-details',
                 'svg' => null,
-                'order' => 48,
+                'order' => 49,
                 'is_active' => true,
                 'params' => [],
                 'type' => 'item',
@@ -1022,7 +1096,7 @@ class MenuService
                     'dashboard.admin.frontend.sectionsettings',
                 ],
                 'show_condition' => true,
-                'is_admin' => true
+                'is_admin' => true,
             ],
             'frontend_menu' => [
                 'parent_key' => 'frontend',
@@ -1031,7 +1105,7 @@ class MenuService
                 'label' => 'Menu',
                 'icon' => 'tabler-list-details',
                 'svg' => null,
-                'order' => 49,
+                'order' => 50,
                 'is_active' => true,
                 'params' => [],
                 'type' => 'item',
@@ -1040,8 +1114,46 @@ class MenuService
                     'dashboard.admin.frontend.menusettings',
                 ],
                 'show_condition' => true,
-                'is_admin' => true
+                'is_admin' => true,
             ],
+            'social_media_accounts' => [
+                'parent_key' => 'frontend',
+                'key' => 'social_media_accounts',
+                'route' => 'dashboard.admin.frontend.socialmedia',
+                'label' => 'Social Media Accounts',
+                'icon' => 'tabler-list-details',
+                'svg' => null,
+                'order' => 50,
+                'is_active' => true,
+                'params' => [],
+                'type' => 'item',
+                'extension' => null,
+                'active_condition' => [
+                    'dashboard.admin.frontend.socialmedia',
+                ],
+                'show_condition' => true,
+                'is_admin' => true,
+            ],
+
+            'social_media_accounts' => [
+                'parent_key' => 'frontend',
+                'key' => 'social_media_accounts',
+                'route' => 'dashboard.admin.frontend.socialmedia',
+                'label' => 'Social Media Accounts',
+                'icon' => 'tabler-list-details',
+                'svg' => null,
+                'order' => 50,
+                'is_active' => true,
+                'params' => [],
+                'type' => 'item',
+                'extension' => null,
+                'active_condition' => [
+                    'dashboard.admin.frontend.socialmedia',
+                ],
+                'show_condition' => true,
+                'is_admin' => true,
+            ],
+
 			'social_media_accounts' => [
 				'parent_key' => 'frontend',
 				'key' => 'social_media_accounts',
@@ -1049,7 +1161,7 @@ class MenuService
 				'label' => 'Social Media Accounts',
 				'icon' => 'tabler-list-details',
 				'svg' => null,
-				'order' => 50,
+				'order' => 51,
 				'is_active' => true,
 				'params' => [],
 				'type' => 'item',
@@ -1060,47 +1172,12 @@ class MenuService
 				'show_condition' => true,
 				'is_admin' => true
 			],
+
             'auth_settings' => [
                 'parent_key' => 'frontend',
                 'key' => 'auth_settings',
                 'route' => 'dashboard.admin.frontend.authsettings',
                 'label' => 'Auth Settings',
-                'icon' => 'tabler-list-details',
-                'svg' => null,
-                'order' => 50,
-                'is_active' => true,
-                'params' => [],
-                'type' => 'item',
-                'extension' => null,
-                'active_condition' => [
-                    'dashboard.admin.frontend.authsettings',
-                ],
-                'show_condition' => true,
-                'is_admin' => true
-            ],
-            'f_a_q' => [
-                'parent_key' => 'frontend',
-                'key' => 'f_a_q',
-                'route' => 'dashboard.admin.frontend.faq.index',
-                'label' => 'F.A.Q',
-                'icon' => 'tabler-list-details',
-                'svg' => null,
-                'order' => 51,
-                'is_active' => true,
-                'params' => [],
-                'type' => 'item',
-                'extension' => null,
-                'active_condition' => [
-                    'dashboard.admin.frontend.faq.index',
-                ],
-                'show_condition' => true,
-                'is_admin' => true
-            ],
-            'tools_section' => [
-                'parent_key' => 'frontend',
-                'key' => 'tools_section',
-                'route' => 'dashboard.admin.frontend.tools.index',
-                'label' => 'Tools Section',
                 'icon' => 'tabler-list-details',
                 'svg' => null,
                 'order' => 52,
@@ -1109,16 +1186,16 @@ class MenuService
                 'type' => 'item',
                 'extension' => null,
                 'active_condition' => [
-                    'dashboard.admin.frontend.tools.*',
+                    'dashboard.admin.frontend.authsettings',
                 ],
                 'show_condition' => true,
-                'is_admin' => true
+                'is_admin' => true,
             ],
-            'features_section' => [
+            'f_a_q' => [
                 'parent_key' => 'frontend',
-                'key' => 'features_section',
-                'route' => 'dashboard.admin.frontend.future.index',
-                'label' => 'Features Section',
+                'key' => 'f_a_q',
+                'route' => 'dashboard.admin.frontend.faq.index',
+                'label' => 'F.A.Q',
                 'icon' => 'tabler-list-details',
                 'svg' => null,
                 'order' => 53,
@@ -1127,16 +1204,16 @@ class MenuService
                 'type' => 'item',
                 'extension' => null,
                 'active_condition' => [
-                    'dashboard.admin.frontend.future.*',
+                    'dashboard.admin.frontend.faq.index',
                 ],
                 'show_condition' => true,
-                'is_admin' => true
+                'is_admin' => true,
             ],
-            'testimonials_section' => [
+            'tools_section' => [
                 'parent_key' => 'frontend',
-                'key' => 'testimonials_section',
-                'route' => 'dashboard.admin.testimonials.index',
-                'label' => 'Testimonials Section',
+                'key' => 'tools_section',
+                'route' => 'dashboard.admin.frontend.tools.index',
+                'label' => 'Tools Section',
                 'icon' => 'tabler-list-details',
                 'svg' => null,
                 'order' => 54,
@@ -1145,16 +1222,16 @@ class MenuService
                 'type' => 'item',
                 'extension' => null,
                 'active_condition' => [
-                    'dashboard.admin.testimonials.*',
+                    'dashboard.admin.frontend.tools.*',
                 ],
                 'show_condition' => true,
-                'is_admin' => true
+                'is_admin' => true,
             ],
-            'clients_section' => [
+            'features_section' => [
                 'parent_key' => 'frontend',
-                'key' => 'clients_section',
-                'route' => 'dashboard.admin.clients.index',
-                'label' => 'Clients Section',
+                'key' => 'features_section',
+                'route' => 'dashboard.admin.frontend.future.index',
+                'label' => 'Features Section',
                 'icon' => 'tabler-list-details',
                 'svg' => null,
                 'order' => 55,
@@ -1163,16 +1240,16 @@ class MenuService
                 'type' => 'item',
                 'extension' => null,
                 'active_condition' => [
-                    'dashboard.admin.clients.index',
+                    'dashboard.admin.frontend.future.*',
                 ],
                 'show_condition' => true,
-                'is_admin' => true
+                'is_admin' => true,
             ],
-            'how_it_works_section' => [
+            'testimonials_section' => [
                 'parent_key' => 'frontend',
-                'key' => 'how_it_works_section',
-                'route' => 'dashboard.admin.howitWorks.index',
-                'label' => 'How it Works Section',
+                'key' => 'testimonials_section',
+                'route' => 'dashboard.admin.testimonials.index',
+                'label' => 'Testimonials Section',
                 'icon' => 'tabler-list-details',
                 'svg' => null,
                 'order' => 56,
@@ -1180,15 +1257,17 @@ class MenuService
                 'params' => [],
                 'type' => 'item',
                 'extension' => null,
-                'active_condition' => ['dashboard.admin.howitWorks.*'],
+                'active_condition' => [
+                    'dashboard.admin.testimonials.*',
+                ],
                 'show_condition' => true,
-                'is_admin' => true
+                'is_admin' => true,
             ],
-            'who_can_use_section' => [
+            'clients_section' => [
                 'parent_key' => 'frontend',
-                'key' => 'who_can_use_section',
-                'route' => 'dashboard.admin.frontend.whois.index',
-                'label' => 'Who Can Use Section',
+                'key' => 'clients_section',
+                'route' => 'dashboard.admin.clients.index',
+                'label' => 'Clients Section',
                 'icon' => 'tabler-list-details',
                 'svg' => null,
                 'order' => 57,
@@ -1197,10 +1276,44 @@ class MenuService
                 'type' => 'item',
                 'extension' => null,
                 'active_condition' => [
+                    'dashboard.admin.clients.index',
+                ],
+                'show_condition' => true,
+                'is_admin' => true,
+            ],
+            'how_it_works_section' => [
+                'parent_key' => 'frontend',
+                'key' => 'how_it_works_section',
+                'route' => 'dashboard.admin.howitWorks.index',
+                'label' => 'How it Works Section',
+                'icon' => 'tabler-list-details',
+                'svg' => null,
+                'order' => 58,
+                'is_active' => true,
+                'params' => [],
+                'type' => 'item',
+                'extension' => null,
+                'active_condition' => ['dashboard.admin.howitWorks.*'],
+                'show_condition' => true,
+                'is_admin' => true,
+            ],
+            'who_can_use_section' => [
+                'parent_key' => 'frontend',
+                'key' => 'who_can_use_section',
+                'route' => 'dashboard.admin.frontend.whois.index',
+                'label' => 'Who Can Use Section',
+                'icon' => 'tabler-list-details',
+                'svg' => null,
+                'order' => 59,
+                'is_active' => true,
+                'params' => [],
+                'type' => 'item',
+                'extension' => null,
+                'active_condition' => [
                     'dashboard.admin.frontend.whois.*',
                 ],
                 'show_condition' => true,
-                'is_admin' => true
+                'is_admin' => true,
             ],
             'generators_list_section' => [
                 'parent_key' => 'frontend',
@@ -1209,7 +1322,7 @@ class MenuService
                 'label' => 'Generators List Section',
                 'icon' => 'tabler-list-details',
                 'svg' => null,
-                'order' => 58,
+                'order' => 60,
                 'is_active' => true,
                 'params' => [],
                 'type' => 'item',
@@ -1218,7 +1331,7 @@ class MenuService
                     'dashboard.admin.frontend.generatorlist.*',
                 ],
                 'show_condition' => true,
-                'is_admin' => true
+                'is_admin' => true,
             ],
             'finance' => [
                 'parent_key' => null,
@@ -1227,7 +1340,7 @@ class MenuService
                 'label' => 'Finance',
                 'icon' => 'tabler-wallet',
                 'svg' => null,
-                'order' => 59,
+                'order' => 61,
                 'is_active' => true,
                 'params' => [],
                 'type' => 'item',
@@ -1236,7 +1349,7 @@ class MenuService
                     'dashboard.admin.finance.*', 'dashboard.admin.bank.transactions.list',
                 ],
                 'show_condition' => true,
-                'is_admin' => true
+                'is_admin' => true,
             ],
             'bank_transactions' => [
                 'parent_key' => 'finance',
@@ -1245,7 +1358,7 @@ class MenuService
                 'label' => 'Bank Transactions',
                 'icon' => 'tabler-list-details',
                 'svg' => null,
-                'order' => 60,
+                'order' => 62,
                 'is_active' => true,
                 'params' => [],
                 'type' => 'item',
@@ -1262,7 +1375,7 @@ class MenuService
                 'label' => 'Membership Plans',
                 'icon' => 'tabler-list-details',
                 'svg' => null,
-                'order' => 60,
+                'order' => 63,
                 'is_active' => true,
                 'params' => [],
                 'type' => 'item',
@@ -1271,7 +1384,7 @@ class MenuService
                     'dashboard.admin.finance.plans.*',
                 ],
                 'show_condition' => true,
-                'is_admin' => true
+                'is_admin' => true,
             ],
             'payment_gateways' => [
                 'parent_key' => 'finance',
@@ -1280,7 +1393,7 @@ class MenuService
                 'label' => 'Payment Gateways',
                 'icon' => 'tabler-list-details',
                 'svg' => null,
-                'order' => 60,
+                'order' => 64,
                 'is_active' => true,
                 'params' => [],
                 'type' => 'item',
@@ -1289,7 +1402,7 @@ class MenuService
                     'dashboard.admin.finance.paymentGateways.*',
                 ],
                 'show_condition' => true,
-                'is_admin' => true
+                'is_admin' => true,
             ],
             'trial_features' => [
                 'parent_key' => 'finance',
@@ -1307,7 +1420,7 @@ class MenuService
                     'dashboard.admin.finance.free.*',
                 ],
                 'show_condition' => true,
-                'is_admin' => true
+                'is_admin' => true,
             ],
             'api_cost_management' => [
                 'parent_key' => 'finance',
@@ -1325,7 +1438,7 @@ class MenuService
                     'dashboard.admin.finance.api-cost-management.*',
                 ],
                 'show_condition' => true,
-                'is_admin' => true
+                'is_admin' => true,
             ],
             'mobile_payment' => [
                 'parent_key' => 'finance',
@@ -1343,7 +1456,7 @@ class MenuService
                     'dashboard.admin.finance.mobile.index',
                 ],
                 'show_condition' => Helper::setting('mobile_payment_active', null, $setting),
-                'is_admin' => $admin
+                'is_admin' => $admin,
             ],
             'pages' => [
                 'parent_key' => null,
@@ -1361,7 +1474,7 @@ class MenuService
                     'dashboard.page.*',
                 ],
                 'show_condition' => true,
-                'is_admin' => true
+                'is_admin' => true,
             ],
             'blog' => [
                 'parent_key' => null,
@@ -1379,7 +1492,7 @@ class MenuService
                     'dashboard.blog.*',
                 ],
                 'show_condition' => true,
-                'is_admin' => true
+                'is_admin' => true,
             ],
             'affiliates_admin' => [
                 'parent_key' => null,
@@ -1397,7 +1510,7 @@ class MenuService
                     'dashboard.admin.affiliates.*',
                 ],
                 'show_condition' => true,
-                'is_admin' => true
+                'is_admin' => true,
             ],
             'coupons_admin' => [
                 'parent_key' => null,
@@ -1415,7 +1528,7 @@ class MenuService
                     'dashboard.admin.coupons.*',
                 ],
                 'show_condition' => true,
-                'is_admin' => true
+                'is_admin' => true,
             ],
             'email_templates' => [
                 'parent_key' => null,
@@ -1433,7 +1546,25 @@ class MenuService
                     'dashboard.email-templates.*',
                 ],
                 'show_condition' => true,
-                'is_admin' => true
+                'is_admin' => true,
+            ],
+            'introductions' => [
+                'parent_key' => null,
+                'key' => 'introductions',
+                'route' => 'dashboard.introductions.index',
+                'label' => 'User Onboarding',
+                'icon' => 'tabler-directions',
+                'svg' => null,
+                'order' => 65,
+                'is_active' => true,
+                'params' => [],
+                'type' => 'item',
+                'extension' => null,
+                'active_condition' => [
+                    'dashboard.introductions.*',
+                ],
+                'show_condition' => true,
+                'is_admin' => true,
             ],
             'api_integration' => [
                 'parent_key' => null,
@@ -1448,10 +1579,10 @@ class MenuService
                 'type' => 'item',
                 'extension' => null,
                 'active_condition' => [
-                    'dashboard.admin.settings.openai', 'dashboard.admin.settings.gemini.*'
+                    'dashboard.admin.settings.openai', 'dashboard.admin.settings.gemini.*',
                 ],
                 'show_condition' => true,
-                'is_admin' => true
+                'is_admin' => true,
             ],
             'api_integration_openai' => [
                 'parent_key' => 'api_integration',
@@ -1470,7 +1601,7 @@ class MenuService
                 'is_admin' => true,
                 'onclick' => Helper::appIsDemo() ? 'return toastr.info(\'This feature is disabled in Demo version.\')' : '',
             ],
-			'api_integration_gemini' => [
+            'api_integration_gemini' => [
                 'parent_key' => 'api_integration',
                 'key' => 'api_integration_gemini',
                 'route' => Helper::appIsDemo() ? 'default' : 'dashboard.admin.settings.gemini',
@@ -1607,6 +1738,23 @@ class MenuService
                 'is_admin' => true,
                 'onclick' => Helper::appIsDemo() ? 'return toastr.info(\'This feature is disabled in Demo version.\')' : '',
             ],
+            'api_integration_synthesia' => [
+                'parent_key' => 'api_integration',
+                'key' => 'api_integration_synthesia',
+                'route' => Helper::appIsDemo() ? 'default' : 'dashboard.admin.settings.synthesia',
+                'label' => 'Synthesia',
+                'icon' => 'tabler-list-details',
+                'svg' => null,
+                'order' => 74,
+                'is_active' => true,
+                'params' => [],
+                'type' => 'item',
+                'extension' => true,
+                'active_condition' => ['dashboard.admin.settings.synthesia'],
+                'show_condition' => Route::has('dashboard.user.ai-avatar.index'),
+                'is_admin' => true,
+                'onclick' => Helper::appIsDemo() ? 'return toastr.info(\'This feature is disabled in Demo version.\')' : '',
+            ],
             'plagiarism_extension' => [
                 'parent_key' => 'api_integration',
                 'key' => 'plagiarism_extension',
@@ -1640,13 +1788,13 @@ class MenuService
                     'dashboard.admin.settings.*', 'elseyyid.translations.home', 'elseyyid.translations.lang',
                 ],
                 'show_condition' => true,
-                'is_admin' => true
+                'is_admin' => true,
             ],
             'general' => [
                 'parent_key' => 'settings',
                 'key' => 'general',
                 'route' => 'dashboard.admin.settings.general',
-                'label' => 'General Setting',
+                'label' => 'General Settings',
                 'icon' => 'tabler-device-laptop',
                 'svg' => null,
                 'order' => 76,
@@ -1656,7 +1804,7 @@ class MenuService
                 'extension' => null,
                 'active_condition' => ['dashboard.admin.settings.general'],
                 'show_condition' => true,
-                'is_admin' => true
+                'is_admin' => true,
             ],
             'invoice' => [
                 'parent_key' => 'settings',
@@ -1672,7 +1820,7 @@ class MenuService
                 'extension' => null,
                 'active_condition' => ['dashboard.admin.settings.invoice'],
                 'show_condition' => true,
-                'is_admin' => true
+                'is_admin' => true,
             ],
             'affiliate_setting' => [
                 'parent_key' => 'settings',
@@ -1688,7 +1836,7 @@ class MenuService
                 'extension' => null,
                 'active_condition' => ['dashboard.admin.settings.affiliate'],
                 'show_condition' => true,
-                'is_admin' => true
+                'is_admin' => true,
             ],
             'thumbnail_system' => [
                 'parent_key' => 'settings',
@@ -1704,7 +1852,7 @@ class MenuService
                 'extension' => null,
                 'active_condition' => ['dashboard.admin.settings.thumbnail'],
                 'show_condition' => true,
-                'is_admin' => true
+                'is_admin' => true,
             ],
             'smtp' => [
                 'parent_key' => 'settings',
@@ -1720,7 +1868,7 @@ class MenuService
                 'extension' => null,
                 'active_condition' => ['dashboard.admin.settings.smtp'],
                 'show_condition' => true,
-                'is_admin' => true
+                'is_admin' => true,
             ],
             'gdpr' => [
                 'parent_key' => 'settings',
@@ -1736,7 +1884,7 @@ class MenuService
                 'extension' => null,
                 'active_condition' => ['dashboard.admin.settings.gdpr'],
                 'show_condition' => true,
-                'is_admin' => true
+                'is_admin' => true,
             ],
             'privacy' => [
                 'parent_key' => 'settings',
@@ -1752,7 +1900,7 @@ class MenuService
                 'extension' => null,
                 'active_condition' => ['dashboard.admin.settings.privacy'],
                 'show_condition' => true,
-                'is_admin' => true
+                'is_admin' => true,
             ],
             'languages' => [
                 'parent_key' => 'settings',
@@ -1768,7 +1916,7 @@ class MenuService
                 'extension' => null,
                 'active_condition' => ['elseyyid.translations.home', 'elseyyid.translations.lang'],
                 'show_condition' => true,
-                'is_admin' => true
+                'is_admin' => true,
             ],
             'storage' => [
                 'parent_key' => 'settings',
@@ -1784,7 +1932,7 @@ class MenuService
                 'extension' => null,
                 'active_condition' => ['dashboard.admin.settings.storage'],
                 'show_condition' => true,
-                'is_admin' => true
+                'is_admin' => true,
             ],
             'site_health' => [
                 'parent_key' => null,
@@ -1800,7 +1948,7 @@ class MenuService
                 'extension' => null,
                 'active_condition' => ['dashboard.admin.health.index'],
                 'show_condition' => true,
-                'is_admin' => true
+                'is_admin' => true,
             ],
             'license' => [
                 'parent_key' => null,
@@ -1816,7 +1964,7 @@ class MenuService
                 'extension' => null,
                 'active_condition' => ['dashboard.admin.license.index'],
                 'show_condition' => true,
-                'is_admin' => true
+                'is_admin' => true,
             ],
             'update' => [
                 'parent_key' => null,
@@ -1833,7 +1981,7 @@ class MenuService
                 'extension' => null,
                 'active_condition' => ['dashboard.admin.update.index'],
                 'show_condition' => true,
-                'is_admin' => true
+                'is_admin' => true,
             ],
             'menu_setting' => [
                 'parent_key' => null,
@@ -1850,7 +1998,7 @@ class MenuService
                 'extension' => null,
                 'active_condition' => ['dashboard.admin.menu.index'],
                 'show_condition' => Route::has('dashboard.admin.menu.index'),
-                'is_admin' => true
+                'is_admin' => true,
             ],
         ];
 
@@ -2017,7 +2165,7 @@ class MenuService
                 'active_condition' => [
                     'dashboard.user.chat-setting.chat-category.*', 'dashboard.user.chat-setting.chatbot.*', 'dashboard.user.chat-setting.chat-template.*',
                 ],
-                'show_condition' => Route::has('dashboard.user.chat-setting.chat-category.index'),
+                'show_condition' => Route::has('dashboard.user.chat-setting.chat-category.index') && (setting('chat_setting_for_customer', 0) == 1),
             ],
             'chat_categories_extension' => [
                 'parent_key' => 'chat_settings_extension',
@@ -2034,7 +2182,7 @@ class MenuService
                 'active_condition' => [
                     'dashboard.user.chat-setting.chat-category.*',
                 ],
-                'show_condition' => Route::has('dashboard.user.chat-setting.chat-category.index'),
+                'show_condition' => Route::has('dashboard.user.chat-setting.chat-category.index') && (setting('chat_setting_for_customer', 0) == 1),
             ],
             'chat_template_extension' => [
                 'parent_key' => 'chat_settings_extension',
@@ -2051,7 +2199,7 @@ class MenuService
                 'active_condition' => [
                     'dashboard.user.chat-setting.chat-template.*',
                 ],
-                'show_condition' => Route::has('dashboard.user.chat-setting.chat-template.index'),
+                'show_condition' => Route::has('dashboard.user.chat-setting.chat-template.index') && (setting('chat_setting_for_customer', 0) == 1),
             ],
             'chat_training_extension' => [
                 'parent_key' => 'chat_settings_extension',
@@ -2068,7 +2216,7 @@ class MenuService
                 'active_condition' => [
                     'dashboard.user.chat-setting.chatbot.*',
                 ],
-                'show_condition' => Route::has('dashboard.user.chat-setting.chatbot.index'),
+                'show_condition' => Route::has('dashboard.user.chat-setting.chatbot.index') && (setting('chat_setting_for_customer', 0) == 1),
             ],
             'cloudflare_r2_extension' => [
                 'parent_key' => 'settings',
@@ -2139,7 +2287,7 @@ class MenuService
                 'show_condition' => Route::has('dashboard.user.openai.webchat.workbook'),
             ],
             'photo_studio_setting' => [
-                'parent_key' => 'settings',
+                'parent_key' => 'api_integration',
                 'key' => 'photo_studio_setting',
                 'route' => 'dashboard.admin.settings.clipdrop',
                 'label' => 'Photo Studio',
@@ -2154,6 +2302,24 @@ class MenuService
                     'dashboard.admin.settings.clipdrop',
                 ],
                 'show_condition' => Route::has('dashboard.user.photo-studio.index') && Route::has('dashboard.admin.settings.clipdrop'),
+            ],
+            'maintenance_setting' => [
+                'parent_key' => 'settings',
+                'key' => 'maintenance_setting',
+                'route' => 'dashboard.admin.settings.maintenance.index',
+                'label' => 'Maintenance',
+                'icon' => 'tabler-device-laptop',
+                'svg' => null,
+                'order' => 8,
+                'is_active' => true,
+                'params' => [],
+                'type' => 'item',
+                'is_admin' => true,
+                'extension' => true,
+                'active_condition' => [
+                    'dashboard.admin.settings.maintenance.index',
+                ],
+                'show_condition' => Route::has('dashboard.admin.settings.maintenance.index'),
             ],
         ]);
 
@@ -2170,6 +2336,6 @@ class MenuService
 
         $checkPlan = PaymentPlans::query()->where('is_team_plan', 1)->first();
 
-        return Helper::setting('team_functionality') && !auth()?->user()?->getAttribute('team_id') && $checkPlan;
+        return Helper::setting('team_functionality') && ! auth()?->user()?->getAttribute('team_id') && $checkPlan;
     }
 }

@@ -29,7 +29,7 @@
 		justify-content: center;
 		background: none;
 		border: 1px solid;
-		color: var(--tblr-primary);
+		color: hsl(var(--primary));
 		transition: all 0.3s;
 
 		svg {
@@ -39,7 +39,7 @@
 			}
 		}
 		&.is-playing {
-			background-color: var(--tblr-primary);
+			background-color: hsl(var(--primary));
 			color: #fff;
 
 			svg {

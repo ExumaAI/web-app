@@ -17,7 +17,7 @@ class UsersActivityListener
     {
         DB::table('users_activity')->insert([
             'email' => $event->email,
-            'type' => $event->type,
+            'type' => $event->type ?? 'user',
             'ip' => $event->ip,
             'connection' => $event->connection,
             'created_at' => now(),

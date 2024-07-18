@@ -2,17 +2,17 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Actions\EmailConfirmation;
 use App\Events\UsersActivityEvent;
 use App\Helpers\Classes\Helper;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Jobs\SendConfirmationEmail;
 use App\Models\Setting;
-use App\Models\Team\TeamInvitation;
 use App\Models\Team\TeamMember;
 use App\Models\User;
 use App\Providers\RouteServiceProvider;
-use Dflydev\DotAccessData\Data;
+use GuzzleHttp\Client;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -149,10 +149,10 @@ class AuthenticationController extends Controller
 
             event(new UsersActivityEvent($user->email, $user->type, $ip, $connection));
         }
+
         return redirect('/dashboard/user');
 
     }
-
 
     public function login(LoginRequest $request)
     {
@@ -174,17 +174,35 @@ class AuthenticationController extends Controller
     public function registerCreate(Request $request)
     {
         return view('panel.authentication.register', [
-            'plan' => $request->get('plan')
+            'plan' => $request->get('plan'),
         ]);
     }
 
     public function registerStore(Request $request)
     {
+        $settings = Setting::first();
+
+        if ($settings->recaptcha_register && ($settings->recaptcha_sitekey || $settings->recaptcha_secretkey)) {
+            $client = new Client();
+            $response = $client->post('https://www.google.com/recaptcha/api/siteverify', [
+                'form_params' => [
+                    'secret' => config('services.recaptcha.secret'),
+                    'response' => $request->input('g-recaptcha-response'),
+                ],
+            ])->getBody()->getContents();
+
+            if (! json_decode($response, true)['success']) {
+                return response()->json([
+                    'errors' => ['Invalid Recaptcha'],
+                    'type' => 'recaptcha',
+                ], 401);
+            }
+        }
 
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'surname' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:' . User::class],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:'.User::class],
             'password' => ['required', 'confirmed', Password::defaults()],
         ]);
 
@@ -202,7 +220,7 @@ class AuthenticationController extends Controller
             }
         }
 
-		if (Helper::appIsDemo()) {
+        if (Helper::appIsDemo()) {
             $user = User::create([
                 'team_id' => $teamMember?->team_id,
                 'team_manager_id' => $teamMember?->team?->user_id,
@@ -244,10 +262,8 @@ class AuthenticationController extends Controller
         }
 
         //event(new Registered($user));
+		EmailConfirmation::forUser($user)->send();
 
-        dispatch(new SendConfirmationEmail($user));
-
-        $settings = Setting::first();
         if ($settings->login_without_confirmation == 1) {
             Auth::login($user);
 
@@ -256,16 +272,17 @@ class AuthenticationController extends Controller
 
             event(new UsersActivityEvent($user->email, $user->type, $ip, $connection));
         } else {
-            $data = array(
+            $data = [
                 'errors' => ['We have sent you an email for account confirmation. Please confirm your account to continue.'],
                 'type' => 'confirmation',
-            );
+            ];
+
             return response()->json($data, 401);
         }
 
         return response()
             ->json([
-                'status' => 'OK'
+                'status' => 'OK',
             ], 200);
     }
 

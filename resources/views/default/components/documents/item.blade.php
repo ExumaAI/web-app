@@ -77,11 +77,11 @@
                 <p
                     class="lqd-docs-item-title overflow-hidden overflow-ellipsis whitespace-nowrap group-[&[data-view-mode=grid]]:h-full group-[&[data-view-mode=grid]]:whitespace-normal">
                     @if (in_array($entry->generator->type, ['text', 'youtube', 'rss', 'code', 'image']))
-                        {{ str()->limit(strip_tags($entry->generator->type === 'image' ? $entry->title : $entry->title . ' : ' . $entry->output), 30) }}
+                        {{ str()->limit(strip_tags($entry->generator->type === 'image' ? $entry->title : $entry->title . ' : ' . $entry->output), $trim) }}
                     @elseif($entry->generator->type == 'audio')
-                        {!! str()->limit($entry->title . ' : ' . $entry->output, 30) !!}
+                        {!! str()->limit($entry->title . ' : ' . $entry->output, $trim) !!}
                     @elseif ($entry->generator->type == 'voiceover')
-                        {{ str()->limit($entry->title) }}
+                        {{ str()->limit($entry->title, $trim) }}
                     @endif
                 </p>
             </div>

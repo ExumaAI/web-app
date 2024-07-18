@@ -117,6 +117,10 @@
         href="{{ custom_theme_url('/assets/libs/toastr/toastr.min.css') }}"
         rel="stylesheet"
     />
+    <link
+        href="{{ custom_theme_url('/assets/libs/introjs/introjs.min.css') }}"
+        rel="stylesheet"
+    >
 
     @yield('additional_css')
     @stack('css')
@@ -126,11 +130,18 @@
         {!! $setting->dashboard_code_before_head !!}
     @endif
 
+    <script>
+        window.pusherConfig = @json(\Illuminate\Support\Arr::except(config('broadcasting.connections.pusher'), ['secret', 'app_id']));
+    </script>
+
     @vite($app_js_path)
 
     @if (setting('additional_custom_css') != null)
         {!! setting('additional_custom_css') !!}
     @endif
+
+    @livewireStyles
+
 </head>
 
 <body class="group/body bg-background font-body text-xs text-foreground antialiased transition-bg">
@@ -245,6 +256,7 @@
             !(route('dashboard.user.openai.generator.workbook', 'ai_pdf') == url()->current()),
         'panel.chatbot.widget')
 
+
     @include('panel.layout.scripts')
 
     @if (\Session::has('message'))
@@ -261,6 +273,22 @@
         </script>
     @endif
 
+    @auth
+{{--        <script type="module">--}}
+{{--            Echo.private(`App.Models.User.{{ auth()->user()?->id }}`)--}}
+{{--                .listen(".Illuminate\\Notifications\\Events\\BroadcastNotificationCreated", (notification) => {--}}
+{{--                    if (Alpine) {--}}
+{{--                        Alpine.store('notifications').add({--}}
+{{--                            id: notification.id,--}}
+{{--                            title: notification.data.title,--}}
+{{--                            message: notification.data.message,--}}
+{{--                            link: notification.data.link,--}}
+{{--                            unread: true--}}
+{{--                        })--}}
+{{--                    }--}}
+{{--                });--}}
+{{--        </script>--}}
+    @endauth
     @stack('script')
 
     <script src="{{ custom_theme_url('/assets/js/frontend.js') }}"></script>
@@ -275,7 +303,9 @@
         @endif
     @endauth
 
+    <script src="{{ custom_theme_url('/assets/libs/introjs/intro.min.js') }}"></script>
     <script src="{{ custom_theme_url('assets/js/chatbot.js') }}"></script>
+
     <template id="typing-template">
         <div class="lqd-typing relative inline-flex items-center gap-3 rounded-full bg-secondary !px-3 !py-2 text-xs font-medium leading-none text-secondary-foreground">
             {{ __('Typing') }}
@@ -292,6 +322,9 @@
     @if (view()->exists('panel.admin.settings.particles.serper_seo'))
         <script src="{{ custom_theme_url('/assets/js/panel/generateSEO.js') }}"></script>
     @endif
+
+    @livewireScriptConfig()
+
 </body>
 
 </html>

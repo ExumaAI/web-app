@@ -13,6 +13,19 @@ class ApplicationStatusRepository implements ApplicationStatusRepositoryInterfac
 {
     public string $baseLicenseUrl = 'https://portal.liquid-themes.com/api/license';
 
+    public function financePage(): string
+    {
+        if ($this->licenseType() === 'Extended License') {
+            return 'panel.admin.finance.gateways.particles.finance';
+        }
+
+        return 'panel.admin.finance.gateways.particles.license';
+    }
+    public function financeLicense(): bool
+    {
+        return $this->licenseType() === 'Extended License';
+    }
+
     public function licenseType(): ?string
     {
         $portal = $this->portal();
@@ -49,6 +62,7 @@ class ApplicationStatusRepository implements ApplicationStatusRepositoryInterfac
 
         return null;
     }
+
 
     public function getVariable(string $key)
     {
@@ -101,6 +115,7 @@ class ApplicationStatusRepository implements ApplicationStatusRepositoryInterfac
 
     public function next($request, Closure $next)
     {
+
         $portal = $this->portal();
 
         if (is_null($portal)) {

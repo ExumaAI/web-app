@@ -7,6 +7,7 @@ use App\Models\OpenAIGenerator;
 use App\Services\Common\MenuService;
 use Database\Seeders\AIModelSeeder;
 use Database\Seeders\MenuSeeder;
+use Database\Seeders\IntroductionSeeder;
 use Database\Seeders\SocialAccountsSeeder;
 use Database\Seeders\TokenSeeder;
 use Illuminate\Support\Facades\DB;
@@ -550,6 +551,15 @@ class InstallationHelper
                                         'route' => 'default',
                                     ]);
 
+                                $apiIntegration = Models\Common\Menu::query()
+                                    ->where([
+                                        'key' => 'api_integration',
+                                    ])->first();
+
+                                Models\Common\Menu::query()->where('key', 'photo_studio_setting')->update([
+                                    'parent_id' => $apiIntegration->id,
+                                ]);
+
                                 app(MenuService::class)->regenerate();
                             } catch (\Exception $exception) {
                             }
@@ -557,6 +567,41 @@ class InstallationHelper
                     ],
                 ],
             ],
+			[
+                'table' => 'introductions',
+                'sql' => [
+                    [
+                        'condition' => true,
+                        'callback' => function () {
+                            try {
+                                app(IntroductionSeeder::class)->run();
+                            } catch (\Exception $exception) {
+                            }
+                        },
+                    ],
+                ],
+            ],
+			[
+                'table' => 'ai_models',
+                'sql' => [
+                    [
+                        'condition' => true,
+                        'callback' => function () {
+                            try {
+                                $models = Models\AiModel::query()->get();
+
+                                foreach ($models as $model) {
+                                    $model->update(['selected_title' => $model->getAttribute('title')]);
+                                }
+                            } catch (\Exception $exception) {
+                            }
+                        },
+                    ],
+                ],
+            ],
+
+
+			
         ];
     }
 }

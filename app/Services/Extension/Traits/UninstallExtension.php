@@ -3,7 +3,6 @@
 namespace App\Services\Extension\Traits;
 
 use App\Models\Extension;
-use App\Services\Common\MenuService;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
@@ -46,8 +45,11 @@ trait UninstallExtension
                     'installed' => 0,
                 ]);
 
-
             Artisan::call('cache:clear');
+
+            if ($extensionSlug == 'maintenance') {
+                cache()->forget('maintenance');
+            }
 
             return [
                 'success' => true,

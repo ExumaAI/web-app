@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Validator;
+use App\Helpers\Helpers;
 
 class AppController extends Controller
 {
@@ -247,8 +248,8 @@ class AppController extends Controller
      *      path="/api/auth/logo",
      *      operationId="getLogo",
      *      tags={"General (Helpers)"},
-     *      summary="Get default logo",
-     *      description="Returns default logo from settings.",
+     *      summary="Get logo path",
+     *      description="Returns logo path from settings.",
      *      security={{ "passport": {} }},
      *      @OA\Response(
      *          response=200,
@@ -267,11 +268,28 @@ class AppController extends Controller
      *      ),
      * )
     */
-    public function getLogo(Request $request, $id = null) {
+    public function getLogo(Request $request) {
 
-        $logo = Setting::first()->logo;
-        if($logo != null) {
-            return response()->json($logo);
+        $settings = Setting::first();
+
+        if($settings->logo_path != null) {
+            return response()->json(custom_theme_url($settings->logo_path));
+        }
+
+        if ($settings->logo_sticky_path != null) {
+            return response()->json(custom_theme_url($settings->logo_sticky_path));
+        }
+
+        if ($settings->logo_2x_path != null) {
+            return response()->json(custom_theme_url($settings->logo_2x_path));
+        }
+
+        if ($settings->logo_sticky_2x_path != null) {
+            return response()->json(custom_theme_url($settings->logo_sticky_2x_path));
+        }
+
+        if ($settings->logo_collapsed_path != null) {
+            return response()->json(custom_theme_url($settings->logo_collapsed_path));
         }
 
         return response()->json(["error" => "No logo found."], 404);

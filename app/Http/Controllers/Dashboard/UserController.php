@@ -2,14 +2,15 @@
 
 namespace App\Http\Controllers\Dashboard;
 
+use App\Actions\CreateActivity;
 use App\Helpers\Classes\Helper;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Finance\PaymentProcessController;
 use App\Jobs\SendInviteEmail;
+use App\Models\AccountDeletionReqs;
 use App\Models\Currency;
 use App\Models\Folders;
 use App\Models\Gateways;
-use App\Models\UserDocsFavorite;
 use App\Models\Integration\Integration;
 use App\Models\OpenAIGenerator;
 use App\Models\OpenaiGeneratorChatCategory;
@@ -17,8 +18,10 @@ use App\Models\OpenaiGeneratorFilter;
 use App\Models\PaymentPlans;
 use App\Models\Setting;
 use App\Models\SettingTwo;
+use App\Models\Team\Team;
 use App\Models\User;
 use App\Models\UserAffiliate;
+use App\Models\UserDocsFavorite;
 use App\Models\UserFavorite;
 use App\Models\UserOpenai;
 use App\Models\UserOpenaiChat;
@@ -27,6 +30,7 @@ use App\Models\Voice\ElevenlabVoice;
 use App\Services\GatewaySelector;
 use enshrined\svgSanitize\Sanitizer;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -34,7 +38,6 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
 use Laravel\Cashier\Payment;
-use App\Models\AccountDeletionReqs;
 
 class UserController extends Controller
 {
@@ -42,7 +45,7 @@ class UserController extends Controller
     {
         $route = 'dashboard.user.index';
 
-        if ($request->user()->isAdmin()) {
+        if ($request->user()->isAdmin() && Helper::appIsNotDemo()) {
             $route = 'dashboard.admin.index';
         }
 
@@ -55,8 +58,40 @@ class UserController extends Controller
         // $ongoingPayments = self::prepareOngoingPaymentsWarning();
         // $user = Auth::user();
         $tmp = PaymentProcessController::checkUnmatchingSubscriptions();
+        $team = $this->getTeam(Auth::user());
 
-        return view('panel.user.dashboard', compact('ongoingPayments')); //
+        return view('panel.user.dashboard', compact('ongoingPayments', 'team')); //
+    }
+
+    public function markTourSeen()
+    {
+        $user = Auth::user();
+        $user->tour_seen = true;
+        $user->save();
+
+        return response()->json(['status' => 'success']);
+    }
+
+    public function getTeam(User $user)
+    {
+        if ($team = $user->myCreatedTeam) {
+
+            if ($team->allow_seats != $user?->relationPlan?->plan_allow_seat) {
+                $team->allow_seats = $user?->relationPlan?->plan_allow_seat ?: 0;
+                $team->save();
+            }
+
+            return $team;
+        }
+
+        $allow_seats = $user->type == 'admin' ? 100 : $user?->relationPlan?->plan_allow_seat;
+
+        return Team::query()->firstOrCreate([
+            'user_id' => auth()->id(),
+        ], [
+            'name' => $user->fullName(),
+            'allow_seats' => $allow_seats ?: 0,
+        ]);
     }
 
     public function prepareOngoingPaymentsWarning()
@@ -73,12 +108,13 @@ class UserController extends Controller
     public function openAIList()
     {
         abort_if(Helper::setting('feature_ai_writer') == 0, 404);
+
         return view('panel.user.openai.list', [
             'list' => OpenAIGenerator::query()
-			->where(function($query) {
-				$query->where('user_id', Auth::id())
-					->orWhereNull('user_id');
-			})->where('active', true)->get(),
+                ->where(function ($query) {
+                    $query->where('user_id', Auth::id())
+                        ->orWhereNull('user_id');
+                })->where('active', true)->get(),
             'filters' => OpenaiGeneratorFilter::query()->where(function ($query) {
                 $query->where('user_id', auth()->user()->id)
                     ->orWhereNull('user_id');
@@ -86,115 +122,112 @@ class UserController extends Controller
         ]);
     }
 
-
-
-	
-	public function openAICustomList()
+    public function openAICustomList()
     {
-		abort_if(setting('user_ai_writer_custom_templates', 0) == 0, 404);
+        abort_if(setting('user_ai_writer_custom_templates', 0) == 0, 404);
 
         $list = OpenAIGenerator::query()
             ->with('user')
             ->orderBy('title', 'asc')
             ->where('custom_template', 1)
-			->where('user_id', Auth::id())
+            ->where('user_id', Auth::id())
             ->get();
 
         return view('panel.user.openai.custom.list', compact('list'));
     }
-	public function openAICustomAddOrUpdateSave(Request $request)
-	{
-		$userId = Auth::id();
-		if ($request->template_id != 'undefined') {
-			$template = OpenAIGenerator::where('id', $request->template_id)->where('user_id', $userId)->firstOrFail();
-		} else {
-			$template = new OpenAIGenerator();
-		}
 
-		// Set basic template attributes
-		$template->title = $request->title;
-		$template->description = $request->description;
-		$template->image = $request->image;
-		$template->color = $request->color;
-		$template->prompt = $request->prompt;
-		$template->filters = __("My Templates");
-		$template->premium = 0;
-		$template->active = 1;
-		$template->slug = Str::slug($request->title) . '-' . Str::random(6);
-		$template->type = 'text';
-		$template->custom_template = 1;
-		$template->user_id = $userId;
-
-		// Process input data by type
-		$inputDataByType = json_decode($request->input_data_by_type, true);
-
-		$allquestions = [];
-		foreach ($inputDataByType as $inputType => $inputs) {
-			foreach ($inputs as $input) {
-				// Save input data as arrays
-				$inputArray = [
-					'name' => Str::slug($input['inputName']),
-					'question' => $input['inputName'],
-					'description' => $input['inputDescription'],
-					'type' => $inputType
-				];
-				// If input type is select, include select list values
-				if ($inputType === 'select') {
-					$inputArray['selectListValues'] = $input['selectListValues'];
-				}
-
-				// Save input data array into questions array
-				$allquestions[] = $inputArray;
-			}
-		}
-		$questions = json_encode($allquestions, JSON_UNESCAPED_SLASHES);
-		$template->questions = $questions;
-
-		$template->save();
-
-		if (OpenaiGeneratorFilter::where('name', __("My Templates"))->first() == null) {
-			$newFilter = new OpenaiGeneratorFilter();
-			$newFilter->name = __("My Templates");
-			$newFilter->save();
-		}
-
-		$setting = Setting::first();
-		$freeOpenAiItems = $setting->free_open_ai_items;
-		$freeOpenAiItems[] = $template->slug;
-		$setting->update([
-			'free_open_ai_items' => $freeOpenAiItems ?: [],
-		]);
-	}
-	public function openAICustomAddOrUpdate($id = null)
+    public function openAICustomAddOrUpdateSave(Request $request)
     {
-		$userId = Auth::id();
+        $userId = Auth::id();
+        if ($request->template_id != 'undefined') {
+            $template = OpenAIGenerator::where('id', $request->template_id)->where('user_id', $userId)->firstOrFail();
+        } else {
+            $template = new OpenAIGenerator();
+        }
+
+        // Set basic template attributes
+        $template->title = $request->title;
+        $template->description = $request->description;
+        $template->image = $request->image;
+        $template->color = $request->color;
+        $template->prompt = $request->prompt;
+        $template->filters = __('My Templates');
+        $template->premium = 0;
+        $template->active = 1;
+        $template->slug = Str::slug($request->title).'-'.Str::random(6);
+        $template->type = 'text';
+        $template->custom_template = 1;
+        $template->user_id = $userId;
+
+        // Process input data by type
+        $inputDataByType = json_decode($request->input_data_by_type, true);
+
+        $allquestions = [];
+        foreach ($inputDataByType as $inputType => $inputs) {
+            foreach ($inputs as $input) {
+                // Save input data as arrays
+                $inputArray = [
+                    'name' => Str::slug($input['inputName']),
+                    'question' => $input['inputName'],
+                    'description' => $input['inputDescription'],
+                    'type' => $inputType,
+                ];
+                // If input type is select, include select list values
+                if ($inputType === 'select') {
+                    $inputArray['selectListValues'] = $input['selectListValues'];
+                }
+
+                // Save input data array into questions array
+                $allquestions[] = $inputArray;
+            }
+        }
+        $questions = json_encode($allquestions, JSON_UNESCAPED_SLASHES);
+        $template->questions = $questions;
+
+        $template->save();
+
+        if (OpenaiGeneratorFilter::where('name', __('My Templates'))->first() == null) {
+            $newFilter = new OpenaiGeneratorFilter();
+            $newFilter->name = __('My Templates');
+            $newFilter->save();
+        }
+
+        $setting = Setting::first();
+        $freeOpenAiItems = $setting->free_open_ai_items;
+        $freeOpenAiItems[] = $template->slug;
+        $setting->update([
+            'free_open_ai_items' => $freeOpenAiItems ?: [],
+        ]);
+    }
+
+    public function openAICustomAddOrUpdate($id = null)
+    {
+        $userId = Auth::id();
         if ($id == null) {
             $template = null;
         } else {
             $template = OpenAIGenerator::where('id', $id)->where('user_id', $userId)->firstOrFail();
         }
         $filters = OpenaiGeneratorFilter::orderBy('name', 'desc')->get();
+
         return view('panel.user.openai.custom.form', compact('template', 'filters'));
     }
+
     public function openAICustomDelete($id = null)
     {
-		$userId = Auth::id();
+        $userId = Auth::id();
         $template = OpenAIGenerator::where('id', $id)->where('user_id', $userId)->firstOrFail();
         $template->delete();
+
         return back()->with(['message' => __('Deleted Successfully'), 'type' => 'success']);
     }
-
-
-
-
-
 
     public function openAIFavoritesList()
     {
         return view('panel.user.openai.list_favorites');
     }
 
-	// docsFavorite
+    // docsFavorite
     public function docsFavorite(Request $request)
     {
         $exists = isFavoritedDoc($request->id);
@@ -212,24 +245,24 @@ class UserController extends Controller
 
         return response()->json(['action' => $action]);
     }
-	
-	public function openAIFavorite(Request $request)
-	{
-		$exists = isFavorited($request->id);
-		if ($exists) {
-			$favorite = UserFavorite::where('openai_id', $request->id)->where('user_id', Auth::id())->firstOrFail();
-			$favorite->delete();
-			$action = 'unfavorite';
-		} else {
-			$favorite = new UserFavorite();
-			$favorite->user_id = Auth::id();
-			$favorite->openai_id = $request->id;
-			$favorite->save();
-			$action = 'favorite';
-		}
 
-		return response()->json(['action' => $action]);
-	}
+    public function openAIFavorite(Request $request)
+    {
+        $exists = isFavorited($request->id);
+        if ($exists) {
+            $favorite = UserFavorite::where('openai_id', $request->id)->where('user_id', Auth::id())->firstOrFail();
+            $favorite->delete();
+            $action = 'unfavorite';
+        } else {
+            $favorite = new UserFavorite();
+            $favorite->user_id = Auth::id();
+            $favorite->openai_id = $request->id;
+            $favorite->save();
+            $action = 'favorite';
+        }
+
+        return response()->json(['action' => $action]);
+    }
 
     public function openAIGenerator(Request $request, $slug)
     {
@@ -263,26 +296,26 @@ class UserController extends Controller
             $apiUrl = base64_encode('https://api.anthropic.com/v1/messages');
         }
 
-		if ($settings2->openai_default_stream_server == 'backend') {
-			$apikeyPart1 = base64_encode(rand(1, 100));
-			$apikeyPart2 = base64_encode(rand(1, 100));
-			$apikeyPart3 = base64_encode(rand(1, 100));
-		}else{
-			// Fetch the Site Settings object with openai_api_secret
-			$apiKey = Helper::setOpenAiKey();
+        if ($settings2->openai_default_stream_server == 'backend') {
+            $apikeyPart1 = base64_encode(rand(1, 100));
+            $apikeyPart2 = base64_encode(rand(1, 100));
+            $apikeyPart3 = base64_encode(rand(1, 100));
+        } else {
+            // Fetch the Site Settings object with openai_api_secret
+            $apiKey = Helper::setOpenAiKey();
 
             if (setting('default_ai_engine', 'openai') == 'anthropic') {
                 $apiKey = Helper::setAnthropicKey();
             }
 
-			$len = strlen($apiKey);
-			$parts[] = substr($apiKey, 0, $l[] = rand(1, $len - 5));
-			$parts[] = substr($apiKey, $l[0], $l[] = rand(1, $len - $l[0] - 3));
-			$parts[] = substr($apiKey, array_sum($l));
-			$apikeyPart1 = base64_encode($parts[0]);
-			$apikeyPart2 = base64_encode($parts[1]);
-			$apikeyPart3 = base64_encode($parts[2]);
-		}
+            $len = strlen($apiKey);
+            $parts[] = substr($apiKey, 0, $l[] = rand(1, $len - 5));
+            $parts[] = substr($apiKey, $l[0], $l[] = rand(1, $len - $l[0] - 3));
+            $parts[] = substr($apiKey, array_sum($l));
+            $apikeyPart1 = base64_encode($parts[0]);
+            $apikeyPart2 = base64_encode($parts[1]);
+            $apikeyPart3 = base64_encode($parts[2]);
+        }
 
         $apiSearch = base64_encode('https://google.serper.dev/search');
 
@@ -400,15 +433,15 @@ class UserController extends Controller
 
     public function userSettingsSave(Request $request)
     {
-		$request->validate([
-           	'name' => 'required|string|max:255',
+        $request->validate([
+            'name' => 'required|string|max:255',
             'surname' => 'required|string|max:255',
             'phone' => 'nullable|string|max:15',
             'country' => 'nullable',
-			'state' => 'nullable|string|max:255',
-			'city' => 'nullable|string|max:255',
-			'postal' => 'nullable|string|max:255',
-			'address' => 'nullable|string|max:255',
+            'state' => 'nullable|string|max:255',
+            'city' => 'nullable|string|max:255',
+            'postal' => 'nullable|string|max:255',
+            'address' => 'nullable|string|max:255',
         ]);
 
         $user = Auth::user();
@@ -416,10 +449,10 @@ class UserController extends Controller
         $user->surname = $request->surname;
         $user->phone = $request->phone;
         $user->country = $request->country;
-		$user->state = $request->state;
-		$user->city = $request->city;
-		$user->postal = $request->postal;
-		$user->address = $request->address;
+        $user->state = $request->state;
+        $user->city = $request->city;
+        $user->postal = $request->postal;
+        $user->address = $request->address;
 
         if ($request->old_password != null) {
             $validated = $request->validateWithBag('updatePassword', [
@@ -455,34 +488,42 @@ class UserController extends Controller
             $user->avatar = $path.$image_name;
         }
 
-        createActivity($user->id, 'Updated', 'Profile Information', null);
+        CreateActivity::for($user, 'Updated', 'Profile Information');
         $user->save();
     }
 
-	public function userSettingsUpdate(Request $request)
-	{
-		$request->validate([
+    public function userSettingsUpdate(Request $request): RedirectResponse
+    {
+        $request->validate([
+
             'phone' => 'nullable|string|max:15',
             'country' => 'nullable',
-			'state' => 'nullable|string|max:255',
-			'city' => 'nullable|string|max:255',
-			'postal' => 'nullable|string|max:255',
-			'address' => 'nullable|string|max:255',
+            'state' => 'nullable|string|max:255',
+            'city' => 'nullable|string|max:255',
+            'postal' => 'nullable|string|max:255',
+            'address' => 'nullable|string|max:255',
         ]);
 
-        $user = Auth::user();
-        $user->phone = $request->phone;
-        $user->country = $request->country;
-		$user->state = $request->state;
-		$user->city = $request->city;
-		$user->postal = $request->postal;
-		$user->address = $request->address;
+        if (! $user = Auth::user()) {
+            return redirect()->back()->with(['message' => __('Unauthorized'), 'type' => 'error']);
+        }
 
-        createActivity($user->id, 'Updated', 'Profile Address Information', null);
+        $user->update($request->only(['phone', 'country', 'state', 'city', 'postal', 'address']));
+
+        CreateActivity::for($user, 'Updated', 'Profile Address Information');
+
+        return redirect()->back()->with(['message' => __('Updated Successfully'), 'type' => 'success']);
+    }
+
+    // markDashNotifySeen
+    public function markDashNotifySeen()
+    {
+        $user = Auth::user();
+        $user->dash_notify_seen = true;
         $user->save();
 
-		return redirect()->back()->with(['message' => __('Updated Successfully'), 'type' => 'success']);
-	}
+        return response()->json(['status' => 'success']);
+    }
 
     //Purchase
     public function subscriptionPlans()
@@ -511,13 +552,21 @@ class UserController extends Controller
             }
         }
 
-		$openAiList = OpenAIGenerator::query()->get();
+        $openAiList = OpenAIGenerator::query()->get();
 
-        $plans = PaymentPlans::where('type', 'subscription')->where('active', 1)->get();
-        $prepaidplans = PaymentPlans::where('type', 'prepaid')->where('active', 1)->get();
+        $plansSubscriptionMonthly = PaymentPlans::where([['type', '=', 'subscription'], ['frequency', '=', 'monthly'], ['active', 1]])->get()->sortBy('price');
+        $plansSubscriptionLifetime = PaymentPlans::where([['type', '=', 'subscription'], ['active', 1]])
+            ->where(function ($query) {
+                $query->where('frequency', '=', 'lifetime_yearly')
+                    ->orWhere('frequency', '=', 'lifetime_monthly');
+            })
+            ->get()->sortBy('price');
+        $plansSubscriptionAnnual = PaymentPlans::where([['type', '=', 'subscription'], ['frequency', '=', 'yearly'], ['active', 1]])->get()->sortBy('price');
+        $prepaidplans = PaymentPlans::where([['type', '=', 'prepaid'], ['active', 1]])->get()->sortBy('price');
+
         $view = 'panel.user.finance.subscriptionPlans';
 
-        return view($view, compact('plans', 'prepaidplans', 'openAiList','is_active_gateway', 'activeGateways', 'activesubid'));
+        return view($view, compact('plansSubscriptionMonthly', 'plansSubscriptionLifetime', 'plansSubscriptionAnnual', 'prepaidplans', 'openAiList', 'is_active_gateway', 'activeGateways', 'activesubid'));
     }
 
     //Invoice - Billing
@@ -580,7 +629,7 @@ class UserController extends Controller
         //         $currfolder = null;
         //     }
         // }
-			
+
         if ($listOnly) {
             return view('panel.user.openai.documents_container', compact('items', 'currfolder', 'filter'))->render();
         }
@@ -691,30 +740,33 @@ class UserController extends Controller
     public function documentsDelete($slug)
     {
         $workbook = UserOpenai::where('slug', $slug)->where('user_id', auth()->user()->id)->firstOrFail();
-		try {
-			if ($workbook->storage == UserOpenai::STORAGE_LOCAL) {
-				$file = str_replace('/uploads/', '', $workbook->output);
-				Storage::disk('public')->delete($file);
-			} elseif ($workbook->storage == UserOpenai::STORAGE_AWS) {
-				$file = str_replace('/', '', parse_url($workbook->output)['path']);
-				Storage::disk('s3')->delete($file);
-			} else {
-				// Manual deleting depends on response
-				if (str_contains($workbook->output, 'https://')) {
-					// AWS Storage
-					$file = str_replace('/', '', parse_url($workbook->output)['path']);
-					Storage::disk('s3')->delete($file);
-				} else {
-					$file = str_replace('/uploads/', '', $workbook->output);
-					Storage::disk('public')->delete($file);
-				}
-			}
-			$basefilename = basename($workbook->output); 
-			Storage::disk('thumbs')->delete($basefilename);
-		} catch (\Throwable $th) {
-			//throw $th;
-		}
+
+        try {
+            if ($workbook->storage == UserOpenai::STORAGE_LOCAL) {
+                $file = str_replace('/uploads/', '', $workbook->output);
+                Storage::disk('public')->delete($file);
+            } elseif ($workbook->storage == UserOpenai::STORAGE_AWS) {
+                $file = str_replace('/', '', parse_url($workbook->output)['path']);
+                Storage::disk('s3')->delete($file);
+            } else {
+                // Manual deleting depends on response
+                if (str_contains($workbook->output, 'https://')) {
+                    // AWS Storage
+                    $file = str_replace('/', '', parse_url($workbook->output)['path']);
+                    Storage::disk('s3')->delete($file);
+                } else {
+                    $file = str_replace('/uploads/', '', $workbook->output);
+                    Storage::disk('public')->delete($file);
+                }
+            }
+            $basefilename = basename($workbook->output);
+            Storage::disk('thumbs')->delete($basefilename);
+        } catch (\Throwable $th) {
+            //throw $th;
+        }
+
         $workbook->delete();
+
         return redirect()->route('dashboard.user.openai.documents.all')->with(['message' => __('Document deleted successfuly'), 'type' => 'success']);
     }
 
@@ -740,9 +792,11 @@ class UserController extends Controller
             }
 
         }
-		$basefilename = basename($workbook->output); 
+
+        $basefilename = basename($workbook->output);
         $workbook->delete();
-		Storage::disk('thumbs')->delete($basefilename);
+        Storage::disk('thumbs')->delete($basefilename);
+
         return back()->with(['message' => __('Deleted successfuly'), 'type' => 'success']);
     }
 
@@ -772,12 +826,11 @@ class UserController extends Controller
 
         $defaultCurrency = Currency::find($setting->default_currency)->symbol;
 
-
-        $query = User::where("affiliate_id", auth()->user()->id);
+        $query = User::where('affiliate_id', auth()->user()->id);
 
         if ($request->has('search')) {
             $searchTerm = $request->input('search');
-            $query->where('name', 'like', '%' . $searchTerm . '%');
+            $query->where('name', 'like', '%'.$searchTerm.'%');
         }
 
         if ($request->has('startDate') && $request->input('startDate')) {
@@ -791,13 +844,13 @@ class UserController extends Controller
         $list = $query->paginate(10);
 
         foreach ($list as $user) {
-            $affiliate = UserAffiliate::where("user_id", $user->id)->first();
+            $affiliate = UserAffiliate::where('user_id', $user->id)->first();
             if ($affiliate) {
                 $user->affiliate_data = $affiliate;
             }
         }
 
-        return view('panel.user.affiliate.users', compact(['list','defaultCurrency']));
+        return view('panel.user.affiliate.users', compact(['list', 'defaultCurrency']));
     }
 
     public function affiliatesListSendInvitation(Request $request)
@@ -833,7 +886,7 @@ class UserController extends Controller
             $withdrawalReq->amount = $request->amount;
             $withdrawalReq->save();
 
-            createActivity($user->id, 'Sent', 'Affiliate Withdraw Request', route('dashboard.admin.affiliates.index'));
+            CreateActivity::for($user, 'Sent', 'Affiliate Withdraw Request', route('dashboard.admin.affiliates.index'));
         } else {
             return response()->json(['error' => __('ERROR')], 411);
         }
@@ -846,7 +899,7 @@ class UserController extends Controller
         $list = $user->api_keys;
 
         $anthropic_api_keys = $user->anthropic_api_keys;
-		$gemini_api_keys = $user->gemini_api_keys;
+        $gemini_api_keys = $user->gemini_api_keys;
 
         return view('panel.user.apiKeys.index', compact('list', 'anthropic_api_keys', 'gemini_api_keys'));
     }
@@ -859,76 +912,81 @@ class UserController extends Controller
         $user = Auth::user();
         $user->api_keys = $request->api_keys;
         $user->anthropic_api_keys = $request->anthropic_api_keys;
-		$user->gemini_api_keys = $request->gemini_api_keys;
+        $user->gemini_api_keys = $request->gemini_api_keys;
         $user->save();
 
         return redirect()->back();
     }
-	
-	public function overview(){
-		$overviewData = [
-			[
-				"title" => "Image Documents",
-				'slug' => 'image_documents',
-				"count" => 0
-			],
-			[
-				"title" => "Code Documents",
-				'slug' => 'code_documents',
-				"count" => 0
-			],
-			[
-				"title" => "Other Documents",
-				'slug' => 'other_documents',
-				"count" => 0
-			]
-		];
-		$total = 0;
 
-		$userId = Auth::id();
-		$userOpenai = UserOpenai::where('user_id', $userId)->with('generatorWithType')->get();
-		$imageCount = 0;
-		$codeCount = 0;
-		$otherCount = 0;
-		foreach ($userOpenai as $key => $value) {
-			if ($value->generator_type == 'image') {
-				$imageCount++;
-			} elseif ($value->generator_type == 'code') {
-				$codeCount++;
-			} else {
-				$otherCount++;
-			}
-			$total++;
-		}
-		$overviewData[0]['count'] = $imageCount;
-		$overviewData[1]['count'] = $codeCount;
-		$overviewData[2]['count'] = $otherCount;
+    public function overview()
+    {
+        $overviewData = [
+            [
+                'title' => 'Image Documents',
+                'slug' => 'image_documents',
+                'count' => 0,
+            ],
+            [
+                'title' => 'Code Documents',
+                'slug' => 'code_documents',
+                'count' => 0,
+            ],
+            [
+                'title' => 'Other Documents',
+                'slug' => 'other_documents',
+                'count' => 0,
+            ],
+        ];
+        $total = 0;
 
-		$percantageOther =  round(($otherCount / $total) * 100);
-		return response()->json(['data' => $overviewData, 'total' => $total, 'percantageOther'=> $percantageOther]);
-	}
-	public function deleteAccount()
-	{
-		return view('panel.user.settings.deleteAccount');
-	}
-	public function deleteAccountRequest(Request $request)
-	{
-		abort_if(Helper::appIsDemo(), 404);
-		$request->validate([
-			'password' => 'required',
-		]);
-		$user = Auth::user();
-		if (Hash::check($request->password, $user->password)) {	
-			$oldRequest = AccountDeletionReqs::where('user_id', $user->id)->first();
-			if ($oldRequest) {
-				return response()->json(['message' => __('You have already requested to delete your account')], 409);
-			}
-			$deletionRequest = new AccountDeletionReqs();
-			$deletionRequest->user_id = $user->id;
-			$deletionRequest->save();
-			return response()->json(['message' => __('Your account deletion request has been successfully submitted')], 200);
-		} else {
-			return response()->json(['message' => __('Password is incorrect')], 401);
-		}
-	}
+        $userId = Auth::id();
+        $userOpenai = UserOpenai::where('user_id', $userId)->with('generatorWithType')->get();
+        $imageCount = 0;
+        $codeCount = 0;
+        $otherCount = 0;
+        foreach ($userOpenai as $key => $value) {
+            if ($value->generator_type == 'image') {
+                $imageCount++;
+            } elseif ($value->generator_type == 'code') {
+                $codeCount++;
+            } else {
+                $otherCount++;
+            }
+            $total++;
+        }
+        $overviewData[0]['count'] = $imageCount;
+        $overviewData[1]['count'] = $codeCount;
+        $overviewData[2]['count'] = $otherCount;
+
+        $percantageOther = round(($otherCount / $total) * 100);
+
+        return response()->json(['data' => $overviewData, 'total' => $total, 'percantageOther' => $percantageOther]);
+    }
+
+    public function deleteAccount()
+    {
+        return view('panel.user.settings.deleteAccount');
+    }
+
+    public function deleteAccountRequest(Request $request)
+    {
+        abort_if(Helper::appIsDemo(), 404);
+        $request->validate([
+            'password' => 'required',
+        ]);
+        $user = Auth::user();
+        if (Hash::check($request->password, $user->password)) {
+            $oldRequest = AccountDeletionReqs::where('user_id', $user->id)->first();
+            if ($oldRequest) {
+                return response()->json(['message' => __('You have already requested to delete your account')], 409);
+            }
+            $deletionRequest = new AccountDeletionReqs();
+            $deletionRequest->user_id = $user->id;
+            $deletionRequest->save();
+
+            return response()->json(['message' => __('Your account deletion request has been successfully submitted')], 200);
+        } else {
+            return response()->json(['message' => __('Password is incorrect')], 401);
+        }
+    }
 }

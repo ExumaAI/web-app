@@ -28,55 +28,53 @@
                         data-installed="{{ $item['installed'] }}"
                         data-name="{{ $item['name'] }}"
                     >
-                        <div class="flex grow flex-wrap">
-                            <div class="flex shrink-0 items-center gap-7 rounded-xl">
-                                <img
-                                    src="{{ $item['icon'] }}"
-                                    width="53"
-                                    height="53"
-                                    alt="{{ $item['name'] }}"
-                                >
-                                <div class="w-full">
-                                    <div class="mb-4 flex flex-wrap gap-4">
-                                        <h3 class="m-0 text-xl font-semibold">
-                                            {{ $item['name'] }}
-                                        </h3>
-                                        <p class="flex items-center gap-2 text-2xs font-medium">
-                                            <span @class([
-                                                'size-2 inline-block rounded-full',
-                                                'bg-green-500' => $item['installed'],
-                                                'bg-foreground/10' => !$item['installed'],
-                                            ])></span>
-                                            {{ $item['installed'] ? (__('Installed') . ($item['version'] != $item['db_version'] ? '  -  '.trans('Update Available') : '')) : __('Not Installed') }}
+                        <div class="flex grow items-center gap-7 lg:basis-2/3">
+                            <img
+                                class="shrink-0"
+                                src="{{ $item['icon'] }}"
+                                width="53"
+                                height="53"
+                                alt="{{ $item['name'] }}"
+                            >
+                            <div class="grow">
+                                <div class="mb-4 flex flex-wrap gap-4">
+                                    <h3 class="m-0 text-xl font-semibold">
+                                        {{ $item['name'] }}
+                                    </h3>
+                                    <p class="flex items-center gap-2 text-2xs font-medium">
+                                        <span @class([
+                                            'size-2 inline-block rounded-full',
+                                            'bg-green-500' => $item['installed'],
+                                            'bg-foreground/10' => !$item['installed'],
+                                        ])></span>
+                                        {{ $item['installed'] ? __('Installed') . ($item['version'] != $item['db_version'] ? '  -  ' . trans('Update Available') : '') : __('Not Installed') }}
 
-
-                                        </p>
-                                    </div>
-                                    <p class="text-base leading-normal">
-                                        {{ $item['description'] }}
                                     </p>
                                 </div>
+                                <p class="text-base leading-normal">
+                                    {{ $item['description'] }}
+                                </p>
                             </div>
                         </div>
 
                         <div class="relative z-2">
 
-                            @if($item['version'] != $item['db_version'])
+                            @if ($item['version'] != $item['db_version'])
                                 <x-button
-                                        data-name="{{ $item['slug'] }}"
-                                        @class([
-                                            'size-14 btn_install group me-2',
-                                            'hidden' => ! $item['installed'] ,
-                                        ])
-                                        variant="outline"
-                                        hover-variant="warning"
-                                        size="none"
+                                    data-name="{{ $item['slug'] }}"
+                                    @class([
+                                        'size-14 btn_install group me-2',
+                                        'hidden' => !$item['installed'],
+                                    ])
+                                    variant="outline"
+                                    hover-variant="warning"
+                                    size="none"
                                 >
                                     <x-tabler-reload class="size-6 group-[&.lqd-is-busy]:hidden" />
                                     <x-tabler-refresh class="size-6 hidden animate-spin group-[&.lqd-is-busy]:block" />
                                     <span class="sr-only">
-                                    {{ __('Upgrade') }}
-                                </span>
+                                        {{ __('Upgrade') }}
+                                    </span>
                                 </x-button>
                             @endif
 
@@ -96,9 +94,6 @@
                                     {{ __('Uninstall') }}
                                 </span>
                             </x-button>
-
-
-
 
                             <x-button
                                 data-name="{{ $item['slug'] }}"

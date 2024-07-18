@@ -100,7 +100,12 @@
             </div>
             <hr class="border-white border-opacity-15">
             <div class="flex flex-wrap items-center justify-center gap-4 py-9 max-sm:text-center">
-                <p class="!text-end text-[14px] opacity-60">{{ __($fSetting->footer_copyright) }}</p>
+                <p
+                    class="!text-end text-[14px] opacity-60"
+                    style="color: {{ $fSetting->footer_text_color }};"
+                >
+                    {{ date('Y') . ' ' . $setting->site_name . '. ' . __($fSetting->footer_copyright) }}
+                </p>
             </div>
         </div>
     </div>

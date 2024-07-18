@@ -21,10 +21,18 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use RachidLaasri\LaravelInstaller\Repositories\ApplicationStatusRepository;
+use RachidLaasri\LaravelInstaller\Repositories\ApplicationStatusRepositoryInterface;
+use function Termwind\render;
 
 // Controls ALL Payment Gateway actions
 class GatewayController extends Controller
 {
+    public function __construct(
+        public ApplicationStatusRepositoryInterface $applicationStatusRepository
+    ) {
+    }
+
     // Helper functions
     public function gatewayCodesArray(): array
     {
@@ -177,7 +185,14 @@ class GatewayController extends Controller
     {
         $gateways = self::readManageGatewaysPageData();
 
-        return view('panel.admin.finance.gateways.index', compact('gateways'));
+        return view(
+            'panel.admin.finance.gateways.index', [
+                'gateways' => $gateways,
+                'view' => view($this->applicationStatusRepository->financePage(), [
+                    'gateways' => $gateways,
+                ])->render()
+            ]
+        );
     }
 
     // Settings page of gateways in Admin Panel

@@ -74,7 +74,6 @@
                 </div>
             @endif
 
-
             <div class="col-md-12">
                 <div class="mb-3">
                     <label class="form-label">{{ __('Default Openai Model') }}</label>
@@ -83,6 +82,13 @@
                         id="anthropic_default_model"
                         name="anthropic_default_model"
                     >
+                        <option
+                            value="claude-3-5-sonnet-20240620"
+                            {{ setting('anthropic_default_model', 'claude-3-5-sonnet-20240620') == 'claude-3-5-sonnet-20240620' ? 'selected' : null }}
+                        >
+                            {{ __('Claude 3.5 Sonnet') }}
+                        </option>
+
                         <option
                             value="claude-3-opus-20240229"
                             {{ setting('anthropic_default_model', 'claude-3-opus-20240229') == 'claude-3-opus-20240229' ? 'selected' : null }}
@@ -118,27 +124,26 @@
                 </div>
             </div>
 
-
-{{--            <div class="col-md-6">--}}
-{{--                <div class="mb-3">--}}
-{{--                    <label class="form-label">{{ __('Maximum Input Length') }}</label>--}}
-{{--                    <input--}}
-{{--                        class="form-control"--}}
-{{--                        id="anthropic_max_input_length"--}}
-{{--                        type="number"--}}
-{{--                        name="anthropic_max_input_length"--}}
-{{--                        min="10"--}}
-{{--                        max="2000"--}}
-{{--                        value="{{ setting('anthropic_max_input_length', 200) }}"--}}
-{{--                        required--}}
-{{--                    >--}}
-{{--                    <x-alert class="mt-2">--}}
-{{--                        <p>--}}
-{{--                            {{ __('In Characters') }}--}}
-{{--                        </p>--}}
-{{--                    </x-alert>--}}
-{{--                </div>--}}
-{{--            </div>--}}
+            {{--            <div class="col-md-6"> --}}
+            {{--                <div class="mb-3"> --}}
+            {{--                    <label class="form-label">{{ __('Maximum Input Length') }}</label> --}}
+            {{--                    <input --}}
+            {{--                        class="form-control" --}}
+            {{--                        id="anthropic_max_input_length" --}}
+            {{--                        type="number" --}}
+            {{--                        name="anthropic_max_input_length" --}}
+            {{--                        min="10" --}}
+            {{--                        max="2000" --}}
+            {{--                        value="{{ setting('anthropic_max_input_length', 200) }}" --}}
+            {{--                        required --}}
+            {{--                    > --}}
+            {{--                    <x-alert class="mt-2"> --}}
+            {{--                        <p> --}}
+            {{--                            {{ __('In Characters') }} --}}
+            {{--                        </p> --}}
+            {{--                    </x-alert> --}}
+            {{--                </div> --}}
+            {{--            </div> --}}
 
             <div class="col-md-12">
                 <div class="mb-3">
@@ -169,12 +174,11 @@
             class="btn btn-primary w-full"
             id="settings_button"
             form="settings_form"
-{{--            onclick="checkMaxOutputLength()"--}}
+            {{--            onclick="checkMaxOutputLength()" --}}
         >
             {{ __('Save') }}
         </button>
     </form>
-
 
 @endsection
 

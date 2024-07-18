@@ -38,6 +38,8 @@ enum AIEngine: string implements Contracts\WithStringBackedEnum
 
     case PLAGIARISM_CHECK = 'plagiarism_check';
 
+    case SYNTHESIA = 'synthesia';
+
     public function label(): string
     {
         return match ($this) {
@@ -54,6 +56,7 @@ enum AIEngine: string implements Contracts\WithStringBackedEnum
             self::SERPER           => __('Serper'),
             self::CLIPDROP         => __('Clipdrop'),
             self::PLAGIARISM_CHECK => __('Plagiarism Check'),
+            self::SYNTHESIA => __('Synthesia'),
         };
     }
 }

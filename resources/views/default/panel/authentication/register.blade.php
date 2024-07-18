@@ -176,6 +176,12 @@
                     size="lg"
                     required
                 />
+                @if($setting->recaptcha_register == 1)
+                    <!-- Google Recaptcha Widget-->
+                    <div class="g-recaptcha mt-4" data-sitekey="{{config('services.recaptcha.key')}}"></div>
+                @endif
+                <input class="hidden" id="recaptcha" value="{{$setting->recaptcha_register}}">
+
                 <x-button
                     class="text-sm"
                     id="RegisterFormButton"

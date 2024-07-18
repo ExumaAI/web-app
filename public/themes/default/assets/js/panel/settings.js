@@ -62,6 +62,11 @@ function frontendSettingsSave() {
     formData.append('footer_button_text', $("#footer_button_text").val());
     formData.append('footer_button_url', $("#footer_button_url").val());
     formData.append('footer_copyright', $("#footer_copyright").val());
+	formData.append('footer_text_color', $("#footer_text_color").val());
+
+	if ($('#hero_image').val() != 'undefined') {
+		formData.append('hero_image', $('#hero_image').prop('files')[0]);
+	}
 
     $.ajax({
         type: "post",
@@ -271,6 +276,8 @@ function generalSettingsSave() {
     formData.append('site_url', $("#site_url").val());
     formData.append('site_email', $("#site_email").val());
     formData.append('register_active', $("#register_active").val());
+    formData.append('login_with_otp', $("#login_with_otp").val());
+    formData.append('tour_seen', $("#tour_seen").val());
     formData.append('free_plan', $("#free_plan").val());
     formData.append('default_country', $("#default_country").val());
     formData.append('default_currency', $("#default_currency").val());
@@ -280,6 +287,12 @@ function generalSettingsSave() {
     formData.append('login_without_confirmation', $("#login_without_confirmation").is(":checked") ? 0 : 1);
     formData.append('daily_limit_count', $("#daily_limit_count").val());
     formData.append('daily_voice_limit_count', $("#daily_voice_limit_count").val());
+
+    formData.append('notification_active', $("#notification_active").is(":checked") ? 1 : 0);
+    formData.append('pusher_app_id', $("#pusher_app_id").val());
+    formData.append('pusher_app_key', $("#pusher_app_key").val());
+    formData.append('pusher_app_secret', $("#pusher_app_secret").val());
+    formData.append('pusher_app_cluster', $("#pusher_app_cluster").val());
 
     if ($('#limit').prop('checked')) {
         formData.append('limit', 1);
@@ -292,6 +305,11 @@ function generalSettingsSave() {
     } else {
         formData.append('voice_limit', 0);
     }
+
+    formData.append('recaptcha_login', $("#recaptcha_login").is(":checked") ? 1 : 0);
+    formData.append('recaptcha_register', $("#recaptcha_register").is(":checked") ? 1 : 0);
+    formData.append('recaptcha_sitekey', $("#recaptcha_sitekey").val());
+    formData.append('recaptcha_secretkey', $("#recaptcha_secretkey").val());
 
     formData.append('facebook_active', $("#facebook_active").is(":checked") ? 1 : 0);
     formData.append('google_active', $("#google_active").is(":checked") ? 1 : 0);
@@ -410,6 +428,38 @@ function generalSettingsSave() {
     });
     return false;
 }
+
+function introductionSettingsSave() {
+    "use strict";
+    document.getElementById("settings_button").disabled = true;
+    document.getElementById("settings_button").innerHTML = magicai_localize.please_wait;
+
+    var form = document.getElementById("settings_form");
+    var formData = new FormData(form);
+
+    $.ajax({
+        type: "POST",
+        url: form.action,
+        data: formData,
+        contentType: false,
+        processData: false,
+        success: function (data) {
+            toastr.success(magicai_localize?.settings_saved || 'Introductions saved successfully');
+            document.getElementById("settings_button").disabled = false;
+            document.getElementById("settings_button").innerHTML = "Save";
+        },
+        error: function (data) {
+            var err = data.responseJSON.errors;
+            $.each(err, function (index, value) {
+                toastr.error(value);
+            });
+            document.getElementById("settings_button").disabled = false;
+            document.getElementById("settings_button").innerHTML = "Save";
+        }
+    });
+    return false;
+}
+
 
 
 function invoiceSettingsSave() {
@@ -669,6 +719,38 @@ function unsplashSettingsSave() {
     });
     return false;
 }
+
+function synthesiaSettingsSave() {
+    "use strict";
+
+    document.getElementById("settings_button").disabled = true;
+    document.getElementById("settings_button").innerHTML = magicai_localize.please_wait;
+
+    var formData = new FormData();
+    formData.append('synthesia_secret_key', $("#synthesia_secret_key").val());
+
+    $.ajax({
+        type: "post",
+        url: "/dashboard/admin/settings/synthesia-save",
+        data: formData,
+        contentType: false,
+        processData: false,
+        success: function (data) {
+            toastr.success(magicai_localize?.settings_saved ||'Settings saved succesfully')
+            document.getElementById("settings_button").disabled = false;
+            document.getElementById("settings_button").innerHTML = "Save";
+        },
+        error: function (data) {
+            var err = data.responseJSON.errors;
+            $.each(err, function (index, value) {
+                toastr.error(value);
+            });
+            document.getElementById("settings_button").disabled = false;
+            document.getElementById("settings_button").innerHTML = "Save";
+        }
+    });
+    return false;
+}
 function pexelsSettingsSave() {
     "use strict";
 
@@ -862,7 +944,7 @@ function apiKeysSettingsSave() {
     var formData = new FormData();
     formData.append('api_keys', $('#api_keys').val());
     formData.append('anthropic_api_keys', $('#anthropic_api_keys').val());
-    formData.append('gemini_api_keys', $('#anthropic_api_keys').val());
+    formData.append('gemini_api_keys', $('#gemini_api_keys').val());
     $.ajax({
         type: 'post',
         url: '/dashboard/user/api-keys/update',

@@ -15,6 +15,10 @@ function generateWaveForm( el ) {
 	var playButton = el.querySelector( 'button' );
 	var timeData = el.querySelector( 'span' );
 
+	if ( !audioUrl || audioUrl === '' ) {
+		return;
+	}
+
 	// empty the element first
 	while ( container.firstElementChild ) {
 		container.firstElementChild.remove();

@@ -1,6 +1,8 @@
 @php
     $base_class = 'lqd-dropdown flex relative group/dropdown [--dropdown-offset:0px]';
-    $trigger_base_class = 'lqd-dropdown-trigger hover:translate-y-0';
+    $trigger_base_class = 'lqd-dropdown-trigger hover:translate-y-0
+	before:absolute before:-inset-3 before:pointer-events-none
+	group-[&.lqd-is-active]/dropdown:before:pointer-events-auto';
     $dropdown_base_class = 'lqd-dropdown-dropdown absolute top-full opacity-0 invisible z-50 translate-y-1 pointer-events-none transition-all mt-[--dropdown-offset]
 		before:absolute before:bottom-full before:-top-[--dropdown-offset] before:inset-x-0
 		group-[&.lqd-is-active]/dropdown:opacity-100 group-[&.lqd-is-active]/dropdown:visible group-[&.lqd-is-active]/dropdown:translate-y-0 group-[&.lqd-is-active]/dropdown:pointer-events-auto';

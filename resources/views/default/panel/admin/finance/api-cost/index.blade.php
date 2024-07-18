@@ -9,7 +9,7 @@
     <div x-data="{ 'activeFilter': 'All' }">
         <form
             class="flex flex-col gap-5"
-            id="cost_form"v
+            id="cost_form"
             action="{{ route('dashboard.admin.finance.api-cost-management.update') }}"
             method="POST"
             enctype="multipart/form-data"
@@ -75,7 +75,7 @@
                 @endforeach
             @endforeach
 
-            @if (env('APP_STATUS') == 'Demo')
+            @if ($app_is_demo)
                 <x-button
                     type="button"
                     onclick="return toastr.info('This feature is disabled in Demo version.');"

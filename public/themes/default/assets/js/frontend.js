@@ -221,6 +221,9 @@
 
 			if (getContentFrom) {
 				const textContent = extractTextWithLinks(getContentFrom);
+				if (typeof toastr === 'undefined') {
+					return;
+				}
 				navigator.clipboard.writeText(textContent).then(() => {
 					toastr.success(
 						magicai_localize?.content_copied_to_clipboard ||

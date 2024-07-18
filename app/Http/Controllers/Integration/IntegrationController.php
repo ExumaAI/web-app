@@ -170,7 +170,7 @@ class IntegrationController extends Controller
 
         $class = $userIntegration->integration->getFormClassName();
 
-        if (! class_exists($class)) {
+        if (!class_exists($class)) {
             abort(404);
         }
 
@@ -186,15 +186,21 @@ class IntegrationController extends Controller
         $imagePath = $request->get('image');
 
         try {
-            if (str_starts_with($imagePath, '/uploads')) {
-                $tempFilePath = realpath(public_path($imagePath));
+            if (str_contains($imagePath, '/uploads')) {
+                $parsedUrl = parse_url($imagePath);
+                $path = $parsedUrl['path'];
+                $cleanedPath = str_replace('uploads', 'uploads', $path);
+
+                $tempFilePath = realpath(public_path($cleanedPath));
             } else {
                 $client = new Client();
                 $response = $client->get($imagePath);
-                $tempFilePath = tempnam(sys_get_temp_dir(), 'image');
 
-                file_put_contents($tempFilePath, $response->getBody()->getContents());
-                $tempFilePath = realpath($tempFilePath);
+                $fileName = basename($imagePath);
+                $uploadPath = public_path('uploads/' . $fileName);
+                file_put_contents($uploadPath, $response->getBody()->getContents());
+
+                $tempFilePath = realpath($uploadPath);
             }
 
             $response = $service->addImage([
@@ -205,12 +211,12 @@ class IntegrationController extends Controller
             if (isset($response)) {
                 return redirect()->back()->with('success', trans('Document created successfully'));
             } else {
-                throw new Exception('Error while creating post: '.json_encode($response));
+                throw new Exception('Error while creating post: ' . json_encode($response));
             }
         } catch (\GuzzleHttp\Exception\GuzzleException $e) {
             return back()->with([
                 'type' => 'error',
-                'message' => 'Guzzle error: '.$e->getMessage(),
+                'message' => 'Guzzle error: ' . $e->getMessage(),
             ]);
         } catch (Exception $e) {
             return back()->with([

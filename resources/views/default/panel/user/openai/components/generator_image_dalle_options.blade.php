@@ -105,7 +105,7 @@
     type="select"
     name="size"
     size="lg"
-    @change="if ( {{ env('APP_STATUS') == 'Demo' ? 1 : 0 }} && {{ $settings_two->dalle == 'dalle3' ? 1 : 0 }} && $event.target.value !== '1024x1024' ) {
+    @change="if ( $app_is_demo && {{ $settings_two->dalle == 'dalle3' ? 1 : 0 }} && $event.target.value !== '1024x1024' ) {
 				toastr.info('{{ __('This feature is disabled in Demo version.') }}')
 				return $event.target.value = '1024x1024';
 			}"

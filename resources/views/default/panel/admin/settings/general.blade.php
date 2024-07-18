@@ -135,20 +135,13 @@
         onsubmit="return generalSettingsSave();"
         enctype="multipart/form-data"
     >
-        <h3 class="mb-[25px] text-[20px]">{{ __('Global Settings') }}</h3>
+        <x-form-step
+            class="mb-4"
+            step="1"
+            label="{{ __('Global Settings') }}"
+        />
+
         <div class="row mb-4">
-
-            <x-forms.input
-                class:container="mb-5"
-                id="login_without_confirmation"
-                type="checkbox"
-                switcher
-                type="checkbox"
-                :checked="$setting->login_without_confirmation == 0"
-                label="{{ __('Disable Login Without Confirmation') }}"
-                tooltip="{{ __('If this is enabled users cannot login unless they confirm their emails.') }}"
-            />
-
             <div class="col-md-12">
                 <div class="mb-3">
                     <label class="form-label">{{ __('Site Name') }}</label>
@@ -216,6 +209,7 @@
 
             <div class="col-md-12">
                 <div class="mb-3">
+
                     <label class="form-label">{{ __('Registration Active') }}</label>
                     <select
                         class="form-select"
@@ -238,13 +232,62 @@
 
             <div class="col-md-12">
                 <div class="mb-3">
-                    <label class="form-label">{{ __('Default ai engine') }}
+                    <label class="form-label" >{{ __('Login With OTP') }}
+                        <x-info-tooltip text="{{ __('Make sure your SMTP settings are configured before activating this.') }}" />
+                    </label>
+                    <select
+                            class="form-select"
+                            id="login_with_otp"
+                            name="login_with_otp"
+                    >
+                        <option
+                                value="1"
+                                {{ $setting->login_with_otp ? 'selected' : '' }}
+                        >
+                            {{ __('Active') }}</option>
+                        <option
+                                value="0"
+                                {{ !$setting->login_with_otp ? 'selected' : '' }}
+                        >
+                            {{ __('Passive') }}</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="col-md-12">
+                <div class="mb-3">
+                    <label class="form-label">{{ __('User Onboarding') }}
                         <x-badge
                             class="ms-2 text-2xs"
                             variant="secondary"
                         >
                             @lang('New')
                         </x-badge>
+                    </label>
+                    <select
+                        class="form-select"
+                        id="tour_seen"
+                        name="tour_seen"
+                    >
+                        <option
+                            value="1"
+                            {{ $setting->tour_seen == 1 ? 'selected' : '' }}
+                        >
+                            {{ __('Active') }}</option>
+                        <option
+                            value="0"
+                            {{ $setting->tour_seen == 0 ? 'selected' : '' }}
+                        >
+                            {{ __('Passive') }}</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="col-md-12">
+                <div class="mb-3">
+
+                    <label class="form-label">{{ __('Default ai engine') }}
+
                     </label>
                     <select
                         class="form-select"
@@ -255,7 +298,7 @@
                             value="openai"
                             {{ setting('default_ai_engine') == 'openai' ? 'selected' : '' }}
                         >
-                            {{ __('Openai') }}</option>
+                            {{ __('OpenAI') }}</option>
                         <option
                             value="anthropic"
                             {{ setting('default_ai_engine') == 'anthropic' ? 'selected' : '' }}
@@ -273,12 +316,7 @@
             <div class="col-md-12">
                 <div class="mb-3">
                     <label class="form-label">{{ __('Article Wizard default image engine') }}
-                        <x-badge
-                            class="ms-2 text-2xs"
-                            variant="secondary"
-                        >
-                            @lang('New')
-                        </x-badge>
+
                     </label>
                     <select
                         class="form-select"
@@ -292,12 +330,12 @@
                             {{ __('Unsplash') }}</option>
                         <option
                             value="pexels"
-                            {{ setting('default_aw_image_engine', 'unsplash') == 'unsplash' ? 'selected' : '' }}
+                            {{ setting('default_aw_image_engine', 'unsplash') == 'pexels' ? 'selected' : '' }}
                         >
                             {{ __('Pexels') }}</option>
                         <option
                             value="pixabay"
-                            {{ setting('default_aw_image_engine', 'unsplash') == 'unsplash' ? 'selected' : '' }}
+                            {{ setting('default_aw_image_engine', 'unsplash') == 'pixabay' ? 'selected' : '' }}
                         >
                             {{ __('Pixabay') }}</option>
                         <option
@@ -313,114 +351,295 @@
                     </select>
                 </div>
             </div>
-        </div>
 
-        <div class="col-md-12">
-            <div class="mb-3">
-                <label class="form-label">{{ __('Free Usage Upon Registration (words,images)') }}</label>
-                <input
-                    class="form-control"
-                    id="free_plan"
-                    type="text"
-                    name="free_plan"
-                    value="{{ $setting->free_plan }}"
+            <div class="col-md-12">
+                <div class="mb-3">
+                    <label class="form-label">{{ __('Free Usage Upon Registration (words,images)') }}</label>
+                    <input
+                        class="form-control"
+                        id="free_plan"
+                        type="text"
+                        name="free_plan"
+                        value="{{ $setting->free_plan }}"
+                    >
+                </div>
+            </div>
+
+            <div class="col-md-12">
+                <x-forms.input
+                    class:container="mb-2"
+                    id="limit"
+                    type="checkbox"
+                    name="limit"
+                    :checked="$settings_two?->daily_limit_enabled == 1"
+                    label="{{ __('Apply daily limit on image generation') }}"
+                    switcher
+                />
+
+                <div
+                    class="mb-[20px]"
+                    id="countField"
+                    style="{{ $settings_two?->daily_limit_enabled == 1 ? '' : 'display:none' }}"
                 >
+                    <label class="form-label">{{ __('Daily Image Limit Count') }}</label>
+                    <input
+                        class="form-control"
+                        id="daily_limit_count"
+                        type="text"
+                        name="daily_limit_count"
+                        value="{{ $settings_two?->allowed_images_count }}"
+                    >
+                </div>
+
+                <div class="mb-[20px]">
+                    <x-forms.input
+                        class:container="mb-2"
+                        id="voice_limit"
+                        type="checkbox"
+                        name="voice_limit"
+                        :checked="$settings_two?->daily_voice_limit_enabled == 1"
+                        label="{{ __('Apply daily limit on voice generation') }}"
+                        switcher
+                    />
+                </div>
+
+                <div
+                    class="mb-[20px]"
+                    id="voiceCountField"
+                    style="{{ $settings_two?->daily_voice_limit_enabled == 1 ? '' : 'display:none' }}"
+                >
+                    <label class="form-label">{{ __('Daily Voice Limit Count') }}</label>
+                    <input
+                        class="form-control"
+                        id="daily_voice_limit_count"
+                        type="text"
+                        name="daily_voice_limit_count"
+                        value="{{ $settings_two?->allowed_voice_count }}"
+                    >
+                </div>
             </div>
         </div>
 
-        <x-forms.input
-            class:container="mb-2"
-            id="limit"
-            type="checkbox"
-            name="limit"
-            :checked="$settings_two?->daily_limit_enabled == 1"
-            label="{{ __('Apply daily limit on image generation') }}"
-            switcher
+        <x-form-step
+            class="mb-4 mt-5"
+            step="2"
+            label="{{ __('Login / Registration') }}"
+        />
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div class="mb-3">
+                    <x-forms.input
+                        id="login_without_confirmation"
+                        type="checkbox"
+                        switcher
+                        type="checkbox"
+                        :checked="$setting->login_without_confirmation == 0"
+                        label="{{ __('Disable Login Without Confirmation') }}"
+                        tooltip="{{ __('If this is enabled users cannot login unless they confirm their emails.') }}"
+                    />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">{{ __('Registration Active') }}</label>
+                    <select
+                        class="form-select"
+                        id="register_active"
+                        name="register_active"
+                    >
+                        <option
+                            value="1"
+                            {{ $setting->register_active == 1 ? 'selected' : '' }}
+                        >
+                            {{ __('Active') }}</option>
+                        <option
+                            value="0"
+                            {{ $setting->register_active == 0 ? 'selected' : '' }}
+                        >
+                            {{ __('Passive') }}</option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <h4 class="mb-3">{{ __('Social Login') }}</h4>
+                    <x-alert class="rounde mb-4">
+                        <a
+                            href="https://magicaidocs.liquid-themes.com/social-login"
+                            target="_blank"
+                        >
+                            {{ __('Check the documentation.') }}
+                            <x-tabler-arrow-up-right class="size-4 inline align-text-bottom" />
+                        </a>
+                    </x-alert>
+                    <x-forms.input
+                        class:container="mb-2"
+                        id="facebook_active"
+                        type="checkbox"
+                        :checked="$setting->facebook_active == 1"
+                        switcher
+                        label="{{ __('Facebook') }}"
+                    />
+                    <x-forms.input
+                        class:container="mb-2"
+                        id="google_active"
+                        type="checkbox"
+                        :checked="$setting->google_active == 1"
+                        switcher
+                        label="{{ __('Google') }}"
+                    />
+                    <x-forms.input
+                        class:container="mb-2"
+                        id="github_active"
+                        type="checkbox"
+                        :checked="$setting->github_active == 1"
+                        switcher
+                        label="{{ __('Github') }}"
+                    />
+                </div>
+            </div>
+        </div>
+
+        <x-form-step
+            class="mb-4 mt-5"
+            step="3"
+            label="{{ __('Notification') }}"
+        >
+            <x-badge
+                class="ms-2 text-2xs"
+                variant="secondary"
+            >
+                @lang('New')
+            </x-badge>
+        </x-form-step>
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div class="mb-3">
+                    <x-forms.input
+                        id="notification_active"
+                        type="checkbox"
+                        switcher
+                        type="checkbox"
+                        :checked="setting('notification_active', 0) == 1"
+                        label="{{ __('Activate Notifications System') }}"
+                        tooltip="{{ __('To use the notification system, you must activate it and use Pusher.') }}"
+                    />
+                </div>
+
+                <x-card class="mb-3">
+                    <h4 class="mb-3">{{ __('Pusher Settings') }}</h4>
+                    <x-alert class="rounde mb-4">
+                        <a
+                            href="https://magicaidocs.liquid-themes.com/pusher-configuration"
+                            target="_blank"
+                        >
+                            {{ __('Check the documentation.') }}
+                            <x-tabler-arrow-up-right class="size-4 inline align-text-bottom" />
+                        </a>
+                    </x-alert>
+                    <x-forms.input
+                        class:container="mb-3"
+                        id="pusher_app_id"
+                        type="text"
+                        size="lg"
+                        name="pusher_app_id"
+                        value="{{ setting('pusher_app_id') }}"
+                        label="{{ __('App ID') }}"
+                    />
+                    <x-forms.input
+                        class:container="mb-3"
+                        id="pusher_app_key"
+                        type="text"
+                        size="lg"
+                        name="pusher_app_key"
+                        value="{{ setting('pusher_app_key') }}"
+                        label="{{ __('App Key') }}"
+                    />
+                    <x-forms.input
+                        class:container="mb-3"
+                        id="pusher_app_secret"
+                        type="text"
+                        size="lg"
+                        name="pusher_app_secret"
+                        value="{{ setting('pusher_app_secret') }}"
+                        label="{{ __('App Secret') }}"
+                    />
+                    <x-forms.input
+                        class:container="mb-3"
+                        id="pusher_app_cluster"
+                        type="text"
+                        size="lg"
+                        name="pusher_app_cluster"
+                        value="{{ setting('pusher_app_cluster', 'mt1') }}"
+                        label="{{ __('Cluster') }}"
+                    />
+                </x-card>
+            </div>
+        </div>
+
+        <x-form-step
+            class="mb-4 mt-5"
+            step="4"
+            label="{{ __('Google Recaptcha Login') }}"
         />
 
-        <div
-            class="mb-[20px]"
-            id="countField"
-            style="{{ $settings_two?->daily_limit_enabled == 1 ? '' : 'display:none' }}"
-        >
-            <label class="form-label">{{ __('Daily Image Limit Count') }}</label>
-            <input
-                class="form-control"
-                id="daily_limit_count"
-                type="text"
-                name="daily_limit_count"
-                value="{{ $settings_two?->allowed_images_count }}"
-            >
-        </div>
-
-        <div class="mb-[20px]">
-            <x-forms.input
-                class:container="mb-2"
-                id="voice_limit"
-                type="checkbox"
-                name="voice_limit"
-                :checked="$settings_two?->daily_voice_limit_enabled == 1"
-                label="{{ __('Apply daily limit on voice generation') }}"
-                switcher
-            />
-        </div>
-
-        <div
-            class="mb-[20px]"
-            id="voiceCountField"
-            style="{{ $settings_two?->daily_voice_limit_enabled == 1 ? '' : 'display:none' }}"
-        >
-            <label class="form-label">{{ __('Daily Voice Limit Count') }}</label>
-            <input
-                class="form-control"
-                id="daily_voice_limit_count"
-                type="text"
-                name="daily_voice_limit_count"
-                value="{{ $settings_two?->allowed_voice_count }}"
-            >
-        </div>
-
-        <h3 class="mb-[25px] mt-7 text-[20px]">{{ __('Social Login') }}</h3>
         <div class="row mb-4">
+            <x-alert class="rounde mb-4">
+                <a
+                    href="https://scribehow.com/shared/Obtaining_reCAPTCHA_site_and_secret_keys_for_magicaicom__CMjndIDqTt26fz9xdhAQww"
+                    target="_blank"
+                >
+                    {{ __('Check the documentation.') }}
+                    <x-tabler-arrow-up-right class="size-4 inline align-text-bottom" />
+                </a>
+            </x-alert>
             <div class="mb-3">
-                <x-alert class="rounde mb-4">
-                    <a
-                        href="https://magicaidocs.liquid-themes.com/social-login"
-                        target="_blank"
-                    >
-                        {{ __('Check the documentation.') }}
-                        <x-tabler-arrow-up-right class="size-4 inline align-text-bottom" />
-                    </a>
-                </x-alert>
+                <x-forms.input
+                    class:container="mb-2"
+                    id="recaptcha_login"
+                    type="checkbox"
+                    :checked="$setting->recaptcha_login == 1"
+                    switcher
+                    label="{{ __('Login Recaptcha') }}"
+                />
+                <x-forms.input
+                    class:container="mb-2"
+                    id="recaptcha_register"
+                    type="checkbox"
+                    :checked="$setting->recaptcha_register == 1"
+                    switcher
+                    label="{{ __('Register Recaptcha') }}"
+                />
 
-                <x-forms.input
-                    class:container="mb-2"
-                    id="facebook_active"
-                    type="checkbox"
-                    :checked="$setting->facebook_active == 1"
-                    switcher
-                    label="{{ __('Facebook') }}"
-                />
-                <x-forms.input
-                    class:container="mb-2"
-                    id="google_active"
-                    type="checkbox"
-                    :checked="$setting->google_active == 1"
-                    switcher
-                    label="{{ __('Google') }}"
-                />
-                <x-forms.input
-                    class:container="mb-2"
-                    id="github_active"
-                    type="checkbox"
-                    :checked="$setting->github_active == 1"
-                    switcher
-                    label="{{ __('Github') }}"
-                />
+                <div class="mt-4">
+                    <label class="form-label">{{ __('Google Recaptcha Site Key') }}</label>
+                    <input
+                        class="form-control"
+                        id="recaptcha_sitekey"
+                        type="text"
+                        name="recaptcha_sitekey"
+                        value="{{ $setting->recaptcha_sitekey }}"
+                    >
+                </div>
+
+                <div class="mt-4">
+                    <label class="form-label">{{ __('Google Recaptcha Secret Key') }}</label>
+                    <input
+                        class="form-control"
+                        id="recaptcha_secretkey"
+                        type="text"
+                        name="recaptcha_secretkey"
+                        value="{{ $setting->recaptcha_secretkey }}"
+                    >
+                </div>
+
             </div>
         </div>
 
-        <h3 class="mb-[25px] mt-7 text-[20px]">{{ __('Logo Settings') }}</h3>
+        <x-form-step
+            class="mb-4 mt-5"
+            step="5"
+            label="{{ __('Logo Settings') }}"
+        />
+
         <div class="row mb-4">
             <div class="col-md-12 mb-3">
                 <div class="mb-4">
@@ -602,7 +821,11 @@
             </div>
         </div>
 
-        <h3 class="mb-[25px] mt-7 text-[20px]">{{ __('Seo Settings') }}</h3>
+        <x-form-step
+            class="mb-4 mt-5"
+            step="6"
+            label="{{ __('Seo Settings') }}"
+        />
         <div class="row mb-4">
             <div class="col-md-12">
                 <div class="mb-4">
@@ -703,7 +926,11 @@
             </div>
         </div>
 
-        <h3 class="mb-[25px] mt-7 text-[20px]">{{ __('Advanced Settings') }}</h3>
+        <x-form-step
+            class="mb-4 mt-5"
+            step="7"
+            label="{{ __('Advanced Settings') }}"
+        />
         <div class="row mb-4">
             <div class="col-md-12">
                 <div class="mb-3">
@@ -734,7 +961,11 @@
             </div>
         </div>
 
-        <h3 class="mb-[25px] mt-7 text-[20px]">{{ __('Manage the Features') }}</h3>
+        <x-form-step
+            class="mb-4 mt-5"
+            step="8"
+            label="{{ __('Manage the Features') }}"
+        />
         <div class="row mb-4">
             <div class="mb-3">
                 <div class="form-label">{{ __('Manage the features you want to activate for users.') }}</div>
@@ -1019,7 +1250,7 @@
 @endsection
 
 @push('script')
-    <script src="{{ custom_theme_url('/assets/js/panel/settings.js') }}"></script>
+    <script src="{{ custom_theme_url('/assets/js/panel/settings.js?v=' . time()) }} }}"></script>
     <script
         src="{{ custom_theme_url('/assets/libs/ace/src-min-noconflict/ace.js') }}"
         type="text/javascript"

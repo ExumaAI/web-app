@@ -37,16 +37,39 @@
                 </p>
             @enderror
         </div>
-
-        <x-forms.input
-            id="flexCheckDefault"
-            name="all_customers"
-            :checked="old('all_customers')"
-            type="checkbox"
-            label="{{ __('All customers') }}"
-            switcher
-            type="checkbox"
-        />
+        <div class="col-md-12">
+            <div class="mb-3">
+                <label class="form-label">{{ __('Customer group') }}
+                    <x-badge
+                            class="ms-2 text-2xs"
+                            variant="secondary"
+                    >
+                        @lang('New')
+                    </x-badge>
+                </label>
+                <select
+                        class="form-select"
+                        id="customer_group"
+                        name="customer_group"
+                >
+                    <option value="none"{{ old('customer_group') == 'none' ? 'selected' : '' }}>
+                        {{ __('None') }}
+                    </option>
+                    <option value="all_customer"{{ old('customer_group') == 'all_customer' ? 'selected' : '' }}>
+                        {{ __('All users') }}
+                    </option>
+                    <option value="active_purchasers"{{ old('customer_group') == 'active_purchasers' ? 'selected' : '' }}>
+                        {{ __('Active purchasers') }}
+                    </option>
+                    <option value="signed_up_but_purchase"{{ old('customer_group') == 'signed_up_but_purchase' ? 'selected' : '' }}>
+                        {{ __('Hasn\'t made a purchase yet') }}
+                    </option>
+                    <option value="cancelled"{{ old('customer_group') == 'cancelled' ? 'selected' : '' }}>
+                        {{ __('Purchased but then cancelled') }}
+                    </option>
+                </select>
+            </div>
+        </div>
 
         <x-button
             id="email_templates_button"

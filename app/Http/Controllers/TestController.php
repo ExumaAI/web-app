@@ -10,11 +10,12 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use App\Services\Ai\Gemini;
 use App\Models\AiModel;
+use App\Models\User;
+use App\Notifications\LiveNotification;
 
 class TestController extends Controller
 {
 	public function test(){
-		return view('test');
 	}
 
     public function collectMissingStrings(){

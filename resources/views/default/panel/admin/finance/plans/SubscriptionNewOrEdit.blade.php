@@ -584,7 +584,32 @@
                     @endif
                 </x-forms.input>
 
+
+
+                    <h2 class="text-lg mt-5">{{ __('Ai Chat Models') }}</h2>
+
+                    <div class="">
+                        @foreach($models as $model)
+                            <x-forms.input
+                                    class:container="h-full bg-input-background mt-2"
+                                    class:label="w-full border h-full rounded px-3 py-4 hover:bg-foreground/5 transition-colors"
+                                    id="ai_model_{{ $model->key }}"
+                                    data-filter="{{ $model }}"
+                                    :checked="in_array($model->id, $selectedModels)"
+                                    type="checkbox"
+                                    name="aiChatModelItems[]"
+                                    value="{{ $model->id }}"
+                                    label="{{ $model->selected_title }}"
+                                    custom
+                            />
+                        @endforeach
+
+                    </div>
+
+
             </x-card>
+
+
 
             @if ($isActiveGateway == 0)
                 <div class="flex flex-wrap items-center gap-2 rounded-xl bg-amber-100 p-3 text-amber-600 dark:bg-amber-600/20 dark:text-amber-200">

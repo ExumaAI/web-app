@@ -9,8 +9,10 @@ use App\Http\Requests\Chatbot\ChatbotSettingRequest;
 use App\Models\Chatbot\Chatbot;
 use App\Models\Chatbot\ChatbotData;
 use App\Models\Chatbot\ChatbotDataVector;
+use App\Models\Chatbot\Domain;
 use App\Models\Setting;
 use App\Models\SettingTwo;
+use Illuminate\Contracts\View\View;
 
 class ChatbotController extends Controller
 {
@@ -20,6 +22,17 @@ class ChatbotController extends Controller
             'title' => trans('Floating Chat Settings'),
             'method' => 'post',
             'action' => route('dashboard.admin.chatbot.setting'),
+            'chatbotData' => Chatbot::query()->get(),
+            'chatbot' => Chatbot::query()->find(Helper::settingTwo('chatbot_template')),
+        ]);
+    }
+
+    public function externalChatSettings(): View
+    {
+        return view('panel.admin.chatbot.external-settings', [
+            'title' => trans('External Chat Settings'),
+            'method' => 'post',
+            'action' => route('dashboard.admin.chatbot.external_settings'),
             'chatbotData' => Chatbot::query()->get(),
             'chatbot' => Chatbot::query()->find(Helper::settingTwo('chatbot_template')),
         ]);
@@ -49,6 +62,7 @@ class ChatbotController extends Controller
             $template = Chatbot::query()->find($request->chatbot_template);
 
             $template->update([
+                'user_id' => auth()->id(),
                 'first_message' => $request->first_message,
                 'instructions' => $request->instructions,
             ]);

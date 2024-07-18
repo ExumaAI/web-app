@@ -30,7 +30,7 @@
                                 class="h-10 bg-background"
                                 id="ref-code"
                                 disabled
-                                value="{{ LaravelLocalization::localizeUrl(url('/') . '/register?aff=' . \Illuminate\Support\Facades\Auth::user()->affiliate_code) }}"
+                                value="{{ str()->limit(LaravelLocalization::localizeUrl(url('/') . '/register?aff=' . \Illuminate\Support\Facades\Auth::user()->affiliate_code), 60) }}"
                             />
                             <x-button
                                 class="copy-aff-link absolute end-0 top-0 inline-flex h-full w-9 items-center rounded-input bg-transparent text-heading-foreground hover:bg-emerald-400 hover:text-white"
@@ -57,7 +57,7 @@
 
                         <p class="mb-0">
                             <span class="opacity-60">
-                                {{ __('Comission Rate') }}:
+                                {{ __('Commission Rate') }}:
                             </span>
                             {{ $setting->affiliate_commission_percentage }}%
                         </p>

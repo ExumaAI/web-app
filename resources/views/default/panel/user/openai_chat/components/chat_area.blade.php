@@ -13,8 +13,8 @@
                 }
             @endphp
             <span
-                class="size-6 inline-block shrink-0 rounded-full bg-cover bg-center"
-                style="background-image: url('{{ custom_theme_url($avatarUrl) }}')"
+                class="mt-0.5 size-6 inline-block shrink-0 rounded-full bg-cover bg-center"
+                style="background-image: url('{{ url(custom_theme_url($avatarUrl)) }}')"
             >
                 <span class="sr-only">
                     @lang('You'):
@@ -22,7 +22,7 @@
             </span>
             <div
                 class="chat-content-container group relative max-w-[calc(100%-64px)] rounded-[2em] bg-secondary text-secondary-foreground dark:bg-zinc-700 dark:text-primary-foreground">
-                <div class="chat-content px-6 py-3">
+                <div class="chat-content px-3 py-2">
                     {{ $message->input }}
                 </div>
                 <button
@@ -75,22 +75,22 @@
     @endif
 
     <div class="lqd-chat-ai-bubble mb-2.5 flex max-w-full content-start gap-2 last:mb-0">
+        @if ($message->output != null)
         <span
-            class="size-6 inline-block shrink-0 rounded-full bg-cover bg-center"
-            style="background-image: url('{{ !empty($chat->category->image) ? custom_theme_url($chat->category->image, true) : custom_theme_url('assets/img/auth/default-avatar.png') }}')"
+            class="mt-0.5 size-6 inline-block shrink-0 rounded-full bg-cover bg-center"
+            style="background-image: url('{{ !empty($chat->category->image) ? custom_theme_url($chat->category->image, true) : url(custom_theme_url('/assets/img/auth/default-avatar.png')) }}')"
         >
             <span class="sr-only">
                 @lang('AI Assistant'):
             </span>
         </span>
-        @if ($message->output != null)
             <div class="chat-content-container group relative max-w-[calc(100%-64px)] rounded-[2em] bg-clay text-heading-foreground dark:bg-white/[2%]">
                 @php
                     $output = $message->output;
                     $output = str_replace(['<br>', '<br/>', '<br >', '<br />'], "\n", $output);
                 @endphp
                 <pre
-                    class="chat-content prose relative w-full max-w-none whitespace-pre-wrap px-6 py-3 indent-0 font-[inherit] text-xs font-normal text-current [word-break:break-word] empty:hidden [&_*]:text-current">{{ $output }}</pre>
+                    class="chat-content prose relative w-full max-w-none whitespace-pre-wrap px-3 py-2 indent-0 font-[inherit] text-xs font-normal text-current [word-break:break-word] empty:hidden [&_*]:text-current">{{ $output }}</pre>
                 <button
                     class="lqd-clipboard-copy size-10 pointer-events-auto invisible absolute -end-5 bottom-0 inline-flex items-center justify-center rounded-full bg-background p-0 text-heading-foreground opacity-0 shadow-lg transition-all hover:-translate-y-0.5 hover:scale-110 group-hover:visible group-hover:opacity-100"
                     data-copy-options='{ "content": ".chat-content", "contentIn": "<.chat-content-container" }'

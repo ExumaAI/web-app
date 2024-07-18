@@ -210,9 +210,11 @@ return [
         /**
          * Laravel Json Localization Manager
          */
+        App\Providers\ExtensionServiceProvider::class,
         Elseyyid\LaravelJsonLocationsManager\Providers\LaravelJsonLocationsManagerServiceProvider::class,
         Barryvdh\DomPDF\ServiceProvider::class,
         Igaster\LaravelTheme\themeServiceProvider::class,
+
     ],
 
     /*

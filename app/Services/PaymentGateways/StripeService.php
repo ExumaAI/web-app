@@ -2,6 +2,7 @@
 
 namespace App\Services\PaymentGateways;
 
+use App\Actions\CreateActivity;
 use App\Events\StripeWebhookEvent;
 use App\Jobs\CancelAwaitingPaymentSubscriptions;
 use App\Jobs\ProcessStripeCustomerJob;
@@ -512,7 +513,7 @@ class StripeService
                 //     dispatch(new CancelAwaitingPaymentSubscriptions($stripe, $waitingSubs));
                 // }
                 // inform the admin
-                createActivity($user->id, __('Subscribed to'), $plan->name.' '.__('Plan'), null);
+                CreateActivity::for($user, __('Subscribed to'), $plan->name . ' ' . __('Plan'));
 				\App\Models\Usage::getSingle()->updateSalesCount($total);
             } else {
                 Log::error("StripeController::subscribeCheckout() - Invalid $intentType");
@@ -707,7 +708,7 @@ class StripeService
                 foreach ($waiting_subscriptions as $waitingSubs) {
                     dispatch(new CancelAwaitingPaymentSubscriptions($stripe, $waitingSubs));
                 }
-                createActivity($user->id, __('Purchased'), $plan->name.' '.__('Plan'), null);
+                CreateActivity::for($user, __('Purchased'), $plan->name . ' ' . __('Plan'));
 				\App\Models\Usage::getSingle()->updateSalesCount($total);
             } catch (\Exception $th) {
                 DB::rollBack();
@@ -753,7 +754,7 @@ class StripeService
                 $user->remaining_words = $recent_words < 0 ? 0 : $recent_words;
                 $user->remaining_images = $recent_images < 0 ? 0 : $recent_images;
                 $user->save();
-                createActivity($user->id, __('cancelled'), $plan->name, null);
+                CreateActivity::for($user, __('Cancelled'), $plan->name . ' ' . __('Plan'));
                 if ($internalUser != null) {
                     return back()->with(['message' => __('User subscription is cancelled succesfully.'), 'type' => 'success']);
                 }

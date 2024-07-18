@@ -10,6 +10,15 @@
             style="inline"
             progress-height="sm"
         />
+        <x-button
+            class="mx-6 group-[:not([data-step='1'],[data-step='2'],[data-step='3'])]/article-wizard:hidden"
+            variant="outline"
+            size="sm"
+            onclick="resetWizard()"
+        >
+            {{ __('Start Over') }}
+        </x-button>
+
     </div>
 @endsection
 
@@ -40,6 +49,16 @@
 @endsection
 
 @push('script')
+    <script>
+        function resetWizard() {
+            $.ajax({
+                url: '{{ route('dashboard.user.openai.articlewizard.startover') }}',
+                type: 'POST',
+            }).done(function(response) {
+                window.location.reload();
+            });
+        }
+    </script>
     <script src="{{ custom_theme_url('/assets/libs/apexcharts/dist/apexcharts.min.js') }}"></script>
     <script src="{{ custom_theme_url('/assets/libs/tinymce/tinymce.min.js') }}"></script>
     <script>

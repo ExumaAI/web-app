@@ -29,6 +29,10 @@ select {
 	}
 }
 
+option {
+	color: hsl(var(--heading-foreground));
+}
+
 .lqd-input-switcher {
 	background-image: var(--switcher-ball);
 
@@ -262,12 +266,6 @@ input::file-selector-button {
 	.form-select,
 	.form-selectgroup-check {
 		@apply bg-input-background border-input-border;
-	}
-
-	.form-select {
-		option {
-			color: #000;
-		}
 	}
 
 	.select2-container {

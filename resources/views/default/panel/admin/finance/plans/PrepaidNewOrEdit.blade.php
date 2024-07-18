@@ -269,6 +269,26 @@
                     label="{{ __('Price') }}"
                     size="lg"
                 />
+
+{{--                    <h2 class="text-lg mt-5">{{ __('Ai Chat Models') }}</h2>--}}
+
+{{--                    <div class="">--}}
+{{--                        @foreach($models as $model)--}}
+{{--                            <x-forms.input--}}
+{{--                                    class:container="h-full bg-input-background mt-2"--}}
+{{--                                    class:label="w-full border h-full rounded px-3 py-4 hover:bg-foreground/5 transition-colors"--}}
+{{--                                    id="ai_model_{{ $model->key }}"--}}
+{{--                                    data-filter="{{ $model }}"--}}
+{{--                                    :checked="in_array($model->key, $selectedModels)"--}}
+{{--                                    type="checkbox"--}}
+{{--                                    name="aiChatModelItems[]"--}}
+{{--                                    value="{{ $model->id }}"--}}
+{{--                                    label="{{ $model->selected_title }}"--}}
+{{--                                    custom--}}
+{{--                            />--}}
+{{--                        @endforeach--}}
+
+{{--                    </div>--}}
             </x-card>
 
             @if ($isActiveGateway == 0)

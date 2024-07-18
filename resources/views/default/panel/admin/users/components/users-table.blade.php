@@ -132,6 +132,7 @@
                             <x-tabler-x class="size-4" />
                         </x-button>
                     </td>
+                    @includeIf('panel.admin.settings.particles.affiliate-setting')
                 </tr>
             @empty
                 <tr>

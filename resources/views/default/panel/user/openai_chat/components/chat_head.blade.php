@@ -46,7 +46,7 @@
                     class="max-md:hidden"
                     id="realtime"
                     container-class="{{ $category->slug == 'ai_pdf' ? 'hidden' : '' }} max-md:size-8 max-md:inline-flex max-md:items-center max-md:justify-center max-md:overflow-hidden max-md:shadow-md max-md:rounded-full max-md:shrink-0 max-md:[&_.lqd-input-label-txt]:hidden"
-                    label="{{ __('Use Real-Time Data') }}"
+                    label="{{ __('Real-Time Data') }}"
                     type="checkbox"
                     name="realtime"
                     onchange="const checked = document.querySelector('#realtime').checked; if ( checked ) { toastr.success('Real-Time data activated') } else { toastr.warning('Real-Time data deactivated') }"

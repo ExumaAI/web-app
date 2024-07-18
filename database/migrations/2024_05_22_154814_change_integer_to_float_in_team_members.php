@@ -12,8 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('team_members', function (Blueprint $table) {
-            $table->decimal('remaining_images', 10, 2)->nullable()->change();
-            $table->decimal('remaining_words', 10, 2)->nullable()->change();
+            $table->decimal('remaining_images', 15, 2)->nullable()->change();
+            $table->decimal('remaining_words', 15, 2)->nullable()->change();
         });
     }
 

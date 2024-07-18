@@ -118,9 +118,9 @@ class EnvironmentManager
         'MAIL_USERNAME='.'null'."\n".
         'MAIL_PASSWORD='.'null'."\n".
         'MAIL_ENCRYPTION='.'null'."\n\n".
-        'PUSHER_APP_ID='.'null'."\n".
-        'PUSHER_APP_KEY='.'null'."\n".
-        'PUSHER_APP_SECRET='.'null';
+        'PUSHER_APP_ID='.''."\n".
+        'PUSHER_APP_KEY='.''."\n".
+        'PUSHER_APP_SECRET='.'';
 
         try {
             file_put_contents($this->envPath, $envFileData);

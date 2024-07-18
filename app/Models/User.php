@@ -3,10 +3,12 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Models\Chatbot\Chatbot;
 use App\Models\Integration\UserIntegration;
 use App\Models\Team\Team;
 use App\Models\Team\TeamMember;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -42,24 +44,29 @@ class User extends Authenticatable
         'anthropic_api_keys',
         'api_keys',
         'defi_setting',
-        'affiliate_status'
+        'affiliate_status',
     ];
 
     protected $hidden = [
         'password',
         'remember_token',
         'google2fa_secret',
-        'defi_setting'
+        'defi_setting',
     ];
 
     protected $casts = [
         'email_verified_at' => 'datetime',
-        'defi_setting' => 'json'
+        'defi_setting' => 'json',
     ];
+
+    public function isConfirmed(): bool
+    {
+        return $this->email_confirmed;
+    }
 
     public function isAdmin(): bool
     {
-        return $this->type == 'admin';
+        return $this->type === 'admin';
     }
 
     protected static function boot()
@@ -103,6 +110,11 @@ class User extends Authenticatable
     public function myCreatedTeam()
     {
         return $this->hasOne(Team::class, 'user_id', 'id');
+    }
+
+    public function activities(): HasMany
+    {
+        return $this->hasMany(Activity::class);
     }
 
     public function relationPlan()
@@ -167,7 +179,7 @@ class User extends Authenticatable
         return $value;
     }
 
-    public function fullName()
+    public function fullName(): string
     {
         return $this->name.' '.$this->surname;
     }
@@ -340,5 +352,15 @@ class User extends Authenticatable
     public function getCompanies()
     {
         return $this->companies()->orderBy('name', 'asc')->get();
+    }
+
+    public function scopeAdmins(Builder $query): void
+    {
+        $query->where('type', 'admin');
+    }
+
+    public function chatbots(): HasMany
+    {
+        return $this->hasMany(Chatbot::class, 'user_id');
     }
 }

@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers\Dashboard;
 
+use App\Actions\CreateActivity;
+use App\Actions\Notify;
+use App\Actions\TicketAction;
 use App\Http\Controllers\Controller;
 use App\Models\UserSupport;
 use App\Models\UserSupportMessage;
@@ -13,11 +16,9 @@ use Nette\Utils\Image;
 class SupportController extends Controller
 {
     public function list(){
-        $user = Auth::user();
-        if ($user->type == 'admin')
-            $items = UserSupport::all();
-        else
-            $items = $user->supportRequests;
+        $user = auth()->user();
+
+        $items = $user->isAdmin() ? UserSupport::all() : $user->supportRequests;
 
         return view('panel.support.list', compact('items'));
     }
@@ -26,21 +27,23 @@ class SupportController extends Controller
         return view('panel.support.new');
     }
 
-    public function newTicketSend(Request $request){
+    public function newTicketSend(Request $request): void
+    {
+        if (! $user = Auth::user()) {
+            return;
+        }
 
-        $support = new UserSupport();
-        $support->ticket_id = Str::upper(Str::random(10));
-        $support->user_id = Auth::id();
-        $support->priority = $request->priority;
-        $support->category = $request->category;
-        $support->subject = $request->subject;
-        $support->save();
+        $support = $user->supportRequests()->create([
+            'ticket_id' => Str::upper(Str::random(10)),
+            'priority' => $request->priority,
+            'category' => $request->category,
+            'subject' => $request->subject,
+        ]);
 
-        $message = new UserSupportMessage();
-        $message->user_support_id = $support->id;
-        $message->message = $request->message;
-        $message->save();
-        createActivity(Auth::id(), 'Submitted a Ticket', $support->subject, route('dashboard.support.view', $support->ticket_id));
+        TicketAction::ticket($support)
+                    ->fromUser()
+                    ->new($request->message)
+                    ->send();
     }
 
     public function viewTicket($ticket_id){
@@ -53,34 +56,15 @@ class SupportController extends Controller
         }
     }
 
-    public function viewTicketSendMessage(Request $request){
-        $user = Auth::user();
-        $ticket = UserSupport::where('ticket_id', $request->ticket_id)->firstOrFail();
-        if ($user->type == 'admin'){
-            $ticket->status = 'Answered';
-            $ticket->save();
-
-            $message = new UserSupportMessage();
-            $message->user_support_id = $ticket->id;
-            $message->sender = 'admin';
-            $message->message = $request->message;
-            $message->save();
-        }else{
-            $ticket->status = 'Waiting for answer';
-            $ticket->save();
-
-            $message = new UserSupportMessage();
-            $message->user_support_id = $ticket->id;
-            $message->sender = 'user';
-            $message->message = $request->message;
-            $message->save();
-            createActivity(Auth::id(), 'Support request waiting for your answer', null,  route('dashboard.support.view', $ticket->ticket_id));
-
+    public function viewTicketSendMessage(Request $request): void
+    {
+        if (! $user = Auth::user()) {
+            return;
         }
 
-
+        TicketAction::ticket($request->input('ticket_id'))
+                    ->fromAdminIfTrue($user->isAdmin())
+                    ->answer($request->input('message'))
+                    ->send();
     }
-
-
-
 }

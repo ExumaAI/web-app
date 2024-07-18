@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Finance;
 
+use App\Actions\CreateActivity;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -48,7 +49,7 @@ class PaymentProcessController extends Controller
             }
             try {
                 return GatewaySelector::selectGateway($gatewayCode)::subscribe($plan);
-            } catch (\Exception $e) {   
+            } catch (\Exception $e) {
                 return back()->with(['message' => $e->getMessage(), 'type' => 'error']);
             }
         }
@@ -59,7 +60,7 @@ class PaymentProcessController extends Controller
         if($plan != null){
             try {
                 return GatewaySelector::selectGateway($gatewayCode)::prepaid($plan);
-            } catch (\Exception $e) {   
+            } catch (\Exception $e) {
                 return back()->with(['message' => $e->getMessage(), 'type' => 'error']);
             }
         }
@@ -81,7 +82,7 @@ class PaymentProcessController extends Controller
         }
         try {
             return GatewaySelector::selectGateway($gateway)::subscribeCheckout($request, $referral);
-        } catch (\Exception $e) {   
+        } catch (\Exception $e) {
             return back()->with(['message' => $e->getMessage(), 'type' => 'error']);
         }
     }
@@ -100,37 +101,37 @@ class PaymentProcessController extends Controller
         }
         try {
             return GatewaySelector::selectGateway($gateway)::prepaidCheckout($request, $referral);
-        } catch (\Exception $e) {   
+        } catch (\Exception $e) {
             return back()->with(['message' => $e->getMessage(), 'type' => 'error']);
         }
     }
 
-    # additional required functions 
+    # additional required functions
     public function createPayPalOrder(Request $request){
         try {
             return GatewaySelector::selectGateway('paypal')::createPayPalOrder($request);
-        } catch (\Exception $e) {   
+        } catch (\Exception $e) {
             return back()->with(['message' => $e->getMessage(), 'type' => 'error']);
         }
     }
     public function iyzicoPrepaidCallback(Request $request){
         try {
             return GatewaySelector::selectGateway('iyzico')::iyzicoPrepaidCallback($request);
-        } catch (\Exception $e) {   
+        } catch (\Exception $e) {
             return back()->with(['message' => $e->getMessage(), 'type' => 'error']);
         }
     }
     public function iyzicoSubscribeCallback(Request $request){
         try {
             return GatewaySelector::selectGateway('iyzico')::iyzicoSubscribeCallback($request);
-        } catch (\Exception $e) {   
+        } catch (\Exception $e) {
             return back()->with(['message' => $e->getMessage(), 'type' => 'error']);
         }
     }
     public function iyzicoProductsList(Request $request){
         try {
             return GatewaySelector::selectGateway('iyzico')::iyzicoProductsList($request);
-        } catch (\Exception $e) {   
+        } catch (\Exception $e) {
             return back()->with(['message' => $e->getMessage(), 'type' => 'error']);
         }
     }
@@ -163,7 +164,7 @@ class PaymentProcessController extends Controller
                     abort(404);
                 }
             }
-        } catch (\Exception $e) {   
+        } catch (\Exception $e) {
             return back()->with(['message' => $e->getMessage(), 'type' => 'error']);
         }
     }
@@ -180,7 +181,7 @@ class PaymentProcessController extends Controller
     public static function bankUpdateSave(Request $request){
         if($request->order_status != 0){
             $order = UserOrder::findOrFail($request->order_id);
-            self::changeOrderStatus($request->order_status, $order);            
+            self::changeOrderStatus($request->order_status, $order);
         }
         return back()->with(['message' => __('Updated Successfully'), 'type' => 'success']);
     }
@@ -188,14 +189,14 @@ class PaymentProcessController extends Controller
         switch ($status) {
             case 'Waiting':
                     # sent mail if required here later
-                    createActivity($order->user->id, __('Bank transaction status updated to:')." ". __($status), $order->plan->name . ' '. __('Plan'), null);
+                    CreateActivity::for($order->user, __('Bank transaction status updated to:')." ". __($status), $order->plan->name . ' '. __('Plan'));
                 break;
-            case 'Approved':      
-                    if($order->type == "subscription"){ 
+            case 'Approved':
+                    if($order->type == "subscription"){
                         $subs = Subscriptions::where("stripe_id", $order->order_id)->first();
 						if ($subs) {
 							$subs->stripe_status = "bank_approved";
-		
+
 							switch ($order->plan->frequency) {
 								case 'monthly':
 									$subs->ends_at = \Carbon\Carbon::now()->addMonths(1);
@@ -215,23 +216,23 @@ class PaymentProcessController extends Controller
 									$subs->ends_at = \Carbon\Carbon::now()->addMonths(1);
 									break;
 							}
-							$subs->save(); 
+							$subs->save();
 						}
                     }
                     $order->plan->total_words == -1? ($order->user->remaining_words = -1) : ($order->user->remaining_words += $order->plan->total_words);
                     $order->plan->total_images == -1? ($order->user->remaining_images = -1) : ($order->user->remaining_images += $order->plan->total_images);
                     $order->user->save();
                     # sent mail if required here later
-                    createActivity($order->user->id, __('Purchased with approved bank transaction'), $order->plan->name. ' '. __('Plan'), null);
+                    CreateActivity::for($order->user, __('Purchased with approved bank transaction'), $order->plan->name. ' '. __('Plan'));
                 break;
             case 'Rejected':
                     $subs = Subscriptions::where("stripe_id", $order->order_id)->first();
 					if ($subs) {
 						$subs->stripe_status = "bank_rejected";
-                    	$subs->save();   
+                    	$subs->save();
 					}
                     # sent mail if required here later
-                    createActivity($order->user->id, __('Bank transaction status updated to:')." ". __($status), $order->plan->name . ' '. __('Plan'), null);
+                    CreateActivity::for($order->user, __('Bank transaction status updated to:')." ". __($status), $order->plan->name . ' '. __('Plan'));
                 break;
             default:
                 break;
@@ -275,7 +276,7 @@ class PaymentProcessController extends Controller
         }
         try {
             return GatewaySelector::selectGateway($gateway)::getSubscriptionDaysLeft();
-        } catch (\Exception $e) {   
+        } catch (\Exception $e) {
             return null;
         }
     }
@@ -292,7 +293,7 @@ class PaymentProcessController extends Controller
         }
         try {
             return GatewaySelector::selectGateway($gateway, 'Could not cancel subscription. Please try again. If this error occures again, please update and migrate.')::subscribeCancel();
-        } catch (\Exception $e) {   
+        } catch (\Exception $e) {
             return back()->with(['message' => $e->getMessage(), 'type' => 'error']);
         }
     }
@@ -312,7 +313,7 @@ class PaymentProcessController extends Controller
                 return false;
             }
             return GatewaySelector::selectGateway($gateway)::checkIfTrial();
-        } catch (\Exception $e) {   
+        } catch (\Exception $e) {
             return back()->with(['message' => $e->getMessage(), 'type' => 'error']);
         }
     }
@@ -335,7 +336,7 @@ class PaymentProcessController extends Controller
     }
     public static function deletePaymentPlan($id){
         $plan = PaymentPlans::where('id', $id)->first();
-        if($plan != null){        
+        if($plan != null){
             // Get related subscriptions
             $queryAnd   = [['stripe_status', '=', 'active'  ], ['plan_id', '=', $plan->id]];
             $queryOr    = [['stripe_status', '=', 'trialing'], ['plan_id', '=', $plan->id]];
@@ -359,7 +360,7 @@ class PaymentProcessController extends Controller
                     }
                 }
             }
-            
+
             // Delete Plan
             $plan->delete();
             return back()->with(['message' => __('All subscriptions related to this plan has been cancelled. Plan is deleted.'), 'type' => 'success']);
@@ -422,12 +423,12 @@ class PaymentProcessController extends Controller
         }
         if($activeSub){
 			$priceArray = GatewayProducts::all()->pluck('price_id')->toArray();
-			# if some plan cancelation happens when appling coupon then add the custom product price_id to custom bilings table 
+			# if some plan cancelation happens when appling coupon then add the custom product price_id to custom bilings table
 			$customPriceArray = CustomBilingPlans::all()->pluck('custom_plan_price_id')->toArray();
 			if(in_array($activeSub->stripe_price, $priceArray) == true || in_array($activeSub->stripe_price, $customPriceArray) == true){
 				// Do nothing. This is what we want.
 			}else{
-				// Cancel subscription 
+				// Cancel subscription
 				try{
 					if($activeSub->paid_with != "yokassa"){
 						$tmp = self::cancelActiveSubscription();
@@ -469,7 +470,7 @@ class PaymentProcessController extends Controller
         try {
             $user = User::find($userId);
             return GatewaySelector::selectGateway($gateway, 'Could not cancel subscription. Please try again. If this error occures again, please update and migrate.')::subscribeCancel($user);
-        } catch (\Exception $e) {   
+        } catch (\Exception $e) {
             return back()->with(['message' => $e->getMessage(), 'type' => 'error']);
         }
     }
@@ -509,7 +510,7 @@ class PaymentProcessController extends Controller
             $subscription->user_id = $user->id;
             $subscription->name = $planID;
             $subscription->stripe_id = 'FLS-' . strtoupper(Str::random(13));
-            $subscription->stripe_status = $status; 
+            $subscription->stripe_status = $status;
             $subscription->stripe_price = "Not Needed";
             $subscription->quantity = 1;
             $subscription->trial_ends_at = null;
@@ -540,15 +541,15 @@ class PaymentProcessController extends Controller
             $plan->total_images == -1? ($user->remaining_images = -1) : ($user->remaining_images += $plan->total_images);
             $user->save();
             # inform the admin
-            createActivity($user->id, __('Subscribed to'), $plan->name . ' '. __('Plan'), null);    
-        
+            CreateActivity::for($user, __('Subscribed to'), $plan->name . ' '. __('Plan'), null);
+
             DB::commit();
             return back()->with(['message' => __('The plan has been successfully assigned to the user.'),'type' => 'success' ]);
         }catch (\Exception $ex) {
             DB::rollBack();
             Log::error($gatewayCode."-> assignPlan(): ". $ex->getMessage());
             return back()->with(['message' => Str::before($ex->getMessage(), ':'),'type' => 'error' ]);
-        } 
+        }
     }
 
     public static function assignTokenByAdmin(Request $request){
@@ -558,7 +559,7 @@ class PaymentProcessController extends Controller
         ]);
         $planID = $request->token;
         $userID = $request->userID;
-        
+
         $user = User::find($userID);
         $plan = PaymentPlans::where('id', $planID)->first();
 
@@ -598,13 +599,13 @@ class PaymentProcessController extends Controller
             $order->plan->total_images == -1? ($order->user->remaining_images = -1) : ($order->user->remaining_images += $order->plan->total_images);
             $order->user->save();
             # sent mail if required here later
-            createActivity($order->user->id, __('Purchased'), $order->plan->name. ' '. __('Plan'). ' '. __('For free'), null);
+            CreateActivity::for($order->user, __('Purchased'), $order->plan->name. ' '. __('Plan'). ' '. __('For free'), null);
             DB::commit();
             return back()->with(['message' => __('The plan has been successfully assigned to the user.'),'type' => 'success' ]);
         } catch (\Exception $th) {
             DB::rollBack();
             Log::error($gatewayCode."-> subscribe(): ". $th->getMessage());
             return back()->with(['message' => Str::before($th->getMessage(), ':'),'type' => 'error' ]);
-        } 
+        }
     }
 }

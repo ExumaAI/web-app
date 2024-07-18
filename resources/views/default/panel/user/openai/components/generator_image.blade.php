@@ -203,6 +203,7 @@
 
             <x-button
                 class="lqd-generator-advanced-trigger group text-3xs font-semibold text-heading-foreground"
+                ::class="{ 'active': advancedSettingsShow }"
                 tag="button"
                 type="button"
                 variant="link"
@@ -521,6 +522,7 @@
             >
                 <x-button
                     class="lqd-generator-advanced-trigger group text-3xs font-semibold text-heading-foreground"
+                    ::class="{ 'active': advancedSettingsShow }"
                     tag="button"
                     type="button"
                     variant="link"
@@ -556,13 +558,14 @@
 
 @if (Route::has('dashboard.user.photo-studio.index') && setting('photo_studio', 1) == 1)
     <div
-        class="mb-10 space-y-8"
+        class="lqd-img-gen-tools-wrap mb-10 space-y-8"
         x-data="{ toolsShow: true }"
     >
-        <div class="flex items-center gap-8">
+        <div class="lqd-img-gen-tools-trigger-wrap flex items-center gap-8">
             <span class="h-px grow bg-border"></span>
             <button
-                class="flex shrink-0 items-center gap-2.5 text-2xs font-medium"
+                class="lqd-img-gen-tools-trigger active flex shrink-0 items-center gap-2.5 text-2xs font-medium"
+                :class="{ 'active': toolsShow }"
                 @click="toolsShow = !toolsShow"
             >
                 <span>
@@ -597,16 +600,16 @@
                 >
                     <div class="flex items-center gap-4">
                         <div
-                            class="size-11 inline-flex shrink-0 items-center justify-center rounded-lg"
+                            class="lqd-img-gen-tool-icon size-11 inline-flex shrink-0 items-center justify-center rounded-lg transition-all"
                             style="background-color: {{ $tool['color'] }}"
                         >
                             {!! $tool['icon'] !!}
                         </div>
                         <div>
-                            <h4 class="mb-1 text-lg">
+                            <h4 class="lqd-img-gen-tool-title mb-1 text-lg">
                                 {{ __($tool['title']) }}
                             </h4>
-                            <p class="mb-0 text-2xs text-heading-foreground/60">
+                            <p class="lqd-img-gen-tool-desc mb-0 text-2xs text-heading-foreground/60">
                                 {{ __($tool['desc']) }}
                             </p>
                         </div>
@@ -796,7 +799,7 @@
 
                         <div class="mt-auto flex flex-wrap justify-between gap-y-3 text-[13px] font-medium">
                             <div class="w-full md:w-[30%]">
-                                <div class="rounded-lg bg-black/[3%] p-2.5 dark:bg-white/[3%]">
+                                <div class="lqd-modal-img-info rounded-lg bg-black/[3%] p-2.5 dark:bg-white/[3%]">
                                     <p class="mb-1">@lang('Date')</p>
                                     <p
                                         class="mb-0 opacity-60"
@@ -805,7 +808,7 @@
                                 </div>
                             </div>
                             <div class="w-full md:w-[30%]">
-                                <div class="rounded-lg bg-black/[3%] p-2.5 dark:bg-white/[3%]">
+                                <div class="lqd-modal-img-info rounded-lg bg-black/[3%] p-2.5 dark:bg-white/[3%]">
                                     <p class="mb-1">@lang('Resolution')</p>
                                     <p
                                         class="mb-0 opacity-60"
@@ -815,7 +818,7 @@
                                 </div>
                             </div>
                             <div class="w-full md:w-[30%]">
-                                <div class="rounded-lg bg-black/[3%] p-2.5 dark:bg-white/[3%]">
+                                <div class="lqd-modal-img-info rounded-lg bg-black/[3%] p-2.5 dark:bg-white/[3%]">
                                     <p class="mb-1">@lang('Credit')</p>
                                     <p
                                         class="mb-0 opacity-60"
@@ -824,7 +827,7 @@
                                 </div>
                             </div>
                             <div class="w-full md:w-[30%]">
-                                <div class="rounded-lg bg-black/[3%] p-2.5 dark:bg-white/[3%]">
+                                <div class="lqd-modal-img-info rounded-lg bg-black/[3%] p-2.5 dark:bg-white/[3%]">
                                     <p class="mb-1">@lang('AI Model')</p>
                                     <p
                                         class="mb-0 opacity-60"
@@ -833,7 +836,7 @@
                                 </div>
                             </div>
                             <div class="w-full md:w-[30%]">
-                                <div class="rounded-lg bg-black/[3%] p-2.5 dark:bg-white/[3%]">
+                                <div class="lqd-modal-img-info rounded-lg bg-black/[3%] p-2.5 dark:bg-white/[3%]">
                                     <p class="mb-1">@lang('Art Style')</p>
                                     <p
                                         class="mb-0 opacity-60"
@@ -842,7 +845,7 @@
                                 </div>
                             </div>
                             <div class="w-full md:w-[30%]">
-                                <div class="rounded-lg bg-black/[3%] p-2.5 dark:bg-white/[3%]">
+                                <div class="lqd-modal-img-info rounded-lg bg-black/[3%] p-2.5 dark:bg-white/[3%]">
                                     <p class="mb-1">@lang('Mood')</p>
                                     <p
                                         class="mb-0 opacity-60"
@@ -856,14 +859,14 @@
 
                 <!-- Prev/Next buttons -->
                 <a
-                    class="size-9 absolute -start-1 top-1/2 z-10 inline-flex -translate-y-1/2 items-center justify-center rounded-full bg-background text-inherit shadow-md transition-all hover:scale-110 hover:bg-[--tblr-primary] hover:text-white"
+                    class="size-9 absolute -start-1 top-1/2 z-10 inline-flex -translate-y-1/2 items-center justify-center rounded-full bg-background text-inherit shadow-md transition-all hover:scale-110 hover:bg-primary hover:text-primary-foreground"
                     href="#"
                     @click.prevent="prevItem()"
                 >
                     <x-tabler-chevron-left class="size-5" />
                 </a>
                 <a
-                    class="size-9 absolute -end-1 top-1/2 z-10 inline-flex -translate-y-1/2 items-center justify-center rounded-full bg-background text-inherit shadow-md transition-all hover:scale-110 hover:bg-[--tblr-primary] hover:text-white"
+                    class="size-9 absolute -end-1 top-1/2 z-10 inline-flex -translate-y-1/2 items-center justify-center rounded-full bg-background text-inherit shadow-md transition-all hover:scale-110 hover:bg-primary hover:text-primary-foreground"
                     href="#"
                     @click.prevent="nextItem()"
                 >

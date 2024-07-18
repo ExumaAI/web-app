@@ -31,6 +31,21 @@ class IndexController extends Controller
 {
     public function index()
     {
+        $maintenance = cache()->get('maintenance');
+
+        $maintenanceMode = data_get($maintenance, 'maintenance_mode', false);
+
+        $maintenanceModeAuth = true;
+
+        if (Auth::check()) {
+            $maintenanceModeAuth = ! Auth::user()->isAdmin();
+        }
+
+        if ($maintenanceMode && $maintenanceModeAuth) {
+            return view('maintenance.index', ['data' => $maintenance]);
+        }
+
+
         $filters = OpenaiGeneratorFilter::all();
         $templates = OpenAIGenerator::all();
         $plansSubscription = PaymentPlans::where('type', 'subscription')->get()->sortBy('price');
@@ -84,7 +99,11 @@ class IndexController extends Controller
         ));
     }
 
-    public function activate(Request $request){
+    public function activate(Request $request)
+    {
+
+        cache()->forget('check_license_domain_'.$request->getHost());
+
         $valid = $request->liquid_license_status;
         $liquid_license_domain_key = $request->liquid_license_domain_key;
         if ($valid == 'valid'){

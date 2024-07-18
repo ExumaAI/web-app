@@ -22,6 +22,8 @@
 >
 
 <head>
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+
     <meta charset="UTF-8" />
     <meta
         http-equiv="X-UA-Compatible"
@@ -122,6 +124,8 @@
     @if (setting('additional_custom_css') != null)
         {!! setting('additional_custom_css') !!}
     @endif
+
+    @livewireStyles
 </head>
 
 <body class="group/body bg-background font-body text-foreground">
@@ -177,6 +181,8 @@
             toastr.{{ \Session::get('type') }}('{{ \Session::get('message') }}')
         </script>
     @endif
+
+    @livewireScriptConfig()
 
     @stack('script')
 </body>

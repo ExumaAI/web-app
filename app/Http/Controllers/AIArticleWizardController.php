@@ -11,39 +11,42 @@ use App\Models\UserOpenai;
 use Exception;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\ClientException;
+use GuzzleHttp\Exception\RequestException;
 use Illuminate\Http\File;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use OpenAI\Laravel\Facades\OpenAI;
-use App\Models\Usage;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Http;
-use GuzzleHttp\Exception\RequestException;
-
 
 class AIArticleWizardController extends Controller
 {
     protected $client;
+
     protected $settings;
-	protected $settings_two;
+
+    protected $settings_two;
 
     const STABLEDIFFUSION = 'stablediffusion';
+
     const STORAGE_S3 = 's3';
+
     const STORAGE_LOCAL = 'public';
-	const CLOUDFLARE_R2 = 'r2';
+
+    const CLOUDFLARE_R2 = 'r2';
 
     public function __construct()
     {
-		$this->middleware(function (Request $request, $next) {
-			Helper::setOpenAiKey();
+        $this->middleware(function (Request $request, $next) {
+            Helper::setOpenAiKey();
+
             return $next($request);
         });
-		//Settings
-		$this->settings = Setting::first();
-		$this->settings_two = SettingTwo::first();
-		ini_set('max_execution_time', 120000);
+        //Settings
+        $this->settings = Setting::first();
+        $this->settings_two = SettingTwo::first();
+        ini_set('max_execution_time', 120000);
     }
 
     public function index()
@@ -109,29 +112,29 @@ class AIArticleWizardController extends Controller
 
         $wizard = ArticleWizard::find($wizard->id);
         $apiUrl = base64_encode('https://api.openai.com/v1/chat/completions');
-		if ($this->settings_two->openai_default_stream_server == 'backend') {
-			$apikeyPart1 = base64_encode(rand(1, 100));
-			$apikeyPart2 = base64_encode(rand(1, 100));
-			$apikeyPart3 = base64_encode(rand(1, 100));
-		}else{
-			$settings = Setting::first();
-			// Fetch the Site Settings object with openai_api_secret
-			if ($this->settings?->user_api_option) {
-				$apiKeys = explode(',', auth()->user()?->api_keys);
-			} else {
-				$apiKeys = explode(',', $this->settings?->openai_api_secret);
-			}
-			$apiKey = $apiKeys[array_rand($apiKeys)];
+        if ($this->settings_two->openai_default_stream_server == 'backend') {
+            $apikeyPart1 = base64_encode(rand(1, 100));
+            $apikeyPart2 = base64_encode(rand(1, 100));
+            $apikeyPart3 = base64_encode(rand(1, 100));
+        } else {
+            $settings = Setting::first();
+            // Fetch the Site Settings object with openai_api_secret
+            if ($this->settings?->user_api_option) {
+                $apiKeys = explode(',', auth()->user()?->api_keys);
+            } else {
+                $apiKeys = explode(',', $this->settings?->openai_api_secret);
+            }
+            $apiKey = $apiKeys[array_rand($apiKeys)];
 
-			$len = strlen($apiKey);
+            $len = strlen($apiKey);
 
-			$parts[] = substr($apiKey, 0, $l[] = rand(1, $len - 5));
-			$parts[] = substr($apiKey, $l[0], $l[] = rand(1, $len - $l[0] - 3));
-			$parts[] = substr($apiKey, array_sum($l));
-			$apikeyPart1 = base64_encode($parts[0]);
-			$apikeyPart2 = base64_encode($parts[1]);
-			$apikeyPart3 = base64_encode($parts[2]);
-		}
+            $parts[] = substr($apiKey, 0, $l[] = rand(1, $len - 5));
+            $parts[] = substr($apiKey, $l[0], $l[] = rand(1, $len - $l[0] - 3));
+            $parts[] = substr($apiKey, array_sum($l));
+            $apikeyPart1 = base64_encode($parts[0]);
+            $apikeyPart2 = base64_encode($parts[1]);
+            $apikeyPart3 = base64_encode($parts[2]);
+        }
 
         return view('panel.user.article_wizard.wizard', compact(
             'wizard',
@@ -373,7 +376,7 @@ class AIArticleWizardController extends Controller
 
             $paths = [];
 
-			$this->getImagesFromThirdParty($prompt, $count, $size, $paths);
+            $this->getImagesFromThirdParty($prompt, $count, $size, $paths);
 
             return response()->json(['status' => 'success', 'path' => $paths]);
         } catch (ClientException $e) {
@@ -396,492 +399,498 @@ class AIArticleWizardController extends Controller
         }
     }
 
-	private function getImagesFromThirdParty($prompt, $count, $size , &$paths){
-		switch (setting('default_aw_image_engine', 'unsplash')) {
-			case 'unsplash':
-				$this->getImagesFromUnsplash($prompt, $count, $size , $paths);
-				break;
-			case 'pexels':
-				$this->getImagesFromPexels($prompt, $count, $size , $paths);
-				break;
-			case 'pixabay':
-				$this->getImagesFromPixabay($prompt, $count, $size , $paths);
-				break;
-			case 'openai':
-				$this->getImagesDalle($prompt, $count, $size , $paths);
-				break;
-			case 'sd':
-				$this->getImagesFromStableDiffusion($prompt, $count, $size , $paths);
-				break;
-			default:
-				$this->getImagesFromUnsplash($prompt, $count, $size , $paths);
-				break;
-		}
-	}
-	private function getImagesFromUnsplash($prompt, $count, $size, &$paths){
-		$user = Auth::user();
-		$settings = $this->settings_two;
-		$image_storage = $this->settings_two->ai_image_storage;
-		$client = new Client();
-		$apiKey = $settings->unsplash_api_key;
-		$url = "https://api.unsplash.com/search/photos?query=$prompt&count=$count&client_id=$apiKey&orientation=landscape";
-		$response = $client->request('GET', $url, [
-			'headers' => [
-				'Accept' => 'application/json',
-			],
-		]);
-		$statusCode = $response->getStatusCode();
-		$content = $response->getBody();
-		if ($statusCode == 200) {
-			$images = json_decode($content)->results;
+    private function getImagesFromThirdParty($prompt, $count, $size, &$paths)
+    {
+        switch (setting('default_aw_image_engine', 'unsplash')) {
+            case 'unsplash':
+                $this->getImagesFromUnsplash($prompt, $count, $size, $paths);
+                break;
+            case 'pexels':
+                $this->getImagesFromPexels($prompt, $count, $size, $paths);
+                break;
+            case 'pixabay':
+                $this->getImagesFromPixabay($prompt, $count, $size, $paths);
+                break;
+            case 'openai':
+                $this->getImagesDalle($prompt, $count, $size, $paths);
+                break;
+            case 'sd':
+                $this->getImagesFromStableDiffusion($prompt, $count, $size, $paths);
+                break;
+            default:
+                $this->getImagesFromUnsplash($prompt, $count, $size, $paths);
+                break;
+        }
+    }
 
-			foreach ($images as $index => $image) {
-				$image_url = $image->urls->$size;
-				$imageContent = file_get_contents($image_url);
-				$nameOfImage = Str::random(12).'.png';
+    private function getImagesFromUnsplash($prompt, $count, $size, &$paths)
+    {
+        $user = Auth::user();
+        $settings = $this->settings_two;
+        $image_storage = $this->settings_two->ai_image_storage;
+        $client = new Client();
+        $apiKey = $settings->unsplash_api_key;
+        $url = "https://api.unsplash.com/search/photos?query=$prompt&count=$count&client_id=$apiKey&orientation=landscape";
+        $response = $client->request('GET', $url, [
+            'headers' => [
+                'Accept' => 'application/json',
+            ],
+        ]);
+        $statusCode = $response->getStatusCode();
+        $content = $response->getBody();
+        if ($statusCode == 200) {
+            $images = json_decode($content)->results;
 
-				Storage::disk('public')->put($nameOfImage, $imageContent);
-				$path = 'uploads/'.$nameOfImage;
+            foreach ($images as $index => $image) {
+                $image_url = $image->urls->$size;
+                $imageContent = file_get_contents($image_url);
+                $nameOfImage = Str::random(12).'.png';
 
-				if ($image_storage == self::STORAGE_S3) {
-					try {
-						$uploadedFile = new File($path);
-						$aws_path = Storage::disk('s3')->put('', $uploadedFile);
-						unlink($path);
-						$path = Storage::disk('s3')->url($aws_path);
-					} catch (\Exception $e) {
-						return response()->json(['status' => 'error', 'message' => 'AWS Error - '.$e->getMessage()]);
-					}
-				} else {
-					$path = "/$path";
-				}
+                Storage::disk('public')->put($nameOfImage, $imageContent);
+                $path = 'uploads/'.$nameOfImage;
 
-				array_push($paths, $path);
-				
-				userCreditDecreaseForImage($user, 1, setting('default_aw_image_engine', 'unsplash'));
-				$count = $count - 1;
-				if ($count == 0) {
-					break;
-				}
-			}
-		} else {
-			return response()->json([
-				'status' => 'error',
-				'message' => __('Failed to download images.'),
-			], 500);
-		}
-	}
-	private function getImagesFromPexels($prompt, $count, $size, &$paths){
-		$user = Auth::user();
-		switch ($size) {
-			case 'thumb':
-				$size = 'tiny';
-				break;
-			case 'small':
-				$size = 'small';
-				break;
-			case 'small_s3':
-				$size = 'medium';
-				break;
-			case 'full':
-				$size = 'large';
-				break;
-			case 'raw':
-				$size = 'original';
-				break;
-			default:
-				$size = 'medium';
-				break;
-		}
-		$settings = $this->settings_two;
-		$image_storage = $this->settings_two->ai_image_storage;
-		$client = new Client();
-		$apiKey = setting('pexels_api_key');
-		$url = "https://api.pexels.com/v1/search?query=$prompt&per_page=$count";
-		$response = $client->request('GET', $url, [
-			'headers' => [
-				'Authorization' => $apiKey,
-			],
-		]);
-		$statusCode = $response->getStatusCode();
-		$content = $response->getBody();
-		if ($statusCode == 200) {
-			$images = json_decode($content)->photos;
-			foreach ($images as $index => $image) {
-				
+                if ($image_storage == self::STORAGE_S3) {
+                    try {
+                        $uploadedFile = new File($path);
+                        $aws_path = Storage::disk('s3')->put('', $uploadedFile);
+                        unlink($path);
+                        $path = Storage::disk('s3')->url($aws_path);
+                    } catch (\Exception $e) {
+                        return response()->json(['status' => 'error', 'message' => 'AWS Error - '.$e->getMessage()]);
+                    }
+                } else {
+                    $path = "/$path";
+                }
 
-				$image_url = $image->src->$size;
-				$imageContent = file_get_contents($image_url);
-				$nameOfImage = Str::random(12).'.png';
+                array_push($paths, $path);
 
-				Storage::disk('public')->put($nameOfImage, $imageContent);
-				$path = 'uploads/'.$nameOfImage;
+                userCreditDecreaseForImage($user, 1, setting('default_aw_image_engine', 'unsplash'));
+                $count = $count - 1;
+                if ($count == 0) {
+                    break;
+                }
+            }
+        } else {
+            return response()->json([
+                'status' => 'error',
+                'message' => __('Failed to download images.'),
+            ], 500);
+        }
+    }
 
-				if ($image_storage == self::STORAGE_S3) {
-					try {
-						$uploadedFile = new File($path);
-						$aws_path = Storage::disk('s3')->put('', $uploadedFile);
-						unlink($path);
-						$path = Storage::disk('s3')->url($aws_path);
-					} catch (\Exception $e) {
-						return response()->json(['status' => 'error', 'message' => 'AWS Error - '.$e->getMessage()]);
-					}
-				} else {
-					$path = "/$path";
-				}
+    private function getImagesFromPexels($prompt, $count, $size, &$paths)
+    {
+        $user = Auth::user();
+        switch ($size) {
+            case 'thumb':
+                $size = 'tiny';
+                break;
+            case 'small':
+                $size = 'small';
+                break;
+            case 'small_s3':
+                $size = 'medium';
+                break;
+            case 'full':
+                $size = 'large';
+                break;
+            case 'raw':
+                $size = 'original';
+                break;
+            default:
+                $size = 'medium';
+                break;
+        }
+        $settings = $this->settings_two;
+        $image_storage = $this->settings_two->ai_image_storage;
+        $client = new Client();
+        $apiKey = setting('pexels_api_key');
+        $url = "https://api.pexels.com/v1/search?query=$prompt&per_page=$count";
+        $response = $client->request('GET', $url, [
+            'headers' => [
+                'Authorization' => $apiKey,
+            ],
+        ]);
+        $statusCode = $response->getStatusCode();
+        $content = $response->getBody();
+        if ($statusCode == 200) {
+            $images = json_decode($content)->photos;
+            foreach ($images as $index => $image) {
 
-				array_push($paths, $path);
-				userCreditDecreaseForImage($user, 1, setting('default_aw_image_engine', 'unsplash'));
-				$count = $count - 1;
-				if ($count == 0) {
-					break;
-				}
-			}
-		} else {
-			return response()->json([
-				'status' => 'error',
-				'message' => __('Failed to download images.'),
-			], 500);
-		}
-	}
-	private function getImagesFromPixabay($prompt, $count, $size, &$paths){
-		$user = Auth::user();
-		$settings = $this->settings_two;
-		$image_storage = $this->settings_two->ai_image_storage;
-		$client = new Client();
-		$apiKey = setting('pixabay_api_key');
-		$url = "https://pixabay.com/api/?key=$apiKey&q=$prompt&image_type=photo&per_page=$count";
-		$response = $client->request('GET', $url, [
-			'headers' => [
-				'Accept' => 'application/json',
-			],
-		]);
-		$statusCode = $response->getStatusCode();
-		$content = $response->getBody();
-		if ($statusCode == 200) {
-			$images = json_decode($content)->hits;
-			foreach ($images as $index => $image) {
-				$image_url = $image->webformatURL;
-				$imageContent = file_get_contents($image_url);
-				$nameOfImage = Str::random(12).'.png';
+                $image_url = $image->src->$size;
+                $imageContent = file_get_contents($image_url);
+                $nameOfImage = Str::random(12).'.png';
 
-				Storage::disk('public')->put($nameOfImage, $imageContent);
-				$path = 'uploads/'.$nameOfImage;
+                Storage::disk('public')->put($nameOfImage, $imageContent);
+                $path = 'uploads/'.$nameOfImage;
 
-				if ($image_storage == self::STORAGE_S3) {
-					try {
-						$uploadedFile = new File($path);
-						$aws_path = Storage::disk('s3')->put('', $uploadedFile);
-						unlink($path);
-						$path = Storage::disk('s3')->url($aws_path);
-					} catch (\Exception $e) {
-						return response()->json(['status' => 'error', 'message' => 'AWS Error - '.$e->getMessage()]);
-					}
-				} else {
-					$path = "/$path";
-				}
+                if ($image_storage == self::STORAGE_S3) {
+                    try {
+                        $uploadedFile = new File($path);
+                        $aws_path = Storage::disk('s3')->put('', $uploadedFile);
+                        unlink($path);
+                        $path = Storage::disk('s3')->url($aws_path);
+                    } catch (\Exception $e) {
+                        return response()->json(['status' => 'error', 'message' => 'AWS Error - '.$e->getMessage()]);
+                    }
+                } else {
+                    $path = "/$path";
+                }
 
-				array_push($paths, $path);
-				userCreditDecreaseForImage($user, 1, setting('default_aw_image_engine', 'unsplash'));
-				$count = $count - 1;
-				if ($count == 0) {
-					break;
-				}
-			}
-		} else {
-			return response()->json([
-				'status' => 'error',
-				'message' => __('Failed to download images.'),
-			], 500);
-		}
-	}
-	private function getImagesDalle($prompt, $count, $size, &$paths){
-		$user = Auth::user();
-		$count = 1;
-		$settings = $this->settings_two;
-		$image_storage = $this->settings_two->ai_image_storage;
-		$setting = $this->settings;
-		
-		if ($this->settings_two->dalle == 'dalle2') {
-			$model = 'dall-e-2';
-		} elseif ($this->settings_two->dalle == 'dalle3') {
-			$model = 'dall-e-3';
-		} else {
-			$model = 'dall-e-2';
-		}
+                array_push($paths, $path);
+                userCreditDecreaseForImage($user, 1, setting('default_aw_image_engine', 'unsplash'));
+                $count = $count - 1;
+                if ($count == 0) {
+                    break;
+                }
+            }
+        } else {
+            return response()->json([
+                'status' => 'error',
+                'message' => __('Failed to download images.'),
+            ], 500);
+        }
+    }
 
-		$lockKey = 'generate_image_lock';
-		$user = Auth::user();
-		// Attempt to acquire lock
-		if (!Cache::lock($lockKey, 10)->get()) {
-			// Failed to acquire lock, another process is already running
-			return response()->json(['message' => 'Image generation in progress. Please try again later.'], 409);
-		}
-		try {
-			// check daily limit
-			$chkLmt = Helper::checkImageDailyLimit();
-			if ($chkLmt->getStatusCode() === 429) {
-				return $chkLmt;
-			}
-			// check remainings
-			$chkImg = Helper::checkRemainingImages($user);
-			if ($chkImg->getStatusCode() === 429) {
-				return $chkImg;
-			}
-			  
-			switch ($size) {
-				case "thumb":
-					$size = $model == "dall-e-3"? "1024x1024" : "256x256";
-					break;
-				case "small":
-					$size = $model == "dall-e-3"? "1024x1792" : "512x512";
-					break;
-				case "medium":
-					$size = $model == "dall-e-3"? "1792x1024" : "1024x1024";
-					break;
-				case "large":
-					$size = $model == "dall-e-3"? "1792x1024" : "1024x1024";
-					break;
-				case "full":
-					$size = $model == "dall-e-3"? "1792x1024" : "1024x1024";
-					break;
-				default:
-					$size = $model == "dall-e-3"? "1024x1024" : "256x256";
-					break;
-			}
-			for ($i = 0; $i < $count; $i++) {
-				if ($prompt == null) {
-					return response()->json(['status' => 'error', 'message' => 'You must provide a prompt']);
-				}
-				$quality = 'standard';
-				$response = OpenAI::images()->create([
-					'model' => $model,
-					'prompt' => $prompt,
-					'size' => $size,
-					'response_format' => 'b64_json',
-					'quality' => 'standard',
-					'n' => 1,
-				]);
-				$image_url = $response['data'][0]['b64_json'];
-				$contents = base64_decode($image_url);
+    private function getImagesFromPixabay($prompt, $count, $size, &$paths)
+    {
+        $user = Auth::user();
+        $settings = $this->settings_two;
+        $image_storage = $this->settings_two->ai_image_storage;
+        $client = new Client();
+        $apiKey = setting('pixabay_api_key');
+        $url = "https://pixabay.com/api/?key=$apiKey&q=$prompt&image_type=photo&per_page=$count";
+        $response = $client->request('GET', $url, [
+            'headers' => [
+                'Accept' => 'application/json',
+            ],
+        ]);
+        $statusCode = $response->getStatusCode();
+        $content = $response->getBody();
+        if ($statusCode == 200) {
+            $images = json_decode($content)->hits;
+            foreach ($images as $index => $image) {
+                $image_url = $image->webformatURL;
+                $imageContent = file_get_contents($image_url);
+                $nameOfImage = Str::random(12).'.png';
 
-				$nameOfImage = Str::random(12).'.png';
-				Storage::disk('public')->put($nameOfImage, $contents);
-				$path = 'uploads/'.$nameOfImage;
+                Storage::disk('public')->put($nameOfImage, $imageContent);
+                $path = 'uploads/'.$nameOfImage;
 
-				if ($image_storage == self::STORAGE_S3) {
-					try {
-						$uploadedFile = new File($path);
-						$aws_path = Storage::disk('s3')->put('', $uploadedFile);
-						unlink($path);
-						$path = Storage::disk('s3')->url($aws_path);
-					} catch (\Exception $e) {
-						return response()->json(['status' => 'error', 'message' => 'AWS Error - '.$e->getMessage()]);
-					}
-				} else if ($image_storage == self::CLOUDFLARE_R2) {
-					Storage::disk('r2')->put($nameOfImage, $contents);
-					unlink($path);
-					$path = Storage::disk('r2')->url($nameOfImage);
-				} else {
-					$path = "/$path";
-				}
+                if ($image_storage == self::STORAGE_S3) {
+                    try {
+                        $uploadedFile = new File($path);
+                        $aws_path = Storage::disk('s3')->put('', $uploadedFile);
+                        unlink($path);
+                        $path = Storage::disk('s3')->url($aws_path);
+                    } catch (\Exception $e) {
+                        return response()->json(['status' => 'error', 'message' => 'AWS Error - '.$e->getMessage()]);
+                    }
+                } else {
+                    $path = "/$path";
+                }
 
-				array_push($paths, $path);
-				userCreditDecreaseForImage($user, 1, $model);
-			}
+                array_push($paths, $path);
+                userCreditDecreaseForImage($user, 1, setting('default_aw_image_engine', 'unsplash'));
+                $count = $count - 1;
+                if ($count == 0) {
+                    break;
+                }
+            }
+        } else {
+            return response()->json([
+                'status' => 'error',
+                'message' => __('Failed to download images.'),
+            ], 500);
+        }
+    }
 
-			Cache::lock($lockKey)->release();
-		} finally {
-			Cache::lock($lockKey)->forceRelease();
-		}
-	}
-	private function getImagesFromStableDiffusion($prompt, $count, $size, &$paths){
-		$user = Auth::user();
-		$count = 1;
-		$settings = $this->settings_two;
-		$image_storage = $this->settings_two->ai_image_storage;
-		$setting = $this->settings;
+    private function getImagesDalle($prompt, $count, $size, &$paths)
+    {
+        $user = Auth::user();
+        $count = 1;
+        $settings = $this->settings_two;
+        $image_storage = $this->settings_two->ai_image_storage;
+        $setting = $this->settings;
 
+        if ($this->settings_two->dalle == 'dalle2') {
+            $model = 'dall-e-2';
+        } elseif ($this->settings_two->dalle == 'dalle3') {
+            $model = 'dall-e-3';
+        } else {
+            $model = 'dall-e-2';
+        }
 
-		switch ($size) {
-			case "thumb":
-				$size = "640x1536";
-				break;
-			case "small":
-				$size = "768x1344";
-				break;
-			case "medium":
-				$size = "832x1216";
-				break;
-			case "large":
-				$size = "896x1152";
-				break;
-			case "full":
-				$size = "1024x1024";
-				break;
-			case "raw":
-				$size = "1152x896";
-				break;
-			default:
-				$size = "1024x1024";
-				break;
-		}
-		
-		$stablediffusionKeys = explode(',', $settings->stable_diffusion_api_key);
-		$stablediffusionKey = $stablediffusionKeys[array_rand($stablediffusionKeys)];
-		for ($i = 0; $i < $count; $i++) {
-			if ($prompt == null) {
-				return response()->json(['status' => 'error', 'message' => 'You must provide a prompt']);
-			}
-			if ($stablediffusionKey == '') {
-				return response()->json(['status' => 'error', 'message' => 'You must provide a StableDiffusion API Key.']);
-			}
+        $lockKey = 'generate_image_lock';
+        $user = Auth::user();
+        // Attempt to acquire lock
+        if (! Cache::lock($lockKey, 10)->get()) {
+            // Failed to acquire lock, another process is already running
+            return response()->json(['message' => 'Image generation in progress. Please try again later.'], 409);
+        }
+        try {
+            // check daily limit
+            $chkLmt = Helper::checkImageDailyLimit();
+            if ($chkLmt->getStatusCode() === 429) {
+                return $chkLmt;
+            }
+            // check remainings
+            $chkImg = Helper::checkRemainingImages($user);
+            if ($chkImg->getStatusCode() === 429) {
+                return $chkImg;
+            }
 
-			$width = intval(explode('x', $size)[0]);
-			$height = intval(explode('x', $size)[1]);
+            switch ($size) {
+                case 'thumb':
+                    $size = $model == 'dall-e-3' ? '1024x1024' : '256x256';
+                    break;
+                case 'small':
+                    $size = $model == 'dall-e-3' ? '1024x1792' : '512x512';
+                    break;
+                case 'medium':
+                    $size = $model == 'dall-e-3' ? '1792x1024' : '1024x1024';
+                    break;
+                case 'large':
+                    $size = $model == 'dall-e-3' ? '1792x1024' : '1024x1024';
+                    break;
+                case 'full':
+                    $size = $model == 'dall-e-3' ? '1792x1024' : '1024x1024';
+                    break;
+                default:
+                    $size = $model == 'dall-e-3' ? '1024x1024' : '256x256';
+                    break;
+            }
+            for ($i = 0; $i < $count; $i++) {
+                if ($prompt == null) {
+                    return response()->json(['status' => 'error', 'message' => 'You must provide a prompt']);
+                }
+                $quality = 'standard';
+                $response = OpenAI::images()->create([
+                    'model' => $model,
+                    'prompt' => $prompt,
+                    'size' => $size,
+                    'response_format' => 'b64_json',
+                    'quality' => 'standard',
+                    'n' => 1,
+                ]);
+                $image_url = $response['data'][0]['b64_json'];
+                $contents = base64_decode($image_url);
 
-			// Stablediffusion engine
-			$engine = $this->settings_two->stablediffusion_default_model;
+                $nameOfImage = Str::random(12).'.png';
+                Storage::disk('public')->put($nameOfImage, $contents);
+                $path = 'uploads/'.$nameOfImage;
 
-			$sd3Payload = [];
-			if($engine == 'sd3' || $engine == 'sd3-turbo')
-			{
-				$client = new Client([
-					'base_uri' => 'https://api.stability.ai/v2beta/stable-image/generate/',
-					'headers' => [
-						'content-type' => 'multipart/form-data',
-						'Authorization' => 'Bearer '.$stablediffusionKey,
-						'accept' => 'application/json'
-					],
-				]);
-			} else {
-				$engine = 'stable-diffusion-xl-beta-v2-2-2';
-				$client = new Client([
-					'base_uri' => 'https://api.stability.ai/v1/generation/',
-					'headers' => [
-						'content-type' => 'application/json',
-						'Authorization' => 'Bearer '. $stablediffusionKey,
-						'accept' => 'application/json'
-					],
-				]);
-			}
+                if ($image_storage == self::STORAGE_S3) {
+                    try {
+                        $uploadedFile = new File($path);
+                        $aws_path = Storage::disk('s3')->put('', $uploadedFile);
+                        unlink($path);
+                        $path = Storage::disk('s3')->url($aws_path);
+                    } catch (\Exception $e) {
+                        return response()->json(['status' => 'error', 'message' => 'AWS Error - '.$e->getMessage()]);
+                    }
+                } elseif ($image_storage == self::CLOUDFLARE_R2) {
+                    Storage::disk('r2')->put($nameOfImage, $contents);
+                    unlink($path);
+                    $path = Storage::disk('r2')->url($nameOfImage);
+                } else {
+                    $path = "/$path";
+                }
 
-			// Content Type
-			$content_type = 'json';
+                array_push($paths, $path);
+                userCreditDecreaseForImage($user, 1, $model);
+            }
 
-			$payload = [
-				'cfg_scale' => 7,
-				'clip_guidance_preset' => 'NONE',
-				'samples' => 1,
-				'steps' => 50,
-			];
+            Cache::lock($lockKey)->release();
+        } finally {
+            Cache::lock($lockKey)->forceRelease();
+        }
+    }
 
-			$stable_url = "text-to-image";
-			// $payload['width'] = $width;
-			// $payload['height'] = $height;
-			$sd3Payload = [
-				[
-					'name' => 'prompt',
-					"contents" => $prompt
-				],
-				[
-					'name' => 'file',
-					'contents' => 'no'
-				],
-				[
-					'name' => 'output_format',
-					'contents' => 'png'
-				]
-			];
-			$prompt = [
-				[
-					'text' => $prompt,
-					'weight' => 1,
-				],
-			];
-			$payload['text_prompts'] = $prompt;
-			try {
-				if($engine == 'sd3' || $engine == 'sd3-turbo')
-				{
-					$response = $client->post("$engine", [
-						"headers" => [
-							"accept" => "application/json",
-						],
-						"multipart" => $sd3Payload
-					]);
-				} else {
-					$response = $client->post("$engine/$stable_url", [
-						$content_type => $payload,
-					]);
-				}
+    private function getImagesFromStableDiffusion($prompt, $count, $size, &$paths)
+    {
+        $user = Auth::user();
+        $count = 1;
+        $settings = $this->settings_two;
+        $image_storage = $this->settings_two->ai_image_storage;
+        $setting = $this->settings;
 
-			} catch (RequestException $e) {
-				dd($e);
-				if ($e->hasResponse()) {
-					$response = $e->getResponse();
-					$statusCode = $response->getStatusCode();
-					// Custom handling for specific status codes here...
+        switch ($size) {
+            case 'thumb':
+                $size = '640x1536';
+                break;
+            case 'small':
+                $size = '768x1344';
+                break;
+            case 'medium':
+                $size = '832x1216';
+                break;
+            case 'large':
+                $size = '896x1152';
+                break;
+            case 'full':
+                $size = '1024x1024';
+                break;
+            case 'raw':
+                $size = '1152x896';
+                break;
+            default:
+                $size = '1024x1024';
+                break;
+        }
 
-					if ($statusCode == '404') {
-						// Handle a not found error
-					} elseif ($statusCode == '500') {
-						// Handle a server error
-					}
+        $stablediffusionKeys = explode(',', $settings->stable_diffusion_api_key);
+        $stablediffusionKey = $stablediffusionKeys[array_rand($stablediffusionKeys)];
+        for ($i = 0; $i < $count; $i++) {
+            if ($prompt == null) {
+                return response()->json(['status' => 'error', 'message' => 'You must provide a prompt']);
+            }
+            if ($stablediffusionKey == '') {
+                return response()->json(['status' => 'error', 'message' => 'You must provide a StableDiffusion API Key.']);
+            }
 
-					$errorMessage = $response->getBody()->getContents();
+            $width = intval(explode('x', $size)[0]);
+            $height = intval(explode('x', $size)[1]);
 
-					return response()->json(['status' => 'error', 'message' => json_decode($errorMessage)->message]);
-					// Log the error message or handle it as required
-				}
+            // Stablediffusion engine
+            $engine = $this->settings_two->stablediffusion_default_model;
 
-				return response()->json(['status' => 'error', 'message' => $e->getMessage()]);
-			}
+            $sd3Payload = [];
+            if ($engine == 'sd3' || $engine == 'sd3-turbo') {
+                $client = new Client([
+                    'base_uri' => 'https://api.stability.ai/v2beta/stable-image/generate/',
+                    'headers' => [
+                        'content-type' => 'multipart/form-data',
+                        'Authorization' => 'Bearer '.$stablediffusionKey,
+                        'accept' => 'application/json',
+                    ],
+                ]);
+            } else {
+                $engine = 'stable-diffusion-xl-beta-v2-2-2';
+                $client = new Client([
+                    'base_uri' => 'https://api.stability.ai/v1/generation/',
+                    'headers' => [
+                        'content-type' => 'application/json',
+                        'Authorization' => 'Bearer '.$stablediffusionKey,
+                        'accept' => 'application/json',
+                    ],
+                ]);
+            }
 
-			$body = $response->getBody();
+            // Content Type
+            $content_type = 'json';
 
+            $payload = [
+                'cfg_scale' => 7,
+                'clip_guidance_preset' => 'NONE',
+                'samples' => 1,
+                'steps' => 50,
+            ];
 
-			if ($response->getStatusCode() == 200) {
-				$nameOfImage = Str::random(12).'.png';
+            $stable_url = 'text-to-image';
+            // $payload['width'] = $width;
+            // $payload['height'] = $height;
+            $sd3Payload = [
+                [
+                    'name' => 'prompt',
+                    'contents' => $prompt,
+                ],
+                [
+                    'name' => 'file',
+                    'contents' => 'no',
+                ],
+                [
+                    'name' => 'output_format',
+                    'contents' => 'png',
+                ],
+            ];
+            $prompt = [
+                [
+                    'text' => $prompt,
+                    'weight' => 1,
+                ],
+            ];
+            $payload['text_prompts'] = $prompt;
+            try {
+                if ($engine == 'sd3' || $engine == 'sd3-turbo') {
+                    $response = $client->post("$engine", [
+                        'headers' => [
+                            'accept' => 'application/json',
+                        ],
+                        'multipart' => $sd3Payload,
+                    ]);
+                } else {
+                    $response = $client->post("$engine/$stable_url", [
+                        $content_type => $payload,
+                    ]);
+                }
 
-				if($engine == 'sd3' || $engine == 'sd3-turbo') {
-					$contents = base64_decode(json_decode($body)->image);
-				}else {
-					$contents = base64_decode(json_decode($body)->artifacts[0]->base64);
-				}
+            } catch (RequestException $e) {
+                dd($e);
+                if ($e->hasResponse()) {
+                    $response = $e->getResponse();
+                    $statusCode = $response->getStatusCode();
+                    // Custom handling for specific status codes here...
 
-				Storage::disk('public')->put($nameOfImage, $contents);
-				$path = 'uploads/'.$nameOfImage;
-				if ($image_storage == self::STORAGE_S3) {
-					try {
-						$uploadedFile = new File($path);
-						$aws_path = Storage::disk('s3')->put('', $uploadedFile);
-						unlink($path);
-						$path = Storage::disk('s3')->url($aws_path);
-					} catch (\Exception $e) {
-						return response()->json(['status' => 'error', 'message' => 'AWS Error - '.$e->getMessage()]);
-					}
-				} else if ($image_storage == self::CLOUDFLARE_R2) {
-					Storage::disk('r2')->put($nameOfImage, $contents);
-					unlink($path);
-					$path = Storage::disk('r2')->url($nameOfImage);
-				} else {
-					$path = "/$path";
-				}
+                    if ($statusCode == '404') {
+                        // Handle a not found error
+                    } elseif ($statusCode == '500') {
+                        // Handle a server error
+                    }
 
-				array_push($paths, $path);
-				userCreditDecreaseForImage($user, 1, $engine);
-			} else {
-				$message = '';
-				if ($body->status == 'error') {
-					$message = $body->message;
-				} else {
-					$message = 'Failed, Try Again';
-				}
+                    $errorMessage = $response->getBody()->getContents();
 
-				return response()->json(['status' => 'error', 'message' => $message]);
-			}
-		}	
-	}
+                    return response()->json(['status' => 'error', 'message' => json_decode($errorMessage)->message]);
+                    // Log the error message or handle it as required
+                }
+
+                return response()->json(['status' => 'error', 'message' => $e->getMessage()]);
+            }
+
+            $body = $response->getBody();
+
+            if ($response->getStatusCode() == 200) {
+                $nameOfImage = Str::random(12).'.png';
+
+                if ($engine == 'sd3' || $engine == 'sd3-turbo') {
+                    $contents = base64_decode(json_decode($body)->image);
+                } else {
+                    $contents = base64_decode(json_decode($body)->artifacts[0]->base64);
+                }
+
+                Storage::disk('public')->put($nameOfImage, $contents);
+                $path = 'uploads/'.$nameOfImage;
+                if ($image_storage == self::STORAGE_S3) {
+                    try {
+                        $uploadedFile = new File($path);
+                        $aws_path = Storage::disk('s3')->put('', $uploadedFile);
+                        unlink($path);
+                        $path = Storage::disk('s3')->url($aws_path);
+                    } catch (\Exception $e) {
+                        return response()->json(['status' => 'error', 'message' => 'AWS Error - '.$e->getMessage()]);
+                    }
+                } elseif ($image_storage == self::CLOUDFLARE_R2) {
+                    Storage::disk('r2')->put($nameOfImage, $contents);
+                    unlink($path);
+                    $path = Storage::disk('r2')->url($nameOfImage);
+                } else {
+                    $path = "/$path";
+                }
+
+                array_push($paths, $path);
+                userCreditDecreaseForImage($user, 1, $engine);
+            } else {
+                $message = '';
+                if ($body->status == 'error') {
+                    $message = $body->message;
+                } else {
+                    $message = 'Failed, Try Again';
+                }
+
+                return response()->json(['status' => 'error', 'message' => $message]);
+            }
+        }
+    }
 
     // | not rec
     public function updateArticle(Request $request)
@@ -989,5 +998,13 @@ class AIArticleWizardController extends Controller
                 'message' => $e->getMessage(),
             ], 500);
         }
+    }
+
+    public function startover()
+    {
+        $user = Auth::user();
+        ArticleWizard::where('user_id', $user->id)->delete();
+
+        return response()->json(['result' => 'success']);
     }
 }

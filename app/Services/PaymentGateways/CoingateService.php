@@ -2,6 +2,7 @@
 
 namespace App\Services\PaymentGateways;
 
+use App\Actions\CreateActivity;
 use App\Helpers\Classes\Helper;
 use App\Models\GatewayProducts;
 use App\Models\Gateways;
@@ -238,7 +239,7 @@ class CoingateService implements BaseGatewayService
                                 ]);
 
                             # sent mail if required here later
-                            createActivity($order->user->id, __('Purchased'), $order->plan->name. ' '. __('Plan'). ' '. __('For free'), null);
+                            CreateActivity::for($order->user, __('Purchased'), $order->plan->name. ' '. __('Plan'). ' '. __('For free'));
 							\App\Models\Usage::getSingle()->updateSalesCount($total);
                             return redirect($payment_url);
                         } catch (\Exception $th) {
@@ -405,7 +406,8 @@ class CoingateService implements BaseGatewayService
             $user->remaining_words = $recent_words < 0 ? 0 : $recent_words;
             $user->remaining_images = $recent_images < 0 ? 0 : $recent_images;
             $user->save();
-            createActivity($user->id, 'Cancelled', 'Subscription plan', null);
+
+            CreateActivity::for($user, 'Cancelled', 'Subscription plan',);
 
             return back()->with(['message' => __('Your subscription is cancelled succesfully.'), 'type' => 'success']);
         }
@@ -698,7 +700,7 @@ class CoingateService implements BaseGatewayService
                         $subscription->save();
                     }
 
-                    createActivity($user->id, 'Purchased', $plan->name. ' Plan', null);
+                    CreateActivity::for($user, 'Purchased', $plan->name. ' Plan');
                 }
             }  catch (\Exception $th) {
 

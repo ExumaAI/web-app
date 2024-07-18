@@ -349,7 +349,6 @@
                             name="hero_image"
                             type="file"
                             placeholder="{{ __('Upload Hero Image') }}"
-                            required
                         />
                     </div>
                     @if ($fSetting->hero_image)
@@ -438,11 +437,10 @@
                         </div>
                     </div>
 
-                    <div class="col-md-12 deprecated hidden">
+                    <div class="col-md-12">
                         <div class="mb-3">
                             <label class="form-label">
                                 {{ __('Footer Copyright') }}
-                                <span class="text-red-500/80">{{ __('Deprecated') }}</span>
                             </label>
                             <input
                                 class="form-control"
@@ -451,6 +449,20 @@
                                 name="footer_copyright"
                                 value="{{ $fSetting->footer_copyright }}"
                             >
+                        </div>
+                    </div>
+
+                    <div class="col-md-12">
+                        <div class="mb-3">
+                            <x-forms.input
+                                id="footer_text_color"
+                                name="footer_text_color"
+                                label="{{ __('Footer Text Color') }}"
+                                size="lg"
+                                type="color"
+                                value="{{ $fSetting->footer_text_color }}"
+                                tooltip="{{ __('Pick a color for for the icon container shape. Color is in HEX format.') }}"
+                            />
                         </div>
                     </div>
 

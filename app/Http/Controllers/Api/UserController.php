@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Actions\CreateActivity;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\User;
@@ -190,13 +191,13 @@ class UserController extends Controller
         if($request->country != null) {
             $user->country = $request->country;
         }
-    
+
         if ($request->old_password != null) {
             $validated = Validator::make($request->all(), [
                 'old_password' => ['required', 'current_password'],
                 'new_password' => ['required', Password::defaults(), 'confirmed'],
             ]);
-    
+
             if ($validated->fails()) {
                 return response()->json(['error' => $validated->errors()], 422);
             }
@@ -207,27 +208,27 @@ class UserController extends Controller
         if ($request->hasFile('avatar')) {
             $path = 'upload/images/avatar/';
             $image = $request->file('avatar');
-    
+
             if ($image->getClientOriginalExtension() == 'svg') {
                 $image = self::sanitizeSVG($request->file('avatar'));
             }
-    
+
             $image_name = Str::random(4) . '-' . Str::slug($user->fullName()) . '-avatar.' . $image->getClientOriginalExtension();
-    
+
             // Image extension check
             $imageTypes = ['jpg', 'jpeg', 'png', 'svg', 'webp'];
             if (!in_array(Str::lower($image->getClientOriginalExtension()), $imageTypes)) {
                 return response()->json(['error' => __('The file extension must be jpg, jpeg, png, webp or svg.')], 419);
             }
-    
+
             $image->move($path, $image_name);
-    
+
             $user->avatar = $path . $image_name;
         }
-    
-        createActivity($user->id, 'Updated', 'Profile Information', null);
+
+        CreateActivity::for($user, 'Updated', 'Profile Information');
         $user->save();
-    
+
         return response()->json(['message' => 'User settings saved successfully'], 200);
     }
 
@@ -269,10 +270,9 @@ class UserController extends Controller
             ], 404);
         }
 
-        createActivity($user->id, 'Deleted', $user->fullName() . ' deleted his/her account.', null);
+        CreateActivity::for($user, 'Deleted', $user->fullName() . ' deleted his/her account.');
 
-        // All user data should be deleted from the database via cascade delete.
-
+        // All user data should be deleted from the database via cascade delete
         $user->delete();
 
         return response()->json([

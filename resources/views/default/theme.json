@@ -19,6 +19,7 @@
 		}
 	},
 	"dashboard": {
+		"supportedColorSchemes": "all",
 		"googleFonts": {
 			"Inter": [
 				"400",

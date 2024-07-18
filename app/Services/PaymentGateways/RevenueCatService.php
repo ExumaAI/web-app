@@ -2,6 +2,7 @@
 
 namespace App\Services\PaymentGateways;
 
+use App\Actions\CreateActivity;
 use App\Http\Controllers\Controller;
 use App\Models\Activity;
 use App\Models\Currency;
@@ -30,7 +31,7 @@ use Carbon\Carbon;
 use Brick\Math\BigDecimal;
 use App\Models\Coupon;
 
-class RevenueCatService 
+class RevenueCatService
 {
     public static function saveAllProducts() {
         return null;
@@ -42,7 +43,7 @@ class RevenueCatService
 
     public static function getSubscriptionDaysLeft() {
         $userId = Auth::user()->id;
-        $activeSub = getCurrentActiveSubscription($userId); 
+        $activeSub = getCurrentActiveSubscription($userId);
         if($activeSub != null){
             if($activeSub->stripe_status == 'trialing'){
                 return \Carbon\Carbon::parse($activeSub->trial_ends_at)->diffInDays();
@@ -55,7 +56,7 @@ class RevenueCatService
     }
     public static function getSubscriptionRenewDate() {
         $userId = Auth::user()->id;
-        $activeSub = getCurrentActiveSubscription($userId); 
+        $activeSub = getCurrentActiveSubscription($userId);
         if($activeSub != null){
             if($activeSub->stripe_status == 'trialing'){
                 return \Carbon\Carbon::parse($activeSub->trial_ends_at)->format('F jS, Y');
@@ -68,7 +69,7 @@ class RevenueCatService
     }
     public static function getSubscriptionStatus($fromApi=false) {
 
-        /// Developer Note: 
+        /// Developer Note:
         /// This functions returns true if user has an active subscription, otherwise returns false and null for errors
         /// If fromApi is true, then it returns json response instead of true/false/null
         /// Api responses are 4 types: 200, 404, 412, 500
@@ -88,7 +89,7 @@ class RevenueCatService
         if($gateway == null){
             Log::error('Gateway not found. RevenueCatService@getSubscriptionStatus');
             if($fromApi){
-                return response()->json(['message' => 'Gateway not found.'], 412);  
+                return response()->json(['message' => 'Gateway not found.'], 412);
             }else{
                 return null;
             }
@@ -98,7 +99,7 @@ class RevenueCatService
         if($apiKey == null){
             Log::error('Gateway is not set properly. RevenueCatService@getSubscriptionStatus');
             if($fromApi){
-                return response()->json(['message' => 'Gateway is not set properly.'], 412);  
+                return response()->json(['message' => 'Gateway is not set properly.'], 412);
             }else{
                 return null;
             }
@@ -114,7 +115,7 @@ class RevenueCatService
         if($userRevenueCatId == null){
             Log::error('User is not set properly. User must login at least once from mobile app. RevenueCatService@getSubscriptionStatus');
             if($fromApi){
-                return response()->json(['message' => 'User is not set properly. User must login at least once from mobile app.'], 412);  
+                return response()->json(['message' => 'User is not set properly. User must login at least once from mobile app.'], 412);
             }else{
                 return null;
             }
@@ -134,7 +135,7 @@ class RevenueCatService
         if($response == null || $response == "" || $response == "{}"){
             Log::error('Error getting subscription status from RevenueCat API. RevenueCatService@getSubscriptionStatus');
             if($fromApi){
-                return response()->json(['message' => 'Error getting subscription status from RevenueCat API.'], 500);  
+                return response()->json(['message' => 'Error getting subscription status from RevenueCat API.'], 500);
             }else{
                 return null;
             }
@@ -179,7 +180,7 @@ class RevenueCatService
                         if($revenueCatProduct == null){
                             Log::error('RevenueCat product not found. Identifier: ' . $identifier);
                             if($fromApi){
-                                return response()->json(['message' => 'RevenueCat product not found.'], 412);  
+                                return response()->json(['message' => 'RevenueCat product not found.'], 412);
                             }else{
                                 return null;
                             }
@@ -190,7 +191,7 @@ class RevenueCatService
                     if($gatewayProduct == null){
                         Log::error('Gateway product not found for RevenueCat. Identifier: ' . $identifier);
                         if($fromApi){
-                            return response()->json(['message' => 'Gateway product not found.'], 412);  
+                            return response()->json(['message' => 'Gateway product not found.'], 412);
                         }else{
                             return null;
                         }
@@ -200,7 +201,7 @@ class RevenueCatService
                     if($plan == null){
                         Log::error('Plan not found for RevenueCat. Identifier: ' . $identifier);
                         if($fromApi){
-                            return response()->json(['message' => 'Plan not found.'], 412);  
+                            return response()->json(['message' => 'Plan not found.'], 412);
                         }else{
                             return null;
                         }
@@ -223,7 +224,7 @@ class RevenueCatService
 
                     $user->save();
 
-                    createActivity($user->id, __('Purchased'), $plan->name.' '. __('Token Pack'), null);
+                    CreateActivity::for($user, __('Purchased'), $plan->name.' '. __('Token Pack'));
                 }else{
                     /// Order already exists, do nothing
                 }
@@ -231,7 +232,7 @@ class RevenueCatService
             }
 
         }
-            
+
 
 
         ///////////////////////////
@@ -272,7 +273,7 @@ class RevenueCatService
                 if($revenueCatProduct == null){
                     Log::error('RevenueCat product not found. Identifier: ' . $identifier);
                     if($fromApi){
-                        return response()->json(['message' => 'RevenueCat product not found.'], 412);  
+                        return response()->json(['message' => 'RevenueCat product not found.'], 412);
                     }else{
                         return null;
                     }
@@ -283,7 +284,7 @@ class RevenueCatService
             if($gatewayProduct == null){
                 Log::error('Gateway product not found for RevenueCat. Identifier: ' . $identifier);
                 if($fromApi){
-                    return response()->json(['message' => 'Gateway product not found.'], 412);  
+                    return response()->json(['message' => 'Gateway product not found.'], 412);
                 }else{
                     return null;
                 }
@@ -293,7 +294,7 @@ class RevenueCatService
             if($plan == null){
                 Log::error('Plan not found for RevenueCat. Identifier: ' . $identifier);
                 if($fromApi){
-                    return response()->json(['message' => 'Plan not found.'], 412);  
+                    return response()->json(['message' => 'Plan not found.'], 412);
                 }else{
                     return null;
                 }
@@ -342,11 +343,8 @@ class RevenueCatService
                     /// Plan is active, and we haven't added to orders before; so this is a new subscription. Hence add the plan to user's remaining words and images
                     $plan->total_words == -1? ($user->remaining_words = -1) : ($user->remaining_words += $plan->total_words);
                     $plan->total_images == -1? ($user->remaining_images = -1) : ($user->remaining_images += $plan->total_images);
-                    if(!$isRefreshed){
-                        createActivity($user->id, __('Subscribed'), $plan->name.' '. __('Plan'), null);
-                    }else{
-                        createActivity($user->id, __('Renewed'), $plan->name.' '. __('Plan'), null);
-                    }
+
+                    CreateActivity::for($user, !$isRefreshed ? __('Subscribed') : __('Renewed'), $plan->name.' '. __('Plan'));
                 }else{
                     // Subscription is cancelled
                     if($subs['billing_issues_detected_at'] != null) {
@@ -365,13 +363,13 @@ class RevenueCatService
                                 $plan->total_images == -1? ($user->remaining_images = 0) : ($user->remaining_images -= $plan->total_images);
                                 if($user->remaining_words < 0) $user->remaining_words = 0;
                                 if($user->remaining_images < 0) $user->remaining_images = 0;
-                                createActivity($user->id, 'Cancelled', 'Subscription plan', null);
+                                CreateActivity::for($user, __('Cancelled'), 'Subscription plan');
                             }
                         }
                     }
                 }
 
-                
+
                 /// check if subscription is already added
                 $subscription = Subscriptions::where([['user_id', '=', $userId], ['stripe_id', '=', $orderId]])->first();
                 if($subscription != null) {
@@ -430,7 +428,7 @@ class RevenueCatService
                                 $plan->total_images == -1? ($user->remaining_images = 0) : ($user->remaining_images -= $plan->total_images);
                                 if($user->remaining_words < 0) $user->remaining_words = 0;
                                 if($user->remaining_images < 0) $user->remaining_images = 0;
-                                createActivity($user->id, 'Cancelled', 'Subscription plan', null);
+                                CreateActivity::for($user, __('Cancelled'), 'Subscription plan');
                             }
                         }
                     }
@@ -452,7 +450,7 @@ class RevenueCatService
                 $user->save();
 
             }
-        
+
 
         }
 
@@ -463,7 +461,7 @@ class RevenueCatService
         /// We have checked both subscriptions and token packs, now we need to check if there is any active subscription and return the result
 
         // Get current active subscription
-        $activeSub = getCurrentActiveSubscription($userId); 
+        $activeSub = getCurrentActiveSubscription($userId);
         if($activeSub != null){
             if($fromApi){
                 return response()->json(['message' => __('Active subscription found.'), 'status' => 'active'], 200);
@@ -474,11 +472,11 @@ class RevenueCatService
             return response()->json(['message' => 'No active subscription found.'], 404);
         }
         return false;
-        
+
     }
     public static function checkIfTrial() {
         $userId = Auth::user()->id;
-        $activeSub = getCurrentActiveSubscription($userId); 
+        $activeSub = getCurrentActiveSubscription($userId);
         if($activeSub != null){
             return $activeSub->stripe_status == 'trialing';
         }

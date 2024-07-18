@@ -146,10 +146,10 @@ class StreamService
 					'stream' => true
 				]);
 			} else {
-				$chat_bot = 'gpt-4-vision-preview';
+				$chat_bot = 'gpt-4o';
 				// Log::info('OpenAI Chat Stream with images');
 				$stream = OpenAI::chat()->createStreamed([
-					'model' => 'gpt-4-vision-preview',
+					'model' => $chat_bot,
 					'messages' => $history,
 					'max_tokens' => 2000,
 					'temperature' => 1.0,
@@ -338,7 +338,7 @@ class StreamService
 			} else {
 				// Log::info('Anthropic Chat Stream with images');
 				Helper::setOpenAiKey();
-				$chat_bot = 'gpt-4-vision-preview';
+				$chat_bot = 'gpt-4o';
 				$stream = OpenAI::chat()->createStreamed([
 					'model' => $chat_bot,
 					'messages' => $history,

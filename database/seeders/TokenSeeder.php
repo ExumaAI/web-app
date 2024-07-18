@@ -37,6 +37,7 @@ class TokenSeeder extends Seeder
 			['aiEngine' => AIEngine::OPEN_AI, 'type' => AITokenType::WORD, 'key' => 'gpt-4-turbo'],
 			['aiEngine' => AIEngine::OPEN_AI, 'type' => AITokenType::WORD, 'key' => 'gpt-4o'],
 			# anthropic
+			['aiEngine' => AIEngine::ANTHROPIC, 'type' => AITokenType::WORD, 'key' => 'claude-3-5-sonnet-20240620'],
 			['aiEngine' => AIEngine::ANTHROPIC, 'type' => AITokenType::WORD, 'key' => 'claude-3-sonnet-20240229'],
 			['aiEngine' => AIEngine::ANTHROPIC, 'type' => AITokenType::WORD, 'key' => 'claude-3-opus-20240229'],
 			['aiEngine' => AIEngine::ANTHROPIC, 'type' => AITokenType::WORD, 'key' => 'claude-3-haiku-20240307'],
@@ -72,6 +73,8 @@ class TokenSeeder extends Seeder
 			['aiEngine' => AIEngine::CLIPDROP, 'type' => AITokenType::IMAGE, 'key' => 'clipdrop'],
 			# plagiarism check
 			['aiEngine' => AIEngine::PLAGIARISM_CHECK, 'type' => AITokenType::WORD, 'key' => 'plagiarismcheck'],
+            # synthesia
+			['aiEngine' => AIEngine::SYNTHESIA, 'type' => AITokenType::IMAGE, 'key' => 'synthesia'],
         ];
         /** @formatter:on */
         foreach ($models as $model) {
@@ -86,13 +89,19 @@ class TokenSeeder extends Seeder
                           ->where('key', $key)
                           ->firstOrFail();
 
+        $defaultToken = 1.00;
+
+        if ($aiEngine == AIEngine::SYNTHESIA){
+            $defaultToken = 20.00;
+        }
+
         $aiModel->tokens()->firstOrCreate(
 			[
 				'ai_model_id' => $aiModel->id,
 			],
 			[
 				'type'           => $type,
-				'cost_per_token' => 1.00,
+				'cost_per_token' => $defaultToken
 			]
 		);
     }

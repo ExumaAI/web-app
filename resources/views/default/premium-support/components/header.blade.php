@@ -67,7 +67,7 @@
                 href="{{ app(\App\Repositories\ExtensionRepository::class)->subscriptionPayment() }}"
                 target="_blank"
             >
-                @lang('Start Free Trial')
+                @lang('Subscribe Now')
             </a>
             <button
                 class="size-12 group inline-flex items-center justify-center rounded-full border border-white/15 bg-black/15 text-white xl:hidden"

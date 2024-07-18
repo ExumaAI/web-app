@@ -21,8 +21,10 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('settings_two', function (Blueprint $table) {
-            $table->dropColumn('liquid_license_type');
-        });
+        if (Schema::hasTable('settings_two')) {
+            Schema::table('settings_two', function (Blueprint $table) {
+                $table->dropColumn('liquid_license_type');
+            });
+        }
     }
 };

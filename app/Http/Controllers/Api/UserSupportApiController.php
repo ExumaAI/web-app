@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Actions\CreateActivity;
+use App\Actions\TicketAction;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\PaymentController;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
@@ -235,30 +238,45 @@ class UserSupportApiController extends Controller {
      *      ),
      * )
     */
-    public function newTicket(Request $request) {
+    public function newTicket(Request $request): JsonResponse
+    {
 
-        if($request->priority == null) return response()->json(['error' => __('Priority missing.')], 412);
-        if($request->category == null) return response()->json(['error' => __('Category missing.')], 412);
-        if($request->subject == null) return response()->json(['error' => __('Subject missing.')], 412);
-        if($request->message == null) return response()->json(['error' => __('Message missing.')], 412);
+        if($request->priority === null) {
+            return response()->json(['error' => __('Priority missing.')], 412);
+        }
 
-        $support = new UserSupport();
-        $support->ticket_id = Str::upper(Str::random(10));
-        $support->user_id = Auth::id();
-        $support->priority = $request->priority;
-        $support->category = $request->category;
-        $support->subject = $request->subject;
-        $support->save();
+        if($request->category === null) {
+            return response()->json(['error' => __('Category missing.')], 412);
+        }
 
-        $message = new UserSupportMessage();
-        $message->user_support_id = $support->id;
-        $message->message = $request->message;
-        $message->save();
-        createActivity(Auth::id(), 'Submitted a Ticket', $support->subject, null);
+        if($request->subject === null) {
+            return response()->json(['error' => __('Subject missing.')], 412);
+        }
+
+        if($request->message === null) {
+            return response()->json(['error' => __('Message missing.')], 412);
+        }
+
+        if (! $user = Auth::user()) {
+            return response()->json(['error' => __('Unauthorized')], 401);
+        }
+
+        $support = $user->supportRequests()->create([
+            'ticket_id' => Str::upper(Str::random(10)),
+            'priority' => $request->priority,
+            'category' => $request->category,
+            'subject' => $request->subject,
+        ]);
+
+        $support->messages()->create([
+            'message' => $request->message,
+        ]);
+
+        CreateActivity::for(Auth::user(), 'Submitted a Ticket', $support->subject);
 
         return response()->json(['message' => 'Ticket submitted'], 200);
     }
-    
+
 
     /**
      * Send message to support request
@@ -308,34 +326,24 @@ class UserSupportApiController extends Controller {
      *      ),
      * )
     */
-    public function sendMessage(Request $request) {
+    public function sendMessage(Request $request)
+    {
 
-        if($request->ticket_id == null) return response()->json(['error' => __('Ticket ID missing.')], 412);
-        if($request->message == null) return response()->json(['error' => __('Message missing.')], 412);
-
-
-        $user = Auth::user();
-        $ticket = UserSupport::where('ticket_id', $request->ticket_id)->firstOrFail();
-        if ($user->type == 'admin'){
-            $ticket->status = 'Answered';
-            $ticket->save();
-
-            $message = new UserSupportMessage();
-            $message->user_support_id = $ticket->id;
-            $message->sender = 'admin';
-            $message->message = $request->message;
-            $message->save();
-        }else{
-            $ticket->status = 'Waiting for answer';
-            $ticket->save();
-
-            $message = new UserSupportMessage();
-            $message->user_support_id = $ticket->id;
-            $message->sender = 'user';
-            $message->message = $request->message;
-            $message->save();
-            createActivity(Auth::id(), 'Support request waiting for your answer', null,  null);
+        if ($request->ticket_id === null) {
+            return response()->json(['error' => __('Ticket ID missing.')], 412);
         }
+        if ($request->message === null) {
+            return response()->json(['error' => __('Message missing.')], 412);
+        }
+
+        if (! $user = Auth::user()) {
+            return response()->json(['error' => __('Unauthorized')], 401);
+        }
+
+        TicketAction::ticket($request->input('ticket_id'))
+                    ->fromAdminIfTrue($user->isAdmin())
+                    ->answer($request->input('message'))
+                    ->send();
 
         return response()->json(['message' => 'Message sent'], 200);
 

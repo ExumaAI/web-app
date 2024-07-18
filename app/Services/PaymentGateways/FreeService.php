@@ -2,6 +2,7 @@
 
 namespace App\Services\PaymentGateways;
 
+use App\Actions\CreateActivity;
 use App\Models\GatewayProducts;
 use App\Models\PaymentPlans;
 // use App\Models\Subscriptions;
@@ -175,7 +176,7 @@ class FreeService
             $order->plan->total_images == -1 ? ($order->user->remaining_images = -1) : ($order->user->remaining_images += $order->plan->total_images);
             $order->user->save();
             // sent mail if required here later
-            createActivity($order->user->id, __('Purchased'), $order->plan->name.' '.__('Plan').' '.__('For free'), null);
+            CreateActivity::for($order->user, __('Purchased'), $order->plan->name.' '.__('Plan').' '.__('For free'));
         } catch (\Exception $th) {
             DB::rollBack();
             Log::error(self::$GATEWAY_CODE.'-> subscribe(): '.$th->getMessage());
@@ -257,7 +258,7 @@ class FreeService
             $order->plan->total_images == -1 ? ($order->user->remaining_images = -1) : ($order->user->remaining_images += $order->plan->total_images);
             $order->user->save();
             // sent mail if required here later
-            createActivity($order->user->id, __('Purchased'), $order->plan->name.' '.__('Plan').' '.__('For free'), null);
+            CreateActivity::for($order->user, __('Purchased'), $order->plan->name.' '.__('Plan').' '.__('For free'));
         } catch (\Exception $th) {
             DB::rollBack();
             Log::error(self::$GATEWAY_CODE.'-> subscribe(): '.$th->getMessage());
@@ -316,7 +317,7 @@ class FreeService
             $activeSub->stripe_status = 'free_canceled';
             $activeSub->save();
 
-            createActivity($user->id, 'cancelled', $plan->name, null);
+            CreateActivity::for($user, 'cancelled', $plan->name);
             if ($internalUser != null) {
                 return back()->with(['message' => __('User subscription is cancelled succesfully.'), 'type' => 'success']);
             }
@@ -354,7 +355,7 @@ class FreeService
             $subscription->stripe_status = 'free_canceled';
             $subscription->save();
             // sent mail if required here later
-            createActivity($order->user->id, __('Subscription canceled due to plan deletion.'), $order->plan->name.' '.__('Plan'), null);
+            CreateActivity::for($order->user, __('Subscription canceled due to plan deletion.'), $order->plan->name.' '.__('Plan'));
 
             return true;
         } catch (\Exception $th) {

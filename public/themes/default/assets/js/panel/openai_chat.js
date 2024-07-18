@@ -449,6 +449,10 @@ function updateChatButtons() {
 		const stopBtn = document.getElementById('stop_button');
 		const promptInput = document.getElementById('prompt');
 		const realtime = document.getElementById('realtime');
+		const chat_brand_voice = document.getElementById('chat_brand_voice');
+		const brand_voice_prod = document.getElementById('brand_voice_prod');
+		const chatbot_front_model = document.getElementById('chatbot_front_model');
+
 		let controller = null; // Store the AbortController instance
 		let scrollLocked = true;
 		let nIntervId = null;
@@ -723,6 +727,10 @@ function updateChatButtons() {
 					formData.append('pdfname', pdfName == undefined ? '' : pdfName);
 					formData.append('pdfpath', pdfPath == undefined ? '' : pdfPath);
 					formData.append('realtime', isChecked ? 1 : 0);
+					formData.append('chat_brand_voice', chat_brand_voice?.value || '');
+					formData.append('brand_voice_prod', brand_voice_prod?.value || '');
+					formData.append('chatbot_front_model', chatbot_front_model?.value || '');
+
 					var receivedMessageId = false;
 					fetchEventSource('/dashboard/user/generator/generate-stream', {
 						method: 'POST',
@@ -750,6 +758,7 @@ function updateChatButtons() {
 									generateBtn.classList.remove( 'hidden' );
 									stopBtn.classList.remove( 'active' );
 									streaming = false;
+									changeChatTitle(streamed_message_id);
 								}
 								let txt = e.data;
 								if (txt !== undefined && e.data != '[DONE]') {
@@ -758,7 +767,7 @@ function updateChatButtons() {
 							}
 						},
 						onclose: () => {
-							console.log('Connection closed');
+							// console.log('Connection closed');
 							streamed_message_id = 0;
 							streamed_text = '';
 						},
@@ -797,13 +806,13 @@ function updateChatButtons() {
 						let resmodel =
 							temp.length == 0
 								? openai_model
-								: 'gpt-4-vision-preview';
+								: 'gpt-4o';
 						let resmessages = [
 							...messages.slice(0, messages.length - 1),
 							...training,
 							messages[messages.length - 1],
 						];
-						if (resmodel == 'gpt-4-vision-preview') {
+						if (resmodel == 'gpt-4o') {
 							resmessages = [
 								{
 									role: 'user',
@@ -1648,3 +1657,27 @@ $('body').on('click', '.chat-download', event => {
 
 	document.body.removeChild(downloadLink);
 });
+
+
+function changeChatTitle(streamed_message_id){
+	$lqdChatUserBubblesLength = document.querySelectorAll('.lqd-chat-user-bubble').length;
+	if($lqdChatUserBubblesLength == 1){
+		$.ajax({
+			type: 'post',
+			url: '/dashboard/change-chat-title',
+			data: {
+				streamed_message_id: streamed_message_id
+			},
+			success: function (data) {
+				if(data.changed){
+					var chat_item_title = $('#chat_' + data.chat_id).find('.chat-item-title');
+					var typed = new Typed(chat_item_title[0], {
+						strings: [data.new_title],
+						typeSpeed: 30,
+						showCursor: false,
+					});
+				}
+			},
+		});
+	}
+}

@@ -2,6 +2,7 @@ jQuery(document).ready(function($) {
 	'use strict';
 
 	$(document).on('click', '#magicai-chatbot-widget .magicai-chatbot-widget--trigger', function (e) {
+		console.log(magicai_js_options)
 		if ( !magicai_js_options.guest_status ) {
 			toastr.error(magicai_localize?.please_active_magicai ||
 						'Please Active The MagicAI');

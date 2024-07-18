@@ -2,6 +2,7 @@
 
 namespace App\Services\PaymentGateways;
 
+use App\Actions\CreateActivity;
 use App\Events\YokassaWebhookEvent;
 use App\Models\Coupon;
 use App\Models\Currency;
@@ -12,6 +13,7 @@ use App\Models\User;
 use App\Models\UserOrder;
 use App\Models\YokassaSubscriptions;
 use Carbon\Carbon;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -185,7 +187,7 @@ class YokassaService
                 $plan->total_images == -1 ? ($user->remaining_images = -1) : ($user->remaining_images += $plan->total_images);
                 $user->save();
 
-                createActivity($user->id, __('Subscribed'), $plan->name.' '.__('Plan'), null);
+                CreateActivity::for($user, __('Subscribed'), $plan->name.' '.__('Plan'));
                 DB::commit();
             } else {
                 DB::rollBack();
@@ -389,7 +391,7 @@ class YokassaService
                 $plan->total_images == -1 ? ($user->remaining_images = -1) : ($user->remaining_images += $plan->total_images);
                 $user->save();
 
-                createActivity($user->id, __('Purchased'), $plan->name.' '.__('Token Pack'), null);
+                CreateActivity::for($user, __('Purchased'), $plan->name.' '.__('Token Pack'));
                 DB::commit();
 				\App\Models\Usage::getSingle()->updateSalesCount($total);
                 return redirect()->route('dashboard.user.payment.succesful')->with(['message' => __('Thank you for your purchase. Enjoy your remaining words and images.'), 'type' => 'success']);
@@ -416,22 +418,26 @@ class YokassaService
         return null;
     }
 
-    public static function subscribeCancel($internalUser = null)
+    public static function subscribeCancel($internalUser = null): RedirectResponse
     {
         $user = $internalUser ?? Auth::user();
-        $userId = $user->id;
-        $activeSub = YokassaSubscriptions::where([['subscription_status', '=', 'active'], ['user_id', '=', $userId]])->orWhere([['subscription_status', '=', 'yokassa_approved'], ['user_id', '=', $userId]])->first();
-        if ($activeSub != null) {
-            $plan = PaymentPlans::where('id', $activeSub->plan_id)->first();
-            $activeSub->subscription_status = 'cancelled';
-            $activeSub->next_pay_at = Carbon::now();
-            $activeSub->save();
+
+        $activeSub = YokassaSubscriptions::where([['subscription_status', '=', 'active'], ['user_id', '=', $user->id]])->orWhere([['subscription_status', '=', 'yokassa_approved'], ['user_id', '=', $user->id]])->first();
+
+        if ($activeSub !== null) {
+            $plan = PaymentPlans::findOrFail($activeSub->plan_id);
+            $activeSub->update([
+                'subscription_status' => 'cancelled',
+                'next_pay_at' => Carbon::now(),
+            ]);
             $recent_words = $user->remaining_words - $plan->total_words;
             $recent_images = $user->remaining_images - $plan->total_images;
             $user->remaining_words = $recent_words < 0 ? 0 : $recent_words;
             $user->remaining_images = $recent_images < 0 ? 0 : $recent_images;
             $user->save();
-            createActivity($user->id, 'Cancelled', 'Subscription plan', null);
+
+            CreateActivity::for($user, 'Cancelled', 'Subscription plan');
+
             if ($internalUser != null) {
                 return back()->with(['message' => __('User subscription is cancelled succesfully.'), 'type' => 'success']);
             }

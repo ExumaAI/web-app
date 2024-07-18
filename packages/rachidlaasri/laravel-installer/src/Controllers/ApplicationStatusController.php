@@ -9,7 +9,6 @@ use Illuminate\Foundation\Application;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
-use Illuminate\Support\Facades\Log;
 use RachidLaasri\LaravelInstaller\Repositories\ApplicationStatusRepositoryInterface;
 use RachidLaasri\LaravelInstaller\Requests\LicenseKeyRequest;
 
@@ -19,8 +18,10 @@ class ApplicationStatusController extends Controller
     {
     }
 
-    public function license(Request $request)
+    public function license(Request $request, $regenerate = null)
     {
+        cache()->forget('check_license_domain_'.$request->getHost());
+
         $this->licenseRepository->generate($request);
 
         $portalData = $this->licenseRepository->portal();
@@ -37,13 +38,14 @@ class ApplicationStatusController extends Controller
                     if ($success) {
                         return to_route('dashboard.user.index')->with([
                             'type' => 'success',
-                            'message' => 'License activated successfully'
+                            'message' => 'License activated successfully',
                         ]);
                     }
                 }
             }
 
-        }catch (\Exception $e) {}
+        } catch (\Exception $e) {
+        }
 
         return view('vendor.installer.license', [
             'portal' => $portalData,
@@ -53,6 +55,8 @@ class ApplicationStatusController extends Controller
 
     public function upgrade(Request $request): View|Application|Factory|\Illuminate\View\View|\Illuminate\Contracts\Foundation\Application
     {
+        cache()->forget('check_license_domain_'.$request->getHost());
+
         $this->licenseRepository->generate($request);
 
         return view('vendor.installer.license', [
@@ -63,6 +67,8 @@ class ApplicationStatusController extends Controller
 
     public function licenseCheck(LicenseKeyRequest $request): RedirectResponse
     {
+        cache()->forget('check_license_domain_'.$request->getHost());
+
         $this->licenseRepository->setLicense();
 
         return redirect()->route('dashboard.user.index');
@@ -70,6 +76,8 @@ class ApplicationStatusController extends Controller
 
     public function webhook(Request $request)
     {
+        cache()->forget('check_license_domain_'.$request->getHost());
+
         $this->licenseRepository->webhook($request);
 
         return response()->noContent();

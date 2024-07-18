@@ -58,7 +58,7 @@ class PageController extends Controller
 		$page->show_on_footer = $request->show_on_footer;
         $page->title = $request->title;
         $page->slug = Str::slug($request->slug);
-        $page->content = $request->content;
+        $page->content = $request->get('content');
         $page->status = $request->status;
         $page->save();
     }
