@@ -33,28 +33,26 @@
         name="viewport"
         content="width=device-width, initial-scale=1.0"
     />
-    @if(isset($setting))
+    <meta
+        name="description"
+        content="{{ getMetaDesc($setting) }}"
+    >
+    @if (isset($setting->meta_keywords))
         <meta
-            name="description"
-            content="{{ getMetaDesc($setting) }}"
+            name="keywords"
+            content="{{ $setting->meta_keywords }}"
         >
-        @if (isset($setting->meta_keywords))
-            <meta
-                name="keywords"
-                content="{{ $setting->meta_keywords }}"
-            >
-        @endif
-
-        <link
-            rel="icon"
-            href="{{ custom_theme_url($setting->favicon_path ?? 'assets/favicon.ico') }}"
-        >
-
-        <title>
-            {{ getMetaTitle($setting) }}
-        </title>
     @endif
-    
+
+    <link
+        rel="icon"
+        href="{{ custom_theme_url($setting->favicon_path ?? 'assets/favicon.ico') }}"
+    >
+
+    <title>
+        {{ getMetaTitle($setting) }}
+    </title>
+
     @if (filled($google_fonts_string))
         <link
             rel="preconnect"
@@ -84,20 +82,18 @@
         $link = 'resources/views/' . get_theme() . '/scss/landing-page.scss';
     @endphp
     @vite($link)
-    @if(isset($setting))
 
-        @if ($setting->frontend_custom_css != null)
-            <link
-                rel="stylesheet"
-                href="{{ $setting->frontend_custom_css }}"
-            />
-        @endif
+    @if ($setting->frontend_custom_css != null)
+        <link
+            rel="stylesheet"
+            href="{{ $setting->frontend_custom_css }}"
+        />
+    @endif
 
-        @if ($setting->frontend_code_before_head != null)
-            {!! $setting->frontend_code_before_head !!}
-        @endif
-    @enfig
-    
+    @if ($setting->frontend_code_before_head != null)
+        {!! $setting->frontend_code_before_head !!}
+    @endif
+
     <script>
         window.liquid = {
             isLandingPage: true
@@ -140,7 +136,7 @@
         :class="{ 'opacity-0': !$store.appLoadingIndicator.showing, 'invisible': !$store.appLoadingIndicator.showing }"
     >
         <div class="lqd-progress relative h-[3px] w-full bg-foreground/10">
-            <div class="absolute inset-0 lqd-progress-bar lqd-progress-bar-indeterminate lqd-app-loading-indicator-progress-bar bg-primary dark:bg-heading-foreground">
+            <div class="lqd-progress-bar lqd-progress-bar-indeterminate lqd-app-loading-indicator-progress-bar absolute inset-0 bg-primary dark:bg-heading-foreground">
             </div>
         </div>
     </div>
