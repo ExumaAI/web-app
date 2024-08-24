@@ -12,9 +12,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('settings_two', function (Blueprint $table) {
-            $table->string('ai_image_storage')->default("public");
+            $table->string('ai_image_storage')->default('public');
         });
     }
+
     /**
      * Reverse the migrations.
      */

@@ -4,17 +4,20 @@ namespace App\Events;
 
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Broadcasting\PresenceChannel;
 use Illuminate\Broadcasting\PrivateChannel;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
 class PaypalLifetimeEvent
 {
-    use Dispatchable, InteractsWithSockets, SerializesModels;
+    use Dispatchable;
+    use InteractsWithSockets;
+    use SerializesModels;
+
     public $status;
+
     public $orderIds;
+
     /**
      * Create a new event instance.
      */
@@ -23,7 +26,6 @@ class PaypalLifetimeEvent
         $this->status = $status;
         $this->orderIds = $orderIds;
     }
-
 
     /**
      * Get the channels the event should broadcast on.

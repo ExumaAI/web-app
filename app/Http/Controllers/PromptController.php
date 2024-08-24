@@ -3,43 +3,44 @@
 namespace App\Http\Controllers;
 
 use App\Models\Favourite;
-use Illuminate\Http\Request;
-
 use App\Models\Prompt;
-use GPBMetadata\Google\Api\Auth;
+use Illuminate\Http\Request;
 
 class PromptController extends Controller
 {
-    public function getAll() {
+    public function getAll()
+    {
         $prompts = Prompt::where('user_id', auth()->user()->id)->get();
         $favourites = Favourite::where('type', 'prompt')
             ->where('user_id', auth()->user()->id)
             ->get();
 
-		return view('panel.user.openai_chat.components.prompt_library_list', ['promptData' => $prompts, 'favData' => $favourites])->render();
+        return view('panel.user.openai_chat.components.prompt_library_list', ['promptData' => $prompts, 'favData' => $favourites])->render();
     }
 
-    public function addNew(Request $req) {
+    public function addNew(Request $req)
+    {
         $title = $req->title;
         $prompt = $req->prompt;
 
         $prompt_record = new Prompt([
             'user_id' => auth()->user()->id,
-            'title' => $title,
-            'prompt' => $prompt
+            'title'   => $title,
+            'prompt'  => $prompt,
         ]);
 
         $prompt_record->save();
 
         $prompts = Prompt::where('user_id', auth()->user()->id)->get();
-		$favourites = Favourite::where('type', 'prompt')
+        $favourites = Favourite::where('type', 'prompt')
             ->where('user_id', auth()->user()->id)
             ->get();
 
-		return view('panel.user.openai_chat.components.prompt_library_list', ['promptData' => $prompts, 'favData' => $favourites])->render();
+        return view('panel.user.openai_chat.components.prompt_library_list', ['promptData' => $prompts, 'favData' => $favourites])->render();
     }
 
-    public function updateFav(Request $req) {
+    public function updateFav(Request $req)
+    {
         $id = $req->id;
 
         $favourites = Favourite::where('type', 'prompt')
@@ -48,9 +49,9 @@ class PromptController extends Controller
             ->get();
 
         if ($favourites->count() != 0) {
-             $favourites->each->delete();
+            $favourites->each->delete();
         } else {
-            $favourite = new Favourite();
+            $favourite = new Favourite;
             $favourite->user_id = auth()->user()->id;
             $favourite->type = 'prompt';
             $favourite->item_id = $id;
@@ -60,12 +61,15 @@ class PromptController extends Controller
         $favourites = Favourite::where('type', 'prompt')
             ->where('user_id', auth()->user()->id)
             ->get();
+
         return response()->json($favourites);
     }
 
-	public function deletePrompt(Request $req){
-		$id = $req->id;
-		Prompt::where('id', $id)->delete();
-		return response()->json(['status' => 'success']);
-	}
+    public function deletePrompt(Request $req)
+    {
+        $id = $req->id;
+        Prompt::where('id', $id)->delete();
+
+        return response()->json(['status' => 'success']);
+    }
 }

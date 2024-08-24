@@ -11,8 +11,7 @@ class DeFiMyPortfolioController extends Controller
 {
     public function __construct(
         public DeFiMyPortfolioService $service
-    ) {
-    }
+    ) {}
 
     public function __invoke(Request $request)
     {
@@ -35,7 +34,6 @@ class DeFiMyPortfolioController extends Controller
                     request('direction', 'asc')
                 );
             }
-
 
             return view('panel.user.defi.my-portfolio', compact('data', 'token'));
         }

@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Model;
 class Prompt extends Model
 {
     protected $table = 'prompt_library';
+
     use HasFactory;
+
     protected $guarded = [];
 }

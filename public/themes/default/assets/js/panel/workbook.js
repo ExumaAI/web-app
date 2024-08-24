@@ -567,8 +567,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 		tinymce.activeEditor.execCommand('Redo');
 	});
 	$('body').on('click', '#workbook_copy', () => {
-		const codeOutput = document.querySelector('#code-output');
-		if (codeOutput && window.codeRaw) {
+		if (window.codeRaw) {
 			navigator.clipboard.writeText(window.codeRaw);
 			toastr.success(magicai_localize?.code_copied ||'Code copied to clipboard');
 			return;

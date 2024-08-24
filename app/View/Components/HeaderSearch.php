@@ -12,9 +12,8 @@ class HeaderSearch extends Component
      * Create a new component instance.
      */
     public function __construct(
-		public bool $inContent = false,
-	)
-    {
+        public bool $inContent = false,
+    ) {
         //
     }
 

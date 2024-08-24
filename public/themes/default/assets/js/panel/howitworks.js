@@ -12,6 +12,7 @@ function howitWorksSave( howitWorks_id ) {
 
 	formData.append( 'order', $( "#order" ).val() );
 	formData.append( 'title', $( "#title" ).val() );
+	formData.append( 'description', $( "#description" ).val() );
 	formData.append( 'bg_color', $( "#bg_color" ).val() );
 	formData.append( 'bg_image', $( "#bg_image" )[0].files[0] );
 	formData.append( 'text_color', $( "#text_color" ).val() );

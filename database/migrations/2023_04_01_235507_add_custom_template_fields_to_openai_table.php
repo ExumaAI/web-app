@@ -6,9 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::table('openai', function (Blueprint $table) {
@@ -18,15 +15,14 @@ return new class extends Migration
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::table('openai', function (Blueprint $table) {
-            $table->dropColumn('prompt');
-            $table->dropColumn('custom_template');
-            $table->dropColumn('tone_of_voice');
+            $table->dropColumn([
+                'prompt',
+                'custom_template',
+                'tone_of_voice',
+            ]);
         });
     }
 };

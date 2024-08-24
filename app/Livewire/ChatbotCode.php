@@ -5,10 +5,7 @@ declare(strict_types=1);
 namespace App\Livewire;
 
 use App\Models\Chatbot\Domain;
-use App\Rules\DomainRule;
 use Illuminate\Contracts\View\View;
-use Illuminate\Validation\Rule;
-use Illuminate\View\ComponentAttributeBag;
 use Livewire\Component;
 
 class ChatbotCode extends Component
@@ -48,8 +45,8 @@ class ChatbotCode extends Component
     {
         return view('livewire.chatbot.code', [
             'scriptCode' => $this->getScriptCode(),
-            'embedCode' => $this->getEmbedCode(),
-            'appKey' => $this->domain->app_key,
+            'embedCode'  => $this->getEmbedCode(),
+            'appKey'     => $this->domain->app_key,
         ]);
     }
 }

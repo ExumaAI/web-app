@@ -3,25 +3,28 @@
 namespace App\Jobs;
 
 use App\Mail\ConfirmationEmail;
+use App\Models\EmailTemplates;
 use App\Models\Setting;
 use App\Models\User;
-use App\Models\EmailTemplates;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Mail;
 
 class SendConfirmationEmail implements ShouldQueue
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    use Dispatchable;
+    use InteractsWithQueue;
+    use Queueable;
+    use SerializesModels;
 
     protected $user;
+
     protected $settings;
+
     protected $template;
 
     public function __construct(User $user)
@@ -37,8 +40,8 @@ class SendConfirmationEmail implements ShouldQueue
             ->send(new ConfirmationEmail($this->user, $this->settings, $this->template));
     }
 
-	public function middleware(): array
-	{
-		return [new WithoutOverlapping($this->user->id)];
-	}
+    public function middleware(): array
+    {
+        return [new WithoutOverlapping($this->user->id)];
+    }
 }

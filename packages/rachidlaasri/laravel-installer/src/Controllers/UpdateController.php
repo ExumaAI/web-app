@@ -44,13 +44,12 @@ class UpdateController extends Controller
         $response = $databaseManager->migrateAndSeed();
 
         return redirect()->route('LaravelUpdater::final')
-                         ->with(['message' => $response]);
+            ->with(['message' => $response]);
     }
 
     /**
      * Update installed file and display finished view.
      *
-     * @param InstalledFileManager $fileManager
      * @return \Illuminate\View\View
      */
     public function finish(InstalledFileManager $fileManager)

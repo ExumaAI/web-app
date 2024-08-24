@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\BedrockEngine;
 use App\Helpers\Classes\Helper;
 use App\Models\Chatbot\Chatbot;
 use App\Models\ChatBotHistory;
@@ -15,6 +16,8 @@ use App\Models\SettingTwo;
 use App\Models\UserOpenaiChat;
 use App\Models\UserOpenaiChatMessage;
 use App\Services\Ai\Anthropic;
+use App\Services\Assistant\AssistantService;
+use App\Services\Bedrock\BedrockRuntimeService;
 use App\Services\GatewaySelector;
 use App\Services\VectorService;
 use Carbon\Carbon;
@@ -30,6 +33,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use OpenAI\Laravel\Facades\OpenAI;
+use Throwable;
 use ZipArchive;
 
 class AIChatController extends Controller
@@ -40,8 +44,11 @@ class AIChatController extends Controller
 
     protected $settings_two;
 
-    public function __construct()
+    protected BedrockRuntimeService $bedrockService;
+
+    public function __construct(BedrockRuntimeService $bedrockService)
     {
+        $this->bedrockService = $bedrockService;
         //Settings
         $this->settings = Setting::first();
         $this->settings_two = SettingTwo::first();
@@ -110,7 +117,7 @@ class AIChatController extends Controller
 
         try {
             $isPaid = GatewaySelector::selectGateway($gateway)::getSubscriptionStatus();
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $isPaid = false;
         }
 
@@ -254,25 +261,33 @@ class AIChatController extends Controller
 
         $chatbot = Chatbot::query()->where('id', $category->chatbot_id)->first();
 
+
+        if ($category->assistant !== null){
+            $service = new AssistantService();
+            $thread = $service->createThread();
+        }
+
         $chat = new UserOpenaiChat();
+      
         $chat->user_id = Auth::id();
         $chat->team_id = Auth::user()->team_id;
         $chat->chatbot_id = $category->chatbot_id;
         $chat->openai_chat_category_id = $category->id;
-        $chat->title = $category->name.' Chat';
+        $chat->title = $category->name . ' Chat';
         $chat->total_credits = 0;
         $chat->total_words = 0;
+        $chat->thread_id = $thread["id"] ?? null;
         $chat->save();
 
-        $message = new UserOpenaiChatMessage();
+        $message = new UserOpenaiChatMessage;
         $message->user_openai_chat_id = $chat->id;
         $message->user_id = Auth::id();
         $message->response = 'First Initiation';
         if ($category->slug != 'ai_vision' || $category->slug != 'ai_pdf') {
             if ($category->role == 'default') {
-                $output = __('Hi! I am').' '.$category->name.__(', and I\'m here to answer all your questions');
+                $output = __('Hi! I am') . ' ' . $category->name . __(', and I\'m here to answer all your questions');
             } else {
-                $output = __('Hi! I am').' '.$category->human_name.__(', and I\'m').' '.$category->role.'. '.$category->helps_with;
+                $output = __('Hi! I am') . ' ' . $category->human_name . __(', and I\'m') . ' ' . $category->role . '. ' . $category->helps_with;
             }
         } else {
             $output = null;
@@ -316,7 +331,7 @@ class AIChatController extends Controller
 
             if (($pos !== false) || (strlen($current_line) == 0)) {
             } else {
-                $response .= $current_line.' ';
+                $response .= $current_line . ' ';
             }
         }
 
@@ -328,7 +343,7 @@ class AIChatController extends Controller
     public function docx_to_text($path_to_file)
     {
         $response = '';
-        $zip = new ZipArchive();
+        $zip = new ZipArchive;
 
         if (! $zip->open($path_to_file)) {
             return false;
@@ -370,8 +385,8 @@ class AIChatController extends Controller
         }
         $doc = $request->file('doc');
         $doc_content = file_get_contents($doc->getRealPath());
-        $fileName = Str::random(12).'.'.$type;
-        Storage::disk('public')->put('temp.'.$type, $doc_content);
+        $fileName = Str::random(12) . '.' . $type;
+        Storage::disk('public')->put('temp.' . $type, $doc_content);
         Storage::disk('public')->put($fileName, $doc_content);
 
         $uploadedFile = new File(substr("/uploads/$fileName", 1));
@@ -383,13 +398,13 @@ class AIChatController extends Controller
                 $aws_path = Storage::disk('s3')->put('', $uploadedFile);
                 unlink(substr("/uploads/$fileName", 1));
                 $resPath = Storage::disk('s3')->url($aws_path);
-            } catch (\Exception $e) {
-                return response()->json(['status' => 'error', 'message' => 'AWS Error - '.$e->getMessage()]);
+            } catch (Exception $e) {
+                return response()->json(['status' => 'error', 'message' => 'AWS Error - ' . $e->getMessage()]);
             }
         }
 
         if ($type == 'pdf') {
-            $parser = new \Smalot\PdfParser\Parser();
+            $parser = new \Smalot\PdfParser\Parser;
             $text = $parser->parseFile('uploads/temp.pdf')->getText();
 
             $page = $text;
@@ -399,15 +414,15 @@ class AIChatController extends Controller
                 $page = $text;
             }
         } elseif ($type == 'docx') {
-            $filePath = public_path('uploads/temp.'.$type);
+            $filePath = public_path('uploads/temp.' . $type);
             $page = $this->docx_to_text($filePath);
             Log::info($page);
         } elseif ($type == 'doc') {
-            $filePath = public_path('uploads/temp.'.$type);
+            $filePath = public_path('uploads/temp.' . $type);
             $page = $this->doc_to_text($filePath);
             Log::info($page);
         } elseif ($type == 'csv') {
-            $file = file_get_contents(public_path('uploads/temp.'.$type));
+            $file = file_get_contents(public_path('uploads/temp.' . $type));
             $rows = explode(PHP_EOL, $file);
 
             $header = str_getcsv(array_shift($rows)); // Get header row
@@ -438,7 +453,7 @@ class AIChatController extends Controller
 
                     if (strlen(substr($page, 1001 * $i, strlen($page) - 1001 * $i)) > 10) {
 
-                        $chatpdf = new PdfData();
+                        $chatpdf = new PdfData;
 
                         $chatpdf->chat_id = $chat_id;
                         $chatpdf->content = substr($page, 1001 * $i, strlen($page) - 1001 * $i);
@@ -458,7 +473,7 @@ class AIChatController extends Controller
                         'input' => $subtxt,
                     ]);
                     if (strlen(substr($page, 1001 * $i, 2000)) > 10) {
-                        $chatpdf = new PdfData();
+                        $chatpdf = new PdfData;
 
                         $chatpdf->chat_id = $chat_id;
                         $chatpdf->content = substr($page, 1001 * $i, 2000);
@@ -477,11 +492,11 @@ class AIChatController extends Controller
     public function startNewDocChat(Request $request)
     {
         $category = OpenaiGeneratorChatCategory::where('id', $request->category_id)->firstOrFail();
-        $chat = new UserOpenaiChat();
+        $chat = new UserOpenaiChat;
         $chat->user_id = Auth::id();
         $chat->team_id = Auth::user()->team_id;
         $chat->openai_chat_category_id = $category->id;
-        $chat->title = $category->name.' Chat';
+        $chat->title = $category->name . ' Chat';
         $chat->total_credits = 0;
         $chat->total_words = 0;
         $chat->save();
@@ -492,15 +507,15 @@ class AIChatController extends Controller
             $chat->doc_name = $request->file('doc')->getClientOriginalName();
             $chat->save();
 
-            $message = new UserOpenaiChatMessage();
+            $message = new UserOpenaiChatMessage;
             $message->user_openai_chat_id = $chat->id;
             $message->user_id = Auth::id();
             $message->response = 'First Initiation';
             if ($category->slug != 'ai_vision' || $category->slug != 'ai_pdf') {
                 if ($category->role == 'default') {
-                    $output = __('Hi! I am').' '.$category->name.__(', and I\'m here to answer all your questions');
+                    $output = __('Hi! I am') . ' ' . $category->name . __(', and I\'m here to answer all your questions');
                 } else {
-                    $output = __('Hi! I am').' '.$category->human_name.__(', and I\'m').' '.$category->role.'. '.$category->helps_with;
+                    $output = __('Hi! I am') . ' ' . $category->human_name . __(', and I\'m') . ' ' . $category->role . '. ' . $category->helps_with;
                 }
             } else {
                 $output = null;
@@ -531,7 +546,7 @@ class AIChatController extends Controller
 
         $category = $chatbot;
 
-        $chat = new UserOpenaiChat();
+        $chat = new UserOpenaiChat;
         $chat->user_id = Auth::id();
         $chat->chatbot_id = $chatbot->id;
         //        $chat->openai_chat_category_id = $category->id;
@@ -541,7 +556,7 @@ class AIChatController extends Controller
         $chat->is_chatbot = 1;
         $chat->save();
 
-        $message = new UserOpenaiChatMessage();
+        $message = new UserOpenaiChatMessage;
         $message->user_openai_chat_id = $chat->id;
         $message->user_id = Auth::id();
         $message->response = 'First Initiation';
@@ -553,7 +568,7 @@ class AIChatController extends Controller
         $message->is_chatbot = 1;
         $message->save();
 
-        $chatbot_history = new ChatBotHistory();
+        $chatbot_history = new ChatBotHistory;
         $chatbot_history->user_id = Auth::id();
         $chatbot_history->ip = isset($_SERVER['HTTP_CF_CONNECTING_IP']) ? $_SERVER['HTTP_CF_CONNECTING_IP'] : request()->ip();
         $chatbot_history->user_openai_chat_id = $chat->id;
@@ -588,7 +603,7 @@ class AIChatController extends Controller
             // }
             $realtime = $request->get('realtime');
             $total_used_tokens = 0;
-            $entry = new UserOpenaiChatMessage();
+            $entry = new UserOpenaiChatMessage;
             $entry->user_id = $user->id;
             $entry->user_openai_chat_id = $chat->id;
             $entry->input = $prompt;
@@ -615,12 +630,15 @@ class AIChatController extends Controller
                 switch ($type) {
                     case 'chat':
                         return self::chatbotsStream($request);
+
                         break;
                     case 'vision':
                         return self::visionStream($request);
+
                         break;
                     default:
                         return self::chatbotsStream($request);
+
                         break;
                 }
             }
@@ -659,7 +677,7 @@ class AIChatController extends Controller
             $chat_completions = json_decode($category->chat_completions, true);
             foreach ($chat_completions as $item) {
                 $history[] = [
-                    'role' => $item['role'],
+                    'role'    => $item['role'],
                     'content' => $item['content'] ?? '',
                 ];
             }
@@ -675,7 +693,7 @@ class AIChatController extends Controller
             ->get()
             ->reverse();
 
-        $vectorService = new VectorService();
+        $vectorService = new VectorService;
 
         $extra_prompt = $vectorService->getMostSimilarText($prompt, $chat_id, 5, $chat->chatbot_id);
         $count = count($lastThreeMessageQuery);
@@ -725,7 +743,7 @@ class AIChatController extends Controller
             $chat_completions = json_decode($category->chat_completions, true);
             foreach ($chat_completions as $item) {
                 $history[] = [
-                    'role' => $item['role'],
+                    'role'    => $item['role'],
                     'content' => $item['content'] ?? '',
                 ];
             }
@@ -741,11 +759,11 @@ class AIChatController extends Controller
 
         if ($category->chatbot_id) {
             try {
-                $extra_prompt = (new VectorService())->getMostSimilarText($prompt, $chat_id, 2, $category->chatbot_id);
+                $extra_prompt = (new VectorService)->getMostSimilarText($prompt, $chat_id, 2, $category->chatbot_id);
                 if ($extra_prompt) {
                     $history[] = ['role' => 'user', 'content' => "'this file' means file content. Must not reference previous chats if user asking about pdf. Must reference file content if only user is asking about file content. Else just response as an assistant shortly and professionaly without must not referencing file content. . User: $prompt \n\n\n\n\n Document Content: \n $extra_prompt"];
                 }
-            } catch (\Throwable $th) {
+            } catch (Throwable $th) {
             }
         }
 
@@ -768,9 +786,9 @@ class AIChatController extends Controller
                 }
             }
             if ($realtime && $this->settings_two->serper_api_key != null) {
-                $sclient = new Client();
+                $sclient = new Client;
                 $headers = [
-                    'X-API-KEY' => $this->settings_two->serper_api_key,
+                    'X-API-KEY'    => $this->settings_two->serper_api_key,
                     'Content-Type' => 'application/json',
                 ];
                 $body = [
@@ -778,18 +796,19 @@ class AIChatController extends Controller
                 ];
                 $response = $sclient->post('https://google.serper.dev/search', [
                     'headers' => $headers,
-                    'json' => $body,
+                    'json'    => $body,
                 ]);
                 $toGPT = $response->getBody()->getContents();
+
                 try {
                     $toGPT = json_decode($toGPT);
-                } catch (\Throwable $th) {
+                } catch (Throwable $th) {
                 }
 
                 $final_prompt =
-                    'Prompt: '.$realtimePrompt.
+                    'Prompt: ' . $realtimePrompt .
                     '\n\nWeb search json results: '
-                    .json_encode($toGPT).
+                    . json_encode($toGPT) .
                     '\n\nInstructions: Based on the Prompt generate a proper response with help of Web search results(if the Web search results in the same context). Only if the prompt require links: (make curated list of links and descriptions using only the <a target="_blank">, write links with using <a target="_blank"> with mrgin Top of <a> tag is 5px and start order as number and write link first and then write description). Must not write links if its not necessary. Must not mention anything about the prompt text.';
                 $history[] = ['role' => 'user', 'content' => $final_prompt ?? ''];
             } else {
@@ -797,9 +816,9 @@ class AIChatController extends Controller
             }
         } else {
             if ($realtime && $this->settings_two->serper_api_key != null) {
-                $client = new Client();
+                $client = new Client;
                 $headers = [
-                    'X-API-KEY' => $this->settings_two->serper_api_key,
+                    'X-API-KEY'    => $this->settings_two->serper_api_key,
                     'Content-Type' => 'application/json',
                 ];
                 $body = [
@@ -807,18 +826,19 @@ class AIChatController extends Controller
                 ];
                 $response = $client->post('https://google.serper.dev/search', [
                     'headers' => $headers,
-                    'json' => $body,
+                    'json'    => $body,
                 ]);
                 $toGPT = $response->getBody()->getContents();
+
                 try {
                     $toGPT = json_decode($toGPT);
-                } catch (\Throwable $th) {
+                } catch (Throwable $th) {
                 }
 
                 $final_prompt =
-                    'Prompt: '.$realtimePrompt.
+                    'Prompt: ' . $realtimePrompt .
                     '\n\nWeb search json results: '
-                    .json_encode($toGPT).
+                    . json_encode($toGPT) .
                     '\n\nInstructions: Based on the Prompt generate a proper response with help of Web search results(if the Web search results in the same context). Only if the prompt require links: (make curated list of links and descriptions using only the <a target="_blank">, write links with using <a target="_blank"> with mrgin Top of <a> tag is 5px and start order as number and write link first and then write description). Must not write links if its not necessary. Must not mention anything about the prompt text.';
                 $history[] = ['role' => 'user', 'content' => $final_prompt ?? ''];
             } else {
@@ -858,7 +878,7 @@ class AIChatController extends Controller
             $chat_completions = json_decode($category->chat_completions, true);
             foreach ($chat_completions as $item) {
                 $history[] = [
-                    'role' => $item['role'],
+                    'role'    => $item['role'],
                     'content' => $item['content'] ?? '',
                 ];
             }
@@ -873,11 +893,11 @@ class AIChatController extends Controller
         $extra_prompt = null;
 
         try {
-            $extra_prompt = (new VectorService())->getMostSimilarText($prompt, $chat_id, 2);
+            $extra_prompt = (new VectorService)->getMostSimilarText($prompt, $chat_id, 2);
             if ($extra_prompt) {
                 $history[] = ['role' => 'user', 'content' => "'this file' means file content. Must not reference previous chats if user asking about pdf. Must reference file content if only user is asking about file content. Else just response as an assistant shortly and professionaly without must not referencing file content. . User: $prompt \n\n\n\n\n Document Content: \n $extra_prompt"];
             }
-        } catch (\Throwable $th) {
+        } catch (Throwable $th) {
 
         }
 
@@ -900,9 +920,9 @@ class AIChatController extends Controller
                 }
             }
             if ($realtime && $this->settings_two->serper_api_key != null) {
-                $sclient = new Client();
+                $sclient = new Client;
                 $headers = [
-                    'X-API-KEY' => $this->settings_two->serper_api_key,
+                    'X-API-KEY'    => $this->settings_two->serper_api_key,
                     'Content-Type' => 'application/json',
                 ];
                 $body = [
@@ -910,18 +930,19 @@ class AIChatController extends Controller
                 ];
                 $response = $sclient->post('https://google.serper.dev/search', [
                     'headers' => $headers,
-                    'json' => $body,
+                    'json'    => $body,
                 ]);
                 $toGPT = $response->getBody()->getContents();
+
                 try {
                     $toGPT = json_decode($toGPT);
-                } catch (\Throwable $th) {
+                } catch (Throwable $th) {
                 }
 
                 $final_prompt =
-                    'Prompt: '.$realtimePrompt.
+                    'Prompt: ' . $realtimePrompt .
                     '\n\nWeb search json results: '
-                    .json_encode($toGPT).
+                    . json_encode($toGPT) .
                     '\n\nInstructions: Based on the Prompt generate a proper response with help of Web search results(if the Web search results in the same context). Only if the prompt require links: (make curated list of links and descriptions using only the <a target="_blank">, write links with using <a target="_blank"> with mrgin Top of <a> tag is 5px and start order as number and write link first and then write description). Must not write links if its not necessary. Must not mention anything about the prompt text.';
                 $history[] = ['role' => 'user', 'content' => $final_prompt ?? ''];
             } else {
@@ -929,9 +950,9 @@ class AIChatController extends Controller
             }
         } else {
             if ($realtime && $this->settings_two->serper_api_key != null) {
-                $client = new Client();
+                $client = new Client;
                 $headers = [
-                    'X-API-KEY' => $this->settings_two->serper_api_key,
+                    'X-API-KEY'    => $this->settings_two->serper_api_key,
                     'Content-Type' => 'application/json',
                 ];
                 $body = [
@@ -939,18 +960,19 @@ class AIChatController extends Controller
                 ];
                 $response = $client->post('https://google.serper.dev/search', [
                     'headers' => $headers,
-                    'json' => $body,
+                    'json'    => $body,
                 ]);
                 $toGPT = $response->getBody()->getContents();
+
                 try {
                     $toGPT = json_decode($toGPT);
-                } catch (\Throwable $th) {
+                } catch (Throwable $th) {
                 }
 
                 $final_prompt =
-                    'Prompt: '.$realtimePrompt.
+                    'Prompt: ' . $realtimePrompt .
                     '\n\nWeb search json results: '
-                    .json_encode($toGPT).
+                    . json_encode($toGPT) .
                     '\n\nInstructions: Based on the Prompt generate a proper response with help of Web search results(if the Web search results in the same context). Only if the prompt require links: (make curated list of links and descriptions using only the <a target="_blank">, write links with using <a target="_blank"> with mrgin Top of <a> tag is 5px and start order as number and write link first and then write description). Must not write links if its not necessary. Must not mention anything about the prompt text.';
                 $history[] = ['role' => 'user', 'content' => $final_prompt ?? ''];
             } else {
@@ -980,7 +1002,7 @@ class AIChatController extends Controller
         $chat = UserOpenaiChat::whereId($chat_id)->first();
         // add vision completions for the template
         $history[] = [
-            'role' => 'system',
+            'role'    => 'system',
             'content' => 'You will now play a character and respond as that character (You will never break character). Your name is Vision AI. Must not introduce by yourself as well as greetings. Help also with asked questions based on previous responses and images if exists.',
         ];
         // follow the context of the last 5 messages
@@ -996,7 +1018,7 @@ class AIChatController extends Controller
         if ($count > 1) {
             foreach ($lastThreeMessageQuery as $threeMessage) {
                 $history[] = [
-                    'role' => 'user',
+                    'role'    => 'user',
                     'content' => array_merge(
                         [
                             [
@@ -1014,9 +1036,9 @@ class AIChatController extends Controller
                                 $base64Image = base64_encode($imageData);
 
                                 return [
-                                    'type' => 'image_url',
+                                    'type'      => 'image_url',
                                     'image_url' => [
-                                        'url' => 'data:image/png;base64,'.$base64Image,
+                                        'url' => 'data:image/png;base64,' . $base64Image,
                                     ],
                                 ];
                             }
@@ -1030,7 +1052,7 @@ class AIChatController extends Controller
         }
         $history[] =
         [
-            'role' => 'user',
+            'role'    => 'user',
             'content' => array_merge(
                 [
                     [
@@ -1047,9 +1069,9 @@ class AIChatController extends Controller
                     $base64Image = base64_encode($imageData);
 
                     return [
-                        'type' => 'image_url',
+                        'type'      => 'image_url',
                         'image_url' => [
-                            'url' => 'data:image/png;base64,'.$base64Image,
+                            'url' => 'data:image/png;base64,' . $base64Image,
                         ],
                     ];
                 })->toArray()
@@ -1073,19 +1095,19 @@ class AIChatController extends Controller
                 }
 
                 if ($openaiUse) {
-                    $gclient = new Client();
+                    $gclient = new Client;
                     $url = 'https://api.openai.com/v1/chat/completions';
                     $headers = [
-                        'Authorization' => 'Bearer '.$openaiApiKey,
+                        'Authorization' => 'Bearer ' . $openaiApiKey,
                     ];
 
                     $postData = [
                         'headers' => $headers,
-                        'json' => [
-                            'model' => $chat_bot,
-                            'messages' => $history,
+                        'json'    => [
+                            'model'      => $chat_bot,
+                            'messages'   => $history,
                             'max_tokens' => $ai_max_tokens,
-                            'stream' => true,
+                            'stream'     => true,
                         ],
                     ];
 
@@ -1110,13 +1132,12 @@ class AIChatController extends Controller
                             $random_text = Str::random($needChars);
 
                             echo PHP_EOL;
-                            echo 'data: '.$messageFix.'/**'.$random_text."\n\n";
+                            echo 'data: ' . $messageFix . '/**' . $random_text . "\n\n";
                             flush();
                             usleep(1000);
                         }
                     }
                 } else {
-                    $client = app(Anthropic::class);
 
                     $historyMessages = array_filter($history, function ($item) {
                         return $item['role'] != 'system';
@@ -1126,53 +1147,90 @@ class AIChatController extends Controller
                         return $item['role'] == 'system';
                     }));
 
-                    $system = data_get($system, 'content');
+                    foreach ($historyMessages as $message) {
+                        if (isset($message['content'])) {
+                            $content = $message['content'];
+                        }
+                    }
 
-                    $data = $client->setStream(true)
-                        ->setSystem($system)
-                        ->setMessages(array_values($historyMessages))
-                        ->stream()
-                        ->body();
+                    if (setting('anthropic_default_model') == BedrockEngine::BEDROCK->value) {
+                        $responseBody = $this->bedrockService->invokeClaude($content);
+                        $completion = $responseBody['completion'];
+                        foreach (explode("\n", $completion) as $chunk) {
+                            $words = explode(' ', $chunk);
+                            foreach ($words as $word) {
+                                $messageFix = str_replace(["\r\n", "\r", "\n"], '<br/>', $word) . ' ';
+                                $output .= $messageFix;
+                                $responsedText .= $word . ' ';
 
-                    $total_used_tokens = 0;
-                    $output = '';
-                    $responsedText = '';
+                                $total_used_tokens += countWords($word);
+                                $string_length = Str::length($messageFix);
+                                $needChars = 6000 - $string_length;
+                                $random_text = Str::random($needChars);
 
-                    foreach (explode("\n", $data) as $chunk) {
+                                echo PHP_EOL;
+                                echo 'data: ' . $messageFix . '/**' . $random_text . "\n\n";
+                                flush();
+                                //ob_flush();
+                                usleep(1000);
 
-                        if (strlen($chunk) < 6) {
-                            continue;
+                            }
+                            if (connection_aborted()) {
+                                break;
+                            }
                         }
 
-                        if (! Str::contains($chunk, 'data: ')) {
+                    } else {
+                        $client = app(Anthropic::class);
 
-                            continue;
-                        }
+                        $system = data_get($system, 'content');
 
-                        $chunk = str_replace('data: {', '{', $chunk);
+                        $data = $client->setStream(true)
+                            ->setSystem($system)
+                            ->setMessages(array_values($historyMessages))
+                            ->stream()
+                            ->body();
 
-                        if (isset(json_decode($chunk)->delta->text)) {
-                            $message = json_decode($chunk)->delta->text;
+                        $total_used_tokens = 0;
+                        $output = '';
+                        $responsedText = '';
 
-                            $messageFix = str_replace(["\r\n", "\r", "\n"], '<br/>', $message);
+                        foreach (explode("\n", $data) as $chunk) {
 
-                            $output .= $messageFix;
-                            $responsedText .= $message;
+                            if (strlen($chunk) < 6) {
+                                continue;
+                            }
 
-                            $total_used_tokens += countWords($message);
-                            $string_length = Str::length($messageFix);
-                            $needChars = 6000 - $string_length;
-                            $random_text = Str::random($needChars);
+                            if (! Str::contains($chunk, 'data: ')) {
 
-                            echo PHP_EOL;
-                            echo 'data: '.$messageFix.'/**'.$random_text."\n\n";
-                            flush();
-                            //ob_flush();
-                            usleep(1000);
-                        }
+                                continue;
+                            }
 
-                        if (connection_aborted()) {
-                            break;
+                            $chunk = str_replace('data: {', '{', $chunk);
+
+                            if (isset(json_decode($chunk)->delta->text)) {
+                                $message = json_decode($chunk)->delta->text;
+
+                                $messageFix = str_replace(["\r\n", "\r", "\n"], '<br/>', $message);
+
+                                $output .= $messageFix;
+                                $responsedText .= $message;
+
+                                $total_used_tokens += countWords($message);
+                                $string_length = Str::length($messageFix);
+                                $needChars = 6000 - $string_length;
+                                $random_text = Str::random($needChars);
+
+                                echo PHP_EOL;
+                                echo 'data: ' . $messageFix . '/**' . $random_text . "\n\n";
+                                flush();
+                                //ob_flush();
+                                usleep(1000);
+                            }
+
+                            if (connection_aborted()) {
+                                break;
+                            }
                         }
                     }
                 }
@@ -1189,9 +1247,9 @@ class AIChatController extends Controller
 
                 if ($openaiUse) {
                     $stream = OpenAI::chat()->createStreamed([
-                        'model' => $chat_bot,
-                        'messages' => $history,
-                        'presence_penalty' => 0.6,
+                        'model'             => $chat_bot,
+                        'messages'          => $history,
+                        'presence_penalty'  => 0.6,
                         'frequency_penalty' => 0,
                     ]);
                     $total_used_tokens = 0;
@@ -1211,7 +1269,7 @@ class AIChatController extends Controller
                             $random_text = Str::random($needChars);
 
                             echo PHP_EOL;
-                            echo 'data: '.$messageFix.'/**'.$random_text."\n\n";
+                            echo 'data: ' . $messageFix . '/**' . $random_text . "\n\n";
                             flush();
                             //ob_flush();
                             usleep(1000);
@@ -1222,8 +1280,6 @@ class AIChatController extends Controller
                     }
                 } else {
 
-                    $client = app(Anthropic::class);
-
                     $historyMessages = array_filter($history, function ($item) {
                         return $item['role'] != 'system';
                     });
@@ -1231,56 +1287,94 @@ class AIChatController extends Controller
                     $system = Arr::first(array_filter($history, function ($item) {
                         return $item['role'] == 'system';
                     }));
-
-                    $system = data_get($system, 'content');
-
-                    $data = $client->setStream(true)
-                        ->setSystem($system)
-                        ->setMessages(array_values($historyMessages))
-                        ->stream()
-                        ->body();
-
-                    $total_used_tokens = 0;
-                    $output = '';
-                    $responsedText = '';
-
-                    foreach (explode("\n", $data) as $chunk) {
-
-                        if (strlen($chunk) < 6) {
-                            continue;
-                        }
-
-                        if (! Str::contains($chunk, 'data: ')) {
-
-                            continue;
-                        }
-
-                        $chunk = str_replace('data: {', '{', $chunk);
-
-                        if (isset(json_decode($chunk)->delta->text)) {
-                            $message = json_decode($chunk)->delta->text;
-
-                            $messageFix = str_replace(["\r\n", "\r", "\n"], '<br/>', $message);
-
-                            $output .= $messageFix;
-                            $responsedText .= $message;
-
-                            $total_used_tokens += countWords($message);
-                            $string_length = Str::length($messageFix);
-                            $needChars = 6000 - $string_length;
-                            $random_text = Str::random($needChars);
-
-                            echo PHP_EOL;
-                            echo 'data: '.$messageFix.'/**'.$random_text."\n\n";
-                            flush();
-                            //ob_flush();
-                            usleep(1000);
-                        }
-
-                        if (connection_aborted()) {
-                            break;
+                    foreach ($historyMessages as $message) {
+                        if (isset($message['content'])) {
+                            $content = $message['content'];
                         }
                     }
+
+                    if (setting('anthropic_default_model') == BedrockEngine::BEDROCK->value) {
+                        $responseBody = $this->bedrockService->invokeClaude($content);
+                        $completion = $responseBody['completion'];
+                        foreach (explode("\n", $completion) as $chunk) {
+                            $words = explode(' ', $chunk);
+                            foreach ($words as $word) {
+                                $messageFix = str_replace(["\r\n", "\r", "\n"], '<br/>', $word) . ' ';
+                                $output .= $messageFix;
+                                $responsedText .= $word . ' ';
+
+                                $total_used_tokens += countWords($word);
+                                $string_length = Str::length($messageFix);
+                                $needChars = 6000 - $string_length;
+                                $random_text = Str::random($needChars);
+
+                                echo PHP_EOL;
+                                echo 'data: ' . $messageFix . '/**' . $random_text . "\n\n";
+                                flush();
+                                //ob_flush();
+                                usleep(1000);
+
+                            }
+                            if (connection_aborted()) {
+                                break;
+                            }
+                        }
+
+                    } else {
+
+                        $client = app(Anthropic::class);
+
+                        $system = data_get($system, 'content');
+
+                        $data = $client->setStream(true)
+                            ->setSystem($system)
+                            ->setMessages(array_values($historyMessages))
+                            ->stream()
+                            ->body();
+
+                        $total_used_tokens = 0;
+                        $output = '';
+                        $responsedText = '';
+
+                        foreach (explode("\n", $data) as $chunk) {
+
+                            if (strlen($chunk) < 6) {
+                                continue;
+                            }
+
+                            if (! Str::contains($chunk, 'data: ')) {
+
+                                continue;
+                            }
+
+                            $chunk = str_replace('data: {', '{', $chunk);
+
+                            if (isset(json_decode($chunk)->delta->text)) {
+                                $message = json_decode($chunk)->delta->text;
+
+                                $messageFix = str_replace(["\r\n", "\r", "\n"], '<br/>', $message);
+
+                                $output .= $messageFix;
+                                $responsedText .= $message;
+
+                                $total_used_tokens += countWords($message);
+                                $string_length = Str::length($messageFix);
+                                $needChars = 6000 - $string_length;
+                                $random_text = Str::random($needChars);
+
+                                echo PHP_EOL;
+                                echo 'data: ' . $messageFix . '/**' . $random_text . "\n\n";
+                                flush();
+                                //ob_flush();
+                                usleep(1000);
+                            }
+
+                            if (connection_aborted()) {
+                                break;
+                            }
+                        }
+                    }
+
                 }
             }
 
@@ -1310,9 +1404,9 @@ class AIChatController extends Controller
             //ob_flush();
             usleep(1000);
         }, 200, [
-            'Cache-Control' => 'no-cache',
+            'Cache-Control'     => 'no-cache',
             'X-Accel-Buffering' => 'no',
-            'Content-Type' => 'text/event-stream',
+            'Content-Type'      => 'text/event-stream',
         ]);
 
     }
@@ -1353,7 +1447,7 @@ class AIChatController extends Controller
 
             $history[] = ['role' => 'system', 'content' => $chatbot->instructions ?: 'You are a helpful assistant.'];
 
-            $vectorService = new VectorService();
+            $vectorService = new VectorService;
 
             $extra_prompt = $vectorService->getMostSimilarText(
                 $prompt,
@@ -1376,9 +1470,9 @@ class AIChatController extends Controller
             } else {
                 if ($extra_prompt == '') {
                     if ($realtime && $settings2->serper_api_key != null) {
-                        $client = new Client();
+                        $client = new Client;
                         $headers = [
-                            'X-API-KEY' => $settings2->serper_api_key,
+                            'X-API-KEY'    => $settings2->serper_api_key,
                             'Content-Type' => 'application/json',
                         ];
                         $body = [
@@ -1386,18 +1480,19 @@ class AIChatController extends Controller
                         ];
                         $response = $client->post('https://google.serper.dev/search', [
                             'headers' => $headers,
-                            'json' => $body,
+                            'json'    => $body,
                         ]);
                         $toGPT = $response->getBody()->getContents();
+
                         try {
                             $toGPT = json_decode($toGPT);
-                        } catch (\Throwable $th) {
+                        } catch (Throwable $th) {
                         }
 
                         $final_prompt =
-                            'Prompt: '.$realtimePrompt.
+                            'Prompt: ' . $realtimePrompt .
                             '\n\nWeb search json results: '
-                            .json_encode($toGPT).
+                            . json_encode($toGPT) .
                             '\n\nInstructions: Based on the Prompt generate a proper response with help of Web search results(if the Web search results in the same context). Only if the prompt require links: (make curated list of links and descriptions using only the <a target="_blank">, write links with using <a target="_blank"> with mrgin Top of <a> tag is 5px and start order as number and write link first and then write description). Must not write links if its not necessary. Must not mention anything about the prompt text.';
                         // unset($history);
                         $history[] = ['role' => 'user', 'content' => $final_prompt];
@@ -1414,9 +1509,9 @@ class AIChatController extends Controller
                 if ($type == 'chat') {
                     try {
                         $stream = OpenAI::chat()->createStreamed([
-                            'model' => $model,
-                            'messages' => $history,
-                            'presence_penalty' => 0.6,
+                            'model'             => $model,
+                            'messages'          => $history,
+                            'presence_penalty'  => 0.6,
                             'frequency_penalty' => 0,
                         ]);
                         $total_used_tokens = 0;
@@ -1436,7 +1531,7 @@ class AIChatController extends Controller
                                 $random_text = Str::random($needChars);
 
                                 echo PHP_EOL;
-                                echo 'data: '.$messageFix.'/**'.$random_text."\n\n";
+                                echo 'data: ' . $messageFix . '/**' . $random_text . "\n\n";
                                 flush();
                                 usleep(5000);
                             }
@@ -1444,11 +1539,11 @@ class AIChatController extends Controller
                                 break;
                             }
                         }
-                    } catch (\Exception $exception) {
+                    } catch (Exception $exception) {
                         $output = '';
                         $total_used_tokens = 0;
                         $responsedText = $exception->getMessage();
-                        $messageError = 'Error from API call. Please try again. If error persists again please contact system administrator with this message '.$exception->getMessage();
+                        $messageError = 'Error from API call. Please try again. If error persists again please contact system administrator with this message ' . $exception->getMessage();
                         echo "data: $messageError";
                         echo "\n\n";
                         flush();
@@ -1461,7 +1556,7 @@ class AIChatController extends Controller
 
                     try {
                         $model = 'gpt-4o';
-                        $gclient = new Client();
+                        $gclient = new Client;
 
                         if ($this->settings?->user_api_option) {
                             $apiKeys = explode(',', auth()->user()?->api_keys);
@@ -1475,13 +1570,13 @@ class AIChatController extends Controller
                             $url,
                             [
                                 'headers' => [
-                                    'Authorization' => 'Bearer '.$openaiApiKey,
+                                    'Authorization' => 'Bearer ' . $openaiApiKey,
                                 ],
                                 'json' => [
-                                    'model' => 'gpt-4o',
+                                    'model'    => 'gpt-4o',
                                     'messages' => [
                                         [
-                                            'role' => 'user',
+                                            'role'    => 'user',
                                             'content' => array_merge(
                                                 [
                                                     [
@@ -1498,9 +1593,9 @@ class AIChatController extends Controller
                                                     $base64Image = base64_encode($imageData);
 
                                                     return [
-                                                        'type' => 'image_url',
+                                                        'type'      => 'image_url',
                                                         'image_url' => [
-                                                            'url' => 'data:image/png;base64,'.$base64Image,
+                                                            'url' => 'data:image/png;base64,' . $base64Image,
                                                         ],
                                                     ];
                                                 })->toArray()
@@ -1508,12 +1603,12 @@ class AIChatController extends Controller
                                         ],
                                     ],
                                     'max_tokens' => 2000,
-                                    'stream' => true,
+                                    'stream'     => true,
                                 ],
                             ],
                         );
-                    } catch (\Exception $exception) {
-                        $messageError = 'Error from API call. Please try again. If error persists again please contact system administrator with this message '.$exception->getMessage();
+                    } catch (Exception $exception) {
+                        $messageError = 'Error from API call. Please try again. If error persists again please contact system administrator with this message ' . $exception->getMessage();
                         echo "data: $messageError";
                         echo "\n\n";
                         //ob_flush();
@@ -1545,7 +1640,7 @@ class AIChatController extends Controller
                             $random_text = Str::random($needChars);
 
                             echo PHP_EOL;
-                            echo 'data: '.$messageFix.'/**'.$random_text."\n\n";
+                            echo 'data: ' . $messageFix . '/**' . $random_text . "\n\n";
                             //ob_flush();
                             flush();
                             usleep(5000);
@@ -1579,9 +1674,9 @@ class AIChatController extends Controller
                 flush();
                 usleep(50000);
             }, 200, [
-                'Cache-Control' => 'no-cache',
+                'Cache-Control'     => 'no-cache',
                 'X-Accel-Buffering' => 'no',
-                'Content-Type' => 'text/event-stream',
+                'Content-Type'      => 'text/event-stream',
             ]);
         } else {
 
@@ -1625,7 +1720,7 @@ class AIChatController extends Controller
 
             $total_used_tokens = 0;
 
-            $entry = new UserOpenaiChatMessage();
+            $entry = new UserOpenaiChatMessage;
             $entry->user_id = Auth::id();
             $entry->user_openai_chat_id = $chat->id;
             $entry->is_chatbot = 1;
@@ -1656,7 +1751,7 @@ class AIChatController extends Controller
         $file = $request->file('file');
         $path = 'upload/audio/';
 
-        $file_name = Str::random(4).'-'.Str::slug($user->fullName()).'-audio.'.$file->getClientOriginalExtension();
+        $file_name = Str::random(4) . '-' . Str::slug($user->fullName()) . '-audio.' . $file->getClientOriginalExtension();
 
         //Audio Extension Control
         $imageTypes = ['mp3', 'mp4', 'mpeg', 'mpga', 'm4a', 'wav', 'webm'];
@@ -1673,14 +1768,14 @@ class AIChatController extends Controller
             $file->move($path, $file_name);
 
             $response = OpenAI::audio()->transcribe([
-                'file' => fopen($path.$file_name, 'r'),
-                'model' => 'whisper-1',
+                'file'            => fopen($path . $file_name, 'r'),
+                'model'           => 'whisper-1',
                 'response_format' => 'verbose_json',
             ]);
 
-            unlink($path.$file_name);
+            unlink($path . $file_name);
             $text = $response->text;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $text = '';
         }
 
@@ -1726,7 +1821,7 @@ class AIChatController extends Controller
     {
         $chat = UserOpenaiChat::where('id', $request->chat_id)->first();
 
-        $message = new UserOpenaiChatMessage();
+        $message = new UserOpenaiChatMessage;
         $message->user_openai_chat_id = $chat->id;
         $message->user_id = Auth::id();
         $message->input = $request->input;
@@ -1764,17 +1859,17 @@ class AIChatController extends Controller
         $newTitle = '';
         if ($chat->messages()->count() <= 2) {
             $generatedNewChatTitle = OpenAI::chat()->create([
-                'model' => $this->settings->openai_default_model,
+                'model'    => $this->settings->openai_default_model,
                 'messages' => [
                     [
-                        'role' => 'system',
+                        'role'    => 'system',
                         'content' => 'You are a chatbot. Generate a title for a chat based on provided conversation. You must return a title only.',
                     ],
                     [
-                        'role' => 'user',
+                        'role'    => 'user',
                         'content' => "Generate a title for a chat based on the following conversation: \n\n\n\n\n"
-                        .'User Input: '.$message->input."\n\n\n\n\n"
-                        .'Assistant Response: '.$message->response,
+                        . 'User Input: ' . $message->input . "\n\n\n\n\n"
+                        . 'Assistant Response: ' . $message->response,
                     ],
                 ],
             ]);

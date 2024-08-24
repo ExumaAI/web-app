@@ -23,7 +23,7 @@ class Notify
     }
 
     /**
-     * @param array<int, User> $users
+     * @param  array<int, User>  $users
      */
     public static function toMany(
         array|Collection $users,

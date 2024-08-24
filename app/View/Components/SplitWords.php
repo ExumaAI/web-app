@@ -12,11 +12,10 @@ class SplitWords extends Component
      * Create a new component instance.
      */
     public function __construct(
-		public string $text = '',
-		public float $transitionDelayStart = 0,
-		public float $transitionDelayStep = 0,
-	)
-    {
+        public string $text = '',
+        public float $transitionDelayStart = 0,
+        public float $transitionDelayStep = 0,
+    ) {
         //
     }
 

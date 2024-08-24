@@ -176,11 +176,13 @@
                     size="lg"
                     required
                 />
-                @if($setting->recaptcha_register == 1)
+                @if($setting->recaptcha_register && config('services.recaptcha.key') && config('services.recaptcha.secret'))
                     <!-- Google Recaptcha Widget-->
                     <div class="g-recaptcha mt-4" data-sitekey="{{config('services.recaptcha.key')}}"></div>
+                    <input class="hidden" id="recaptcha" value="1">
+                @else
+                    <input class="hidden" id="recaptcha" value="0">
                 @endif
-                <input class="hidden" id="recaptcha" value="{{$setting->recaptcha_register}}">
 
                 <x-button
                     class="text-sm"
@@ -225,3 +227,7 @@
         </a>
     </div>
 @endsection
+
+@push('script')
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+@endpush

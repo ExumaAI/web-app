@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::table('users', function (Blueprint $table) {
             $table->text('gemini_api_keys')
-			->after('api_keys')
-			->nullable();
+                ->after('api_keys')
+                ->nullable();
         });
     }
 

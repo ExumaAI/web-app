@@ -136,28 +136,28 @@
                 </li>
             @endforeach
         </ul>
-        @if($data)
+        @if ($data)
             <a
-                    class="group mb-10 flex w-full items-center justify-center gap-3 rounded-full bg-background px-4 py-5 text-center text-[18px] font-bold shadow-[0_14px_44px_#2D2C6A17] transition-all hover:-translate-y-1 hover:scale-[1.025] hover:bg-gradient-to-br hover:from-[#82E2F4] hover:via-[#8A8AED] hover:to-[#6977DE] hover:shadow-2xl hover:shadow-black/10"
-                    href="{{ '/dashboard' }}"
+                class="group mb-10 flex w-full items-center justify-center gap-3 rounded-full bg-background px-4 py-5 text-center text-[18px] font-bold shadow-[0_14px_44px_#2D2C6A17] transition-all hover:-translate-y-1 hover:scale-[1.025] hover:bg-gradient-to-br hover:from-[#82E2F4] hover:via-[#8A8AED] hover:to-[#6977DE] hover:shadow-2xl hover:shadow-black/10"
+                href="{{ '/dashboard' }}"
             >
-            <span
+                <span
                     class="inline-block bg-gradient-to-br from-[#82E2F4] via-[#8A8AED] to-[#6977DE] bg-clip-text text-transparent group-hover:from-white group-hover:via-white group-hover:to-white"
-            >
-                {{ trans('Subscription activated') }}
-            </span>
+                >
+                    {{ trans('Subscription activated') }}
+                </span>
                 <x-tabler-chevron-right class="size-4 text-[#6977DE] group-hover:text-white" />
             </a>
         @else
             <a
-                    class="group mb-10 flex w-full items-center justify-center gap-3 rounded-full bg-background px-4 py-5 text-center text-[18px] font-bold shadow-[0_14px_44px_#2D2C6A17] transition-all hover:-translate-y-1 hover:scale-[1.025] hover:bg-gradient-to-br hover:from-[#82E2F4] hover:via-[#8A8AED] hover:to-[#6977DE] hover:shadow-2xl hover:shadow-black/10"
-                    href="{{ $payment }}"
+                class="group mb-10 flex w-full items-center justify-center gap-3 rounded-full bg-background px-4 py-5 text-center text-[18px] font-bold shadow-[0_14px_44px_#2D2C6A17] transition-all hover:-translate-y-1 hover:scale-[1.025] hover:bg-gradient-to-br hover:from-[#82E2F4] hover:via-[#8A8AED] hover:to-[#6977DE] hover:shadow-2xl hover:shadow-black/10"
+                href="{{ $payment }}"
             >
-            <span
+                <span
                     class="inline-block bg-gradient-to-br from-[#82E2F4] via-[#8A8AED] to-[#6977DE] bg-clip-text text-transparent group-hover:from-white group-hover:via-white group-hover:to-white"
-            >
-                {{ trans('Start My Free Trial') }}
-            </span>
+                >
+                    {{ trans('Subscribe Now') }}
+                </span>
                 <x-tabler-chevron-right class="size-4 text-[#6977DE] group-hover:text-white" />
             </a>
         @endif

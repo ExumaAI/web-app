@@ -6,10 +6,7 @@ namespace App\Notifications;
 
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
-use Illuminate\Notifications\Messages\BroadcastMessage;
-use App\Models\User;
 
 class LiveNotification extends Notification implements ShouldQueue
 {
@@ -33,12 +30,12 @@ class LiveNotification extends Notification implements ShouldQueue
     public function toArray(object $notifiable): array
     {
         return [
-            'user_id' => $notifiable->id,
+            'user_id'   => $notifiable->id,
             'user_name' => $notifiable->name,
-            'data' => [
+            'data'      => [
                 'message' => $this->message,
-                'link' => $this->link,
-                'title' => $this->title,
+                'link'    => $this->link,
+                'title'   => $this->title,
             ],
         ];
     }

@@ -382,9 +382,7 @@
                         if ($upgrade) {
                             $href = LaravelLocalization::localizeUrl(route('dashboard.user.payment.subscription'));
                         } else {
-                            $href = LaravelLocalization::localizeUrl(
-                                route($entry->type === 'voiceover' ? 'dashboard.user.openai.generator.workbook' : 'dashboard.user.openai.generator', $entry->slug),
-                            );
+                            $href = LaravelLocalization::localizeUrl(route('dashboard.user.openai.generator', $entry->slug));
                         }
                     @endphp
                     @if ($upgrade || $entry->active == 1)
@@ -446,33 +444,8 @@
 @endsection
 
 @push('script')
+@includeWhen(\Illuminate\Support\Facades\Route::has('dashboard.introductions.index'), 'panel/admin/introduction/include/introduction')
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-
-        if (window.innerWidth >= 768) {
-            const steps = @json(\App\Models\Introduction::getFormattedSteps());
-
-            @if (auth()->user()->tour_seen == 0 && \App\Models\Setting::first()->tour_seen == 1)
-                introJs().setOptions({
-                    showBullets: false,
-                    steps: steps.map(step => {
-                        step.element = document.querySelector(step.element);
-                        return step;
-                    })
-                }).oncomplete(function() {
-                    fetch('/dashboard/user/mark-tour-seen', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                        },
-                        body: JSON.stringify({})
-                    });
-                }).start();
-            @endif
-        }
-    });
-
     function dismiss() {
         // localStorage.setItem('lqd-announcement-dismissed', true);
         document.querySelector('.lqd-announcement').style.display = 'none';

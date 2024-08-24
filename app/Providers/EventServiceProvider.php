@@ -2,39 +2,36 @@
 
 namespace App\Providers;
 
-
+use App\Events\BankTransferEvent;
+use App\Events\FreePaymentEvent;
+use App\Events\IyzicoLifetimeEvent;
+use App\Events\IyzicoWebhookEvent;
+use App\Events\PaypalLifetimeEvent;
+use App\Events\PaypalWebhookEvent;
+use App\Events\PaystackLifetimeEvent;
+use App\Events\PaystackWebhookEvent;
+use App\Events\StripeLifetimeEvent;
+use App\Events\StripeWebhookEvent;
+use App\Events\TwoCheckoutWebhookEvent;
 use App\Events\UsersActivityEvent;
+use App\Events\YokassaWebhookEvent;
+use App\Listeners\BankTransferListener;
+use App\Listeners\FreePaymentListener;
+use App\Listeners\IyzicoLifetimeListener;
+use App\Listeners\IyzicoWebhookListener;
+use App\Listeners\PaypalLifetimeListener;
+use App\Listeners\PaypalWebhookListener;
+use App\Listeners\PaystackLifetimeListener;
+use App\Listeners\PaystackWebhookListener;
+use App\Listeners\StripeLifetimeListener;
+use App\Listeners\StripeWebhookListener;
+use App\Listeners\TwoCheckoutWebhookListener;
 use App\Listeners\UsersActivityListener;
+use App\Listeners\YokassaWebhookListener;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\Event;
-
-use App\Events\PaypalWebhookEvent;
-use App\Events\StripeWebhookEvent;
-use App\Events\YokassaWebhookEvent;
-use App\Events\TwoCheckoutWebhookEvent;
-use App\Events\IyzicoWebhookEvent;
-use App\Events\PaystackWebhookEvent;
-use App\Events\BankTransferEvent;
-use App\Events\FreePaymentEvent;
-use App\Events\StripeLifetimeEvent;
-use App\Events\PaypalLifetimeEvent;
-use App\Events\PaystackLifetimeEvent;
-use App\Events\IyzicoLifetimeEvent;
-
-use App\Listeners\PaypalWebhookListener;
-use App\Listeners\StripeWebhookListener;
-use App\Listeners\YokassaWebhookListener;
-use App\Listeners\TwoCheckoutWebhookListener;
-use App\Listeners\IyzicoWebhookListener;
-use App\Listeners\PaystackWebhookListener;
-use App\Listeners\BankTransferListener;
-use App\Listeners\FreePaymentListener;
-use App\Listeners\StripeLifetimeListener;
-use App\Listeners\PaypalLifetimeListener;
-use App\Listeners\IyzicoLifetimeListener;
-use App\Listeners\PaystackLifetimeListener;
 
 class EventServiceProvider extends ServiceProvider
 {
@@ -80,14 +77,14 @@ class EventServiceProvider extends ServiceProvider
         IyzicoLifetimeEvent::class => [
             IyzicoLifetimeListener::class,
         ],
-		PaystackLifetimeEvent::class => [
+        PaystackLifetimeEvent::class => [
             PaystackLifetimeListener::class,
         ],
-        # This should not be deleted, the extension tip is required
+        // This should not be deleted, the extension tip is required
         \App\Events\AffiliateEvent::class => [
             \App\Listeners\AffiliateListener::class,
         ],
-		UsersActivityEvent::class => [
+        UsersActivityEvent::class => [
             UsersActivityListener::class,
         ],
     ];

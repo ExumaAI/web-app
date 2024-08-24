@@ -19,7 +19,6 @@ class BadWord extends Model
         return $this->belongsTo(User::class);
     }
 
-
     public function getWordsAsCollection(): Collection
     {
         return str($this->words)->explode(',')

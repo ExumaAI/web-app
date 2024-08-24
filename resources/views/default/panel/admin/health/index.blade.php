@@ -5,7 +5,7 @@
     <!-- Page body -->
     <div class="page-body">
         <div class="container-xl">
-            @if (Auth::user()->type == 'admin')
+            @if (Auth::user()->isAdmin())
                 @php
                     function backgroundColor($status)
                     {

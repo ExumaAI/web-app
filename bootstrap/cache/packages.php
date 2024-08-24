@@ -212,6 +212,17 @@
       'Health' => 'Spatie\\Health\\Facades\\Health',
     ),
   ),
+  'spatie/laravel-newsletter' => 
+  array (
+    'providers' => 
+    array (
+      0 => 'Spatie\\Newsletter\\NewsletterServiceProvider',
+    ),
+    'aliases' => 
+    array (
+      'Newsletter' => 'Spatie\\Newsletter\\Facades\\Newsletter',
+    ),
+  ),
   'spatie/laravel-sitemap' => 
   array (
     'providers' => 
@@ -228,13 +239,6 @@
     'aliases' => 
     array (
       'PayPal' => 'Srmklive\\PayPal\\Facades\\PayPal',
-    ),
-  ),
-  'wire-elements/wire-extender' => 
-  array (
-    'providers' => 
-    array (
-      0 => 'WireElements\\WireExtender\\WireExtenderServiceProvider',
     ),
   ),
   'yajra/laravel-datatables-oracle' => 

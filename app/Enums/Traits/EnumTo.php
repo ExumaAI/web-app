@@ -6,11 +6,10 @@ namespace App\Enums\Traits;
 
 use App\Enums\Contracts\WithIntBackedEnum;
 use App\Enums\Contracts\WithStringBackedEnum;
-use App\Enums\ImageStorage;
 use Illuminate\Support\Arr;
 use Illuminate\View\ComponentAttributeBag;
-use InvalidArgumentException;
 use UnitEnum;
+
 trait EnumTo
 {
     public static function toArray(): array
@@ -59,5 +58,4 @@ trait EnumTo
     {
         return (new ComponentAttributeBag($defaultAttrs))->merge($attributes);
     }
-
 }

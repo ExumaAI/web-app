@@ -83,22 +83,18 @@
                 <div class="row">
                     <div class="col-md-6">
                         <div class="mb-3">
-                            <div class="form-label">{{ __('Type') }}</div>
+                            <div class="form-label">{{ __('Role') }}</div>
                             <select
                                 class="form-select"
                                 id="type"
                                 name="type"
                             >
-                                <option
-                                    value="admin"
-                                    {{ $user->type == 'admin' ? 'selected' : '' }}
-                                >
-                                    {{ __('Admin') }}</option>
-                                <option
-                                    value="user"
-                                    {{ $user->type == 'user' ? 'selected' : '' }}
-                                >
-                                    {{ __('User') }}</option>
+                                
+                                @foreach(App\Enums\Roles::cases() as $role)
+                                    <option value="{{ $role }}" {{ $user->type === $role ? 'selected' : '' }}>
+                                        {{ $role->label() }}
+                                    </option>
+                                @endforeach
                             </select>
                         </div>
                     </div>

@@ -7,18 +7,16 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class UserSynthesia extends Model
 {
-
-    protected $table = "user_synthesia";
-
+    protected $table = 'user_synthesia';
 
     protected $fillable = [
         'user_id',
         'avatar_id',
-        'status'
+        'status',
     ];
 
-    public function user() : BelongsTo
+    public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class, "user_id", "id");
+        return $this->belongsTo(User::class, 'user_id', 'id');
     }
 }

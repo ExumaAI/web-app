@@ -14,6 +14,6 @@ class Blog extends Model
         'seo_title',
         'seo_description',
         'categories',
-        'tags'
+        'tags',
     ];
 }

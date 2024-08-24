@@ -6,9 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::table('frontend_footer_settings', function (Blueprint $table) {
@@ -19,16 +16,15 @@ return new class extends Migration
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::table('frontend_footer_settings', function (Blueprint $table) {
-            $table->dropColumn('floating_button_small_text');
-            $table->dropColumn('floating_button_bold_text');
-            $table->dropColumn('floating_button_link');
-            $table->dropColumn('floating_button_active');
+            $table->dropColumn([
+                'floating_button_small_text',
+                'floating_button_bold_text',
+                'floating_button_link',
+                'floating_button_active',
+            ]);
         });
     }
 };

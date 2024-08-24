@@ -4,11 +4,12 @@ namespace App\Http\Controllers\Common;
 
 use App\Http\Controllers\Controller;
 use App\Models\SettingTwo;
+use Exception;
+use Illuminate\Http\File;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Illuminate\Http\File;
 use Mcamara\LaravelLocalization\Facades\LaravelLocalization;
 
 class CommonController extends Controller
@@ -17,7 +18,7 @@ class CommonController extends Controller
     {
         $currentDebugValue = env('APP_DEBUG', false);
 
-        $newDebugValue = !$currentDebugValue;
+        $newDebugValue = ! $currentDebugValue;
 
         $envContent = file_get_contents(base_path('.env'));
 
@@ -29,6 +30,7 @@ class CommonController extends Controller
 
         return redirect()->back()->with('message', 'Debug mode updated successfully.');
     }
+
     public function regenerate()
     {
         Artisan::call('elseyyid:location:install');
@@ -61,7 +63,7 @@ class CommonController extends Controller
 
         $new_json = json_encode_prettify($list);
         $filesystem = new \Illuminate\Filesystem\Filesystem;
-        $filesystem->put(base_path('lang/'.$lang.'.json'), $new_json);
+        $filesystem->put(base_path('lang/' . $lang . '.json'), $new_json);
 
         if ($column_name == 'edit') {
             // Read existing values from en.json
@@ -117,11 +119,11 @@ class CommonController extends Controller
 
         foreach ($images ?? [] as $image) {
             $base64Image = $image;
-            $nameOfImage = Str::random(12).'.png';
+            $nameOfImage = Str::random(12) . '.png';
 
             //save file on local storage or aws s3
             Storage::disk('public')->put($nameOfImage, base64_decode(preg_replace('#^data:image/\w+;base64,#i', '', $base64Image)));
-            $path = '/uploads/'.$nameOfImage;
+            $path = '/uploads/' . $nameOfImage;
 
             $uploadedFile = new File(substr($path, 1));
 
@@ -130,8 +132,8 @@ class CommonController extends Controller
                     $aws_path = Storage::disk('s3')->put('', $uploadedFile);
                     unlink(substr($path, 1));
                     $path = Storage::disk('s3')->url($aws_path);
-                } catch (\Exception $e) {
-                    return response()->json(['status' => 'error', 'message' => 'AWS Error - '.$e->getMessage()]);
+                } catch (Exception $e) {
+                    return response()->json(['status' => 'error', 'message' => 'AWS Error - ' . $e->getMessage()]);
                 }
             }
 
@@ -140,8 +142,8 @@ class CommonController extends Controller
                     $aws_path = Storage::disk('r2')->put('', $uploadedFile);
                     unlink(substr($path, 1));
                     $path = Storage::disk('r2')->url($aws_path);
-                } catch (\Exception $e) {
-                    return response()->json(["status" => "error", "message" => "AWS Error - " . $e->getMessage()]);
+                } catch (Exception $e) {
+                    return response()->json(['status' => 'error', 'message' => 'AWS Error - ' . $e->getMessage()]);
                 }
             }
 
@@ -158,11 +160,11 @@ class CommonController extends Controller
 
         $imageContent = file_get_contents($image->getRealPath());
         $base64Image = base64_encode($imageContent);
-        $nameOfImage = Str::random(12).'.png';
+        $nameOfImage = Str::random(12) . '.png';
 
         //save file on local storage or aws s3
         Storage::disk('public')->put($nameOfImage, base64_decode($base64Image));
-        $path = '/uploads/'.$nameOfImage;
+        $path = '/uploads/' . $nameOfImage;
         $uploadedFile = new File(substr($path, 1));
 
         if (SettingTwo::first()->ai_image_storage == 's3') {
@@ -170,8 +172,8 @@ class CommonController extends Controller
                 $aws_path = Storage::disk('s3')->put('', $uploadedFile);
                 unlink(substr($path, 1));
                 $path = Storage::disk('s3')->url($aws_path);
-            } catch (\Exception $e) {
-                return response()->json(['status' => 'error', 'message' => 'AWS Error - '.$e->getMessage()]);
+            } catch (Exception $e) {
+                return response()->json(['status' => 'error', 'message' => 'AWS Error - ' . $e->getMessage()]);
             }
         }
 
@@ -180,11 +182,10 @@ class CommonController extends Controller
                 $aws_path = Storage::disk('r2')->put('', $uploadedFile);
                 unlink(substr($path, 1));
                 $path = Storage::disk('r2')->url($aws_path);
-            } catch (\Exception $e) {
-                return response()->json(["status" => "error", "message" => "AWS Error - " . $e->getMessage()]);
+            } catch (Exception $e) {
+                return response()->json(['status' => 'error', 'message' => 'AWS Error - ' . $e->getMessage()]);
             }
         }
-
 
         return response()->json(['path' => "$path"]);
     }

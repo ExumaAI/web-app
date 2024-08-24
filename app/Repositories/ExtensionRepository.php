@@ -37,9 +37,9 @@ class ExtensionRepository implements ExtensionRepositoryInterface
         $appVersion = $this->appVersion();
 
         $response = $this->request('get', 'extension', [
-            'is_theme' => $isTheme,
-            'is_beta' => false,
-            'app_version' => $appVersion ?: 6.5
+            'is_theme'    => $isTheme,
+            'is_beta'     => false,
+            'app_version' => $appVersion ?: 6.5,
         ]);
 
         if ($response->ok()) {
@@ -70,7 +70,7 @@ class ExtensionRepository implements ExtensionRepositoryInterface
 
             return array_merge($data, [
                 'db_version' => $extension?->version,
-                'installed' => (bool) $extension?->installed,
+                'installed'  => (bool) $extension?->installed,
                 'upgradable' => $extension?->version !== $data['version'],
             ]);
         }
@@ -85,15 +85,15 @@ class ExtensionRepository implements ExtensionRepositoryInterface
 
     public function request(string $method, string $route, array $body = [], $fullUrl = null)
     {
-        $fullUrl = $fullUrl ?? self::API_URL.$route;
+        $fullUrl = $fullUrl ?? self::API_URL . $route;
 
         return Http::withHeaders([
-            'Accept' => 'application/json',
-            'Content-Type' => 'application/json',
-            'x-domain' => request()->getHost(),
-            'x-domain-key' => $this->domainKey(),
+            'Accept'         => 'application/json',
+            'Content-Type'   => 'application/json',
+            'x-domain'       => request()->getHost(),
+            'x-domain-key'   => $this->domainKey(),
             'x-license-type' => $this->licenseType(),
-            'x-app-key' => $this->appKey(),
+            'x-app-key'      => $this->appKey(),
         ])->when($method === 'post', function ($http) use ($fullUrl, $body) {
             return $http->post($fullUrl, $body);
         }, function ($http) use ($fullUrl, $body) {
@@ -105,7 +105,7 @@ class ExtensionRepository implements ExtensionRepositoryInterface
     {
         $domain = $request->getHost();
 
-        $check = cache()->remember('check_license_domain_'.$domain, 60 * 60 * 24, function () {
+        $check = cache()->remember('check_license_domain_' . $domain, 60 * 60 * 24, function () {
             return $this
                 ->request('post', 'check')
                 ->json('licensed');
@@ -118,7 +118,7 @@ class ExtensionRepository implements ExtensionRepositoryInterface
 
             SettingTwo::first()->update(['liquid_license_domain_key' => null]);
 
-            cache()->delete('check_license_domain_'.$domain);
+            cache()->delete('check_license_domain_' . $domain);
 
             return redirect()->route('LaravelInstaller::license')->with(['message' => 'License for this domain is invalid. Please contact support.']);
         }
@@ -135,7 +135,7 @@ class ExtensionRepository implements ExtensionRepositoryInterface
 
             return array_merge($extension, [
                 'db_version' => $value?->version,
-                'installed' => (bool) $value?->installed,
+                'installed'  => (bool) $value?->installed,
                 'upgradable' => $value?->version !== $extension['version'],
             ]);
         })->toArray();
@@ -145,7 +145,7 @@ class ExtensionRepository implements ExtensionRepositoryInterface
     {
         foreach ($data as $extension) {
             Extension::query()->firstOrCreate([
-                'slug' => $extension['slug'],
+                'slug'     => $extension['slug'],
                 'is_theme' => $extension['is_theme'],
             ], [
                 'version' => $extension['version'],

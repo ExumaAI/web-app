@@ -8,12 +8,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class UserIntegration extends Model
 {
-    protected $table ='user_integrations';
+    protected $table = 'user_integrations';
 
     protected $fillable = ['integration_id', 'user_id', 'credentials'];
 
     protected $casts = [
-        'credentials' => 'array'
+        'credentials' => 'array',
     ];
 
     public function user(): BelongsTo

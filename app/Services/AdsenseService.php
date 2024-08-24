@@ -5,6 +5,7 @@ use App\Models\Ad;
 function adsense($type)
 {
     $adsense = Ad::where('type', $type)->where('status', true)->first();
+
     return $adsense;
 }
 

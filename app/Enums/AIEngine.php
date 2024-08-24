@@ -39,6 +39,9 @@ enum AIEngine: string implements Contracts\WithStringBackedEnum
     case PLAGIARISM_CHECK = 'plagiarism_check';
 
     case SYNTHESIA = 'synthesia';
+    case PEBBLELY = 'pebblely';
+
+    case FAL_AI = 'fal_ai';
 
     public function label(): string
     {
@@ -56,7 +59,8 @@ enum AIEngine: string implements Contracts\WithStringBackedEnum
             self::SERPER           => __('Serper'),
             self::CLIPDROP         => __('Clipdrop'),
             self::PLAGIARISM_CHECK => __('Plagiarism Check'),
-            self::SYNTHESIA => __('Synthesia'),
+            self::SYNTHESIA        => __('Synthesia'),
+            self::PEBBLELY         => __('Pebblely'),
         };
     }
 }

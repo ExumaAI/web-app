@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class RateLimit extends Model
 {
     use HasFactory;
+
     protected $fillable = [
         'ip_address',
         'attempts',

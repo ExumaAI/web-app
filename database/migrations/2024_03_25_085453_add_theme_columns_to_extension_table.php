@@ -12,8 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('extensions', function (Blueprint $table) {
-			$table->boolean('is_theme')->default(false)->after('licensed');
-			$table->enum('theme_type', ['All', 'Frontend', 'Dashboard'])->default('All')->after('is_theme');
+            $table->boolean('is_theme')->default(false)->after('licensed');
+            $table->enum('theme_type', ['All', 'Frontend', 'Dashboard'])->default('All')->after('is_theme');
         });
     }
 
@@ -23,11 +23,8 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('extensions', function (Blueprint $table) {
-            if (Schema::hasColumn('extensions', 'is_theme')) {
-                $table->dropColumn('is_theme');
-            }
-            if (Schema::hasColumn('extensions', 'is_theme')) {
-                $table->dropColumn('theme_type');
+            if (Schema::hasColumn('extensions', 'theme_type')) {
+                $table->dropColumn(['is_theme', 'theme_type']);
             }
         });
     }

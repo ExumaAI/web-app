@@ -24,7 +24,7 @@ class Chatbot extends Model
         'width',
         'height',
         'color',
-        'status'
+        'status',
     ];
 
     public function imageUrl(): Attribute

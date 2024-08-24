@@ -13,9 +13,9 @@ class Folder extends Component
      * Create a new component instance.
      */
     public function __construct(
-		public Folders $folder,
-		public bool $folderSingleView = false
-	){}
+        public Folders $folder,
+        public bool $folderSingleView = false
+    ) {}
 
     /**
      * Get the view / contents that represent the component.

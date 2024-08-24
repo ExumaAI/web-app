@@ -140,8 +140,11 @@
                                 id="type"
                                 name="type"
                             >
-                                <option value="user">{{ __('User') }}</option>
-                                <option value="admin">{{ __('Admin') }}</option>
+                                @foreach(\App\Enums\Roles::cases() as $role)
+                                    <option value="{{ $role->value }}">
+                                        {{ $role->label() }}
+                                    </option>
+                                @endforeach
                             </select>
                         </div>
                     </div>

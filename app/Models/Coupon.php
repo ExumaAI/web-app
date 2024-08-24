@@ -25,6 +25,6 @@ class Coupon extends Model
     public function usersUsed()
     {
         return $this->belongsToMany(User::class, 'coupon_users')
-                    ->withTimestamps();
+            ->withTimestamps();
     }
 }

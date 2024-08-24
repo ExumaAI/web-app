@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Admin\Finance\PlanController;
+use App\Http\Controllers\Admin\Finance\TokenPackPlanController;
 use App\Http\Controllers\AdsController;
 use App\Http\Controllers\AdvertisController;
 use App\Http\Controllers\AIArticleWizardController;
@@ -48,7 +50,7 @@ use Illuminate\Support\Facades\Route;
 use Mcamara\LaravelLocalization\Facades\LaravelLocalization;
 
 Route::group([
-    'prefix' => LaravelLocalization::setLocale(),
+    'prefix'     => LaravelLocalization::setLocale(),
     'middleware' => [
         'localeSessionRedirect', 'localizationRedirect', 'localeViewPath',
     ],
@@ -69,8 +71,8 @@ Route::group([
                 Route::post('/mark-tour-seen', [UserController::class, 'markTourSeen'])->name('markTourSeen');
                 Route::group([
                     'controller' => Google2FAController::class,
-                    'prefix' => '2fa',
-                    'as' => '2fa.',
+                    'prefix'     => '2fa',
+                    'as'         => '2fa.',
                 ], function () {
                     Route::get('activate', 'activate2FA')->name('activate');
                     Route::post('activate', 'assign2FA');
@@ -89,8 +91,8 @@ Route::group([
                 });
 
                 Route::group([
-                    'as' => 'integration.',
-                    'prefix' => 'integration',
+                    'as'         => 'integration.',
+                    'prefix'     => 'integration',
                     'controller' => IntegrationController::class,
                 ], function () {
                     Route::get('share/{userIntegration}/workbook/{userOpenai}', 'workbook')->name('share.workbook');
@@ -102,8 +104,8 @@ Route::group([
 
                 // brand voice
                 Route::group([
-                    'as' => 'brand.',
-                    'prefix' => 'brand',
+                    'as'         => 'brand.',
+                    'prefix'     => 'brand',
                     'controller' => BrandController::class,
                 ], function () {
                     Route::get('/', 'index')->name('index');
@@ -115,8 +117,8 @@ Route::group([
 
                 // teams
                 Route::group([
-                    'as' => 'team.',
-                    'prefix' => 'team',
+                    'as'         => 'team.',
+                    'prefix'     => 'team',
                     'controller' => TeamController::class,
                 ], function () {
                     Route::get('', 'index')->name('index');
@@ -129,8 +131,8 @@ Route::group([
 
                 // user generator
                 Route::group([
-                    'as' => 'generator.',
-                    'prefix' => 'generator',
+                    'as'         => 'generator.',
+                    'prefix'     => 'generator',
                     'controller' => GeneratorController::class,
                 ], function () {
                     Route::get('{workbook_slug?}', [GeneratorController::class, 'index'])->name('index');
@@ -152,6 +154,7 @@ Route::group([
                             CheckTemplateTypeAndPlan::class,
                         ])
                             ->group(function () {
+                                Route::get('generator/check/status', [UserController::class, 'checkStatus'])->name('check.status');
                                 Route::get('/generator/{slug}', [UserController::class, 'openAIGenerator'])->name('generator');
                                 Route::get('/generator/{slug}/workbook', [UserController::class, 'openAIGeneratorWorkbook'])->name('generator.workbook');
                             });
@@ -340,8 +343,8 @@ Route::group([
                     Route::get('/', [AdminController::class, 'index'])->name('index');
 
                     Route::group([
-                        'as' => 'chatbot.',
-                        'prefix' => 'chatbot/{chatbot}',
+                        'as'         => 'chatbot.',
+                        'prefix'     => 'chatbot/{chatbot}',
                         'controller' => ChatbotTrainingController::class,
                     ], function () {
                         Route::post('text', 'text')->name('text');
@@ -355,7 +358,7 @@ Route::group([
                     });
 
                     Route::group([
-                        'as' => 'ai-chat-model.',
+                        'as'     => 'ai-chat-model.',
                         'prefix' => 'ai-chat-model',
                     ], function () {
                         Route::get('', [AiChatbotModelController::class, 'index'])->name('index');
@@ -363,8 +366,8 @@ Route::group([
                     });
 
                     Route::group([
-                        'as' => 'chatbot.',
-                        'prefix' => 'chatbot',
+                        'as'         => 'chatbot.',
+                        'prefix'     => 'chatbot',
                         'controller' => ChatbotController::class,
                     ], function () {
                         Route::get('setting', 'setting')->name('setting');
@@ -376,8 +379,8 @@ Route::group([
 
                     // Marketplace
                     Route::group([
-                        'as' => 'marketplace.',
-                        'prefix' => 'marketplace',
+                        'as'         => 'marketplace.',
+                        'prefix'     => 'marketplace',
                         'controller' => MarketPlaceController::class,
                     ], function () {
                         Route::get('', 'index')->name('index');
@@ -462,7 +465,7 @@ Route::group([
                             Route::get('/', [AdminController::class, 'openAIChatList'])->name('list');
                             Route::get('/add-or-update/{id?}', [AdminController::class, 'openAIChatAddOrUpdate'])->name('addOrUpdate');
                             Route::get('/delete/{id?}', [AdminController::class, 'openAIChatDelete'])->name('delete');
-                            Route::post('/save', [AdminController::class, 'openAIChatAddOrUpdateSave']);
+                            Route::post('/save', [AdminController::class, 'openAIChatAddOrUpdateSave'])->name('save');
 
                             Route::post('/update-plan', [AdminController::class, 'updatePlan'])->name('updatePlan');
 
@@ -477,6 +480,17 @@ Route::group([
 
                     //Finance
                     Route::prefix('finance')->name('finance.')->group(function () {
+
+                        Route::resource('plan', PlanController::class)->except(
+                            'store', 'update', 'destroy'
+                        );
+
+                        Route::get('plan/{plan}/delete', [PlanController::class, 'destroy'])->name('plan.destroy');
+
+                        Route::resource('token-pack-plan', TokenPackPlanController::class)->only(
+                            'create', 'edit'
+                        );
+
                         //Plans
                         Route::get('free-feature', [AdminController::class, 'freeFeature'])->name('free.feature');
                         Route::post('free-feature', [AdminController::class, 'freeFeatureSave']);
@@ -487,6 +501,7 @@ Route::group([
                             Route::get('/delete/{id}', [AdminController::class, 'paymentPlansDelete'])->name('delete');
                             Route::post('/save', [AdminController::class, 'paymentPlansSave'])->name('save');
                         });
+
                         //Payment Gateways
                         Route::prefix('paymentGatewaysadd')->name('paymentGateways.')->group(function () {
                             Route::get('/', [GatewayController::class, 'paymentGateways'])->name('index');
@@ -545,6 +560,7 @@ Route::group([
                         Route::get('anthropic/test', [SettingsController::class, 'anthropicTest'])->name('anthropic.test');
                         Route::post('anthropic', [SettingsController::class, 'anthropicSave']);
 
+
                         Route::get('gemini', [SettingsController::class, 'gemini'])->name('gemini');
                         Route::get('gemini/test', [SettingsController::class, 'geminiTest'])->name('gemini.test');
                         Route::post('gemini', [SettingsController::class, 'geminiSave']);
@@ -583,6 +599,9 @@ Route::group([
 
                         Route::get('/synthesia', [SettingsController::class, 'synthesia'])->name('synthesia');
                         Route::post('/synthesia-save', [SettingsController::class, 'synthesiaSave']);
+
+                        Route::get('/pebblely', [SettingsController::class, 'pebblely'])->name('pebblely');
+                        Route::post('/pebblely-save', [SettingsController::class, 'pebblelySave']);
 
                         Route::get('/invoice', [SettingsController::class, 'invoice'])->name('invoice');
                         Route::post('/invoice-save', [SettingsController::class, 'invoiceSave']);
@@ -745,8 +764,6 @@ Route::group([
                     Route::get('email-templates/{id}/delete', [EmailTemplatesController::class, 'delete'])
                         ->name('email-templates.destroy');
 
-                    Route::resource('introductions', IntroductionController::class)->only(['index', 'store']);
-
                     //Blog
                     Route::prefix('blog')->name('blog.')->group(function () {
                         Route::get('/', [BlogController::class, 'blogList'])->name('list');
@@ -825,7 +842,7 @@ Route::group([
                 $currentDebugValue = env('APP_DEBUG', false);
                 $newDebugValue = ! $currentDebugValue;
                 $envContent = file_get_contents(base_path('.env'));
-                $envContent = preg_replace('/^APP_DEBUG=.*/m', 'APP_DEBUG='.($newDebugValue ? 'true' : 'false'), $envContent);
+                $envContent = preg_replace('/^APP_DEBUG=.*/m', 'APP_DEBUG=' . ($newDebugValue ? 'true' : 'false'), $envContent);
                 file_put_contents(base_path('.env'), $envContent);
                 Artisan::call('config:clear');
 

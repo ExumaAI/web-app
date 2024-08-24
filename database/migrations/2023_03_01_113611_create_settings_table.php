@@ -85,8 +85,6 @@ return new class extends Migration
             //OPENAI
             $table->text('openai_api_secret')->nullable();
 
-
-
             $table->timestamps();
         });
     }

@@ -8,6 +8,6 @@ use Illuminate\Database\Eloquent\Model;
 class SubscriptionItems extends Model
 {
     use HasFactory;
-    protected $table = 'subscription_items';
 
+    protected $table = 'subscription_items';
 }

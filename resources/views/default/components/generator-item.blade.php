@@ -17,7 +17,7 @@
             $upgrade = true;
         }
     } else {
-        if ($auth->type != 'admin' && $item->premium == 1 && $plan_type === 'regular') {
+        if (!$auth->isAdmin() && $item->premium == 1 && $plan_type === 'regular') {
             $upgrade = true;
         }
     }
@@ -31,7 +31,7 @@
         } elseif ($has_words_credit) {
             $overlay_link_href = route('dashboard.user.openai.generator.workbook', $item->slug);
         }
-    } elseif ((($item->type == 'voiceover' || $item->type == 'audio') && $has_words_credit) || ($item->type == 'image' && $has_images_credit)) {
+    } elseif ((($item->type == 'voiceover' || $item->type == 'audio' || $item->type == 'isolator') && $has_words_credit) || ($item->type == 'image' && $has_images_credit)) {
         $overlay_link_href = route('dashboard.user.openai.generator', $item->slug);
         $overlay_link_label = 'Create';
     } else {

@@ -76,7 +76,7 @@ class TicketAction
     {
         $this->message = [
             'message' => $message,
-            'sender' => $this->sender,
+            'sender'  => $this->sender,
         ];
 
         return $this;

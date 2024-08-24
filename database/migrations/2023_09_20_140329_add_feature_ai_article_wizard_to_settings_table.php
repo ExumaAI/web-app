@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('settings', function(Blueprint $table) {
+        Schema::table('settings', function (Blueprint $table) {
             $table->tinyInteger('feature_ai_article_wizard')->default(true);
         });
     }

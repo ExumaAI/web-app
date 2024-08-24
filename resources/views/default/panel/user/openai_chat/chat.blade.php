@@ -274,6 +274,11 @@
     </template>
 
     <input
+            id="assistant"
+            type="hidden"
+            value="{{ $category->assistant }}"
+    />
+    <input
         id="guest_id"
         type="hidden"
         value="{{ $apiUrl }}"

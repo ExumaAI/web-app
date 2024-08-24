@@ -6,9 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::table('settings', function (Blueprint $table) {
@@ -19,16 +16,15 @@ return new class extends Migration
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::table('settings', function (Blueprint $table) {
-            $table->dropColumn('privacy_enable');
-            $table->dropColumn('privacy_enable_login');
-            $table->dropColumn('privacy_content');
-            $table->dropColumn('terms_content');
+            $table->dropColumn([
+                'privacy_enable',
+                'privacy_enable_login',
+                'privacy_content',
+                'terms_content',
+            ]);
         });
     }
 };

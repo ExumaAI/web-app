@@ -1,16 +1,16 @@
 <?php
 
 namespace App\Console\Commands;
+
 // use App\Models\Subscriptions;
-use Laravel\Cashier\Subscription as Subscriptions;
-use Illuminate\Console\Command;
 use App\Events\BankTransferEvent;
 use App\Events\FreePaymentEvent;
-use App\Events\StripeLifetimeEvent;
-use App\Events\PaypalLifetimeEvent;
 use App\Events\IyzicoLifetimeEvent;
+use App\Events\PaypalLifetimeEvent;
 use App\Events\PaystackLifetimeEvent;
-use Illuminate\Support\Facades\Log;
+use App\Events\StripeLifetimeEvent;
+use Illuminate\Console\Command;
+use Laravel\Cashier\Subscription as Subscriptions;
 
 class CheckSubscriptionEnd extends Command
 {
@@ -58,8 +58,7 @@ class CheckSubscriptionEnd extends Command
                     ->where('ends_at', '<=', $now);
             })->get();
 
-
-        # free
+        // free
         $cancelFreeSubscriptions = $allSubscriptions
             ->where('stripe_status', 'free_approved')
             ->where('auto_renewal', false);
@@ -68,13 +67,13 @@ class CheckSubscriptionEnd extends Command
             ->where('auto_renewal', true);
         $cancelFreeSubscriptionIds = $cancelFreeSubscriptions->pluck('stripe_id')->toArray();
         $renewFreeSubscriptionIds = $renewFreeSubscriptions->pluck('stripe_id')->toArray();
-        if (!empty($cancelFreeSubscriptionIds)) {
-            event(new FreePaymentEvent("free_expired", $cancelFreeSubscriptionIds));
+        if (! empty($cancelFreeSubscriptionIds)) {
+            event(new FreePaymentEvent('free_expired', $cancelFreeSubscriptionIds));
         }
-        if (!empty($renewFreeSubscriptionIds)) {
-            event(new FreePaymentEvent("free_renewed", $renewFreeSubscriptionIds));
+        if (! empty($renewFreeSubscriptionIds)) {
+            event(new FreePaymentEvent('free_renewed', $renewFreeSubscriptionIds));
         }
-        # bank
+        // bank
         $cancelBankSubscriptions = $allSubscriptions
             ->where('auto_renewal', false)
             ->where(function ($query) {
@@ -89,45 +88,44 @@ class CheckSubscriptionEnd extends Command
             });
         $renewBankSubscriptionIds = $renewBankSubscriptions->pluck('stripe_id')->toArray();
         $cancelBankSubscriptionIds = $cancelBankSubscriptions->pluck('stripe_id')->toArray();
-        if (!empty($cancelBankSubscriptionIds)) {
-            event(new BankTransferEvent("bank_expired", $cancelBankSubscriptionIds));
+        if (! empty($cancelBankSubscriptionIds)) {
+            event(new BankTransferEvent('bank_expired', $cancelBankSubscriptionIds));
         }
-        if (!empty($renewBankSubscriptionIds)) {
-            event(new BankTransferEvent("bank_renewed", $renewBankSubscriptionIds));
+        if (! empty($renewBankSubscriptionIds)) {
+            event(new BankTransferEvent('bank_renewed', $renewBankSubscriptionIds));
         }
-        # strip
+        // strip
         $renewStripeLifeTimeSubscriptions = $allSubscriptions
             ->where('stripe_status', 'stripe_approved')
             ->where('auto_renewal', true);
         $renewStripeLiftimeSubscriptionIds = $renewStripeLifeTimeSubscriptions->pluck('stripe_id')->toArray();
-        if (!empty($renewStripeLiftimeSubscriptionIds)) {
-            event(new StripeLifetimeEvent("stripe_approved", $renewStripeLiftimeSubscriptionIds));
+        if (! empty($renewStripeLiftimeSubscriptionIds)) {
+            event(new StripeLifetimeEvent('stripe_approved', $renewStripeLiftimeSubscriptionIds));
         }
-        # paypal
+        // paypal
         $renewPaypalLifeTimeSubscriptions = $allSubscriptions
             ->where('stripe_status', 'paypal_approved')
             ->where('auto_renewal', true);
         $renewPaypalLiftimeSubscriptionIds = $renewPaypalLifeTimeSubscriptions->pluck('stripe_id')->toArray();
-        if (!empty($renewPaypalLiftimeSubscriptionIds)) {
-            event(new PaypalLifetimeEvent("paypal_approved", $renewPaypalLiftimeSubscriptionIds));
+        if (! empty($renewPaypalLiftimeSubscriptionIds)) {
+            event(new PaypalLifetimeEvent('paypal_approved', $renewPaypalLiftimeSubscriptionIds));
         }
-        # iyzico
+        // iyzico
         $renewIyzicoLifeTimeSubscriptions = $allSubscriptions
             ->where('stripe_status', 'iyzico_approved')
             ->where('auto_renewal', true);
         $renewIyzicoLiftimeSubscriptionIds = $renewIyzicoLifeTimeSubscriptions->pluck('stripe_id')->toArray();
-        if (!empty($renewIyzicoLiftimeSubscriptionIds)) {
-            event(new IyzicoLifetimeEvent("iyzico_approved", $renewIyzicoLiftimeSubscriptionIds));
+        if (! empty($renewIyzicoLiftimeSubscriptionIds)) {
+            event(new IyzicoLifetimeEvent('iyzico_approved', $renewIyzicoLiftimeSubscriptionIds));
         }
-        # paystack
+        // paystack
         $renewPaystackLifeTimeSubscriptions = $allSubscriptions
             ->where('stripe_status', 'iyzico_approved')
             ->where('auto_renewal', true);
         $renewPaystackLiftimeSubscriptionIds = $renewPaystackLifeTimeSubscriptions->pluck('stripe_id')->toArray();
-        if (!empty($renewPaystackLiftimeSubscriptionIds)) {
-            event(new PaystackLifetimeEvent("paystack_approved", $renewPaystackLiftimeSubscriptionIds));
+        if (! empty($renewPaystackLiftimeSubscriptionIds)) {
+            event(new PaystackLifetimeEvent('paystack_approved', $renewPaystackLiftimeSubscriptionIds));
         }
-
 
         $this->info('Subscription check event run successfully.');
     }

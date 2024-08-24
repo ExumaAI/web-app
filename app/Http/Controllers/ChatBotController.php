@@ -13,27 +13,29 @@ class ChatBotController extends Controller
     public function chatbotIndex()
     {
         $chatbotData = Chatbot::query()->orderBy('id', 'asc')->get();
+
         return view('panel.chatbot.index', compact('chatbotData'));
     }
 
     public function addOrUpdate($id = null)
     {
-        if ($id == null){
+        if ($id == null) {
             $chatbotData = null;
-        }else{
+        } else {
             $chatbotData = Chatbot::query()->where('id', $id)->firstOrFail();
         }
 
         return view('panel.chatbot.form', compact('chatbotData'));
     }
 
-    public function addOrUpdateSave(Request $request){
+    public function addOrUpdateSave(Request $request)
+    {
 
         if (Helper::appIsNotDemo()) {
-            if ($request->template_id != 'undefined'){
+            if ($request->template_id != 'undefined') {
                 $template = Chatbot::where('id', $request->template_id)->firstOrFail();
-            }else{
-                $template = new Chatbot();
+            } else {
+                $template = new Chatbot;
             }
 
             $template->title = $request->title;
@@ -51,31 +53,35 @@ class ChatBotController extends Controller
 
                 // Check image file-type
                 $imageTypes = ['jpg', 'jpeg', 'png', 'svg', 'webp'];
-                if (!in_array(Str::lower($image->getClientOriginalExtension()), $imageTypes)) {
-                    $data = array(
+                if (! in_array(Str::lower($image->getClientOriginalExtension()), $imageTypes)) {
+                    $data = [
                         'errors' => ['The file extension must be jpg, jpeg, png, webp or svg.'],
-                    );
+                    ];
+
                     return response()->json($data, 419);
                 }
 
                 $image->move($path, $image_name);
 
-                $template->image = '/'. $path . $image_name;
+                $template->image = '/' . $path . $image_name;
             }
 
             $template->save();
         }
     }
 
-    public function delete($id = null){
+    public function delete($id = null)
+    {
         if (Helper::appIsNotDemo()) {
             $template = Chatbot::where('id', $id)->firstOrFail();
             $template->delete();
+
             return back()->with(['message' => __('Deleted Successfully'), 'type' => 'success']);
         }
     }
 
-    public function chatbotSettingsSave(Request $request) {
+    public function chatbotSettingsSave(Request $request)
+    {
         if (Helper::appIsNotDemo()) {
             $settings_two = SettingTwo::first();
             $settings_two->chatbot_status = $request->status;

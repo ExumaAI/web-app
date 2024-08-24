@@ -3,12 +3,13 @@
 namespace App\Http\Controllers\Common;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Artisan;
 use Spatie\Health\Commands\RunHealthChecksCommand;
 use Spatie\Health\ResultStores\ResultStore;
-use Carbon\Carbon;
+use Throwable;
+
 class HealthController extends Controller
 {
     public function index()
@@ -20,7 +21,7 @@ class HealthController extends Controller
         Artisan::call(RunHealthChecksCommand::class);
 
         return view('panel.admin.health.index', [
-            'lastRanAt' => new Carbon($checkResults?->finishedAt),
+            'lastRanAt'    => new Carbon($checkResults?->finishedAt),
             'checkResults' => $checkResults,
         ]);
     }
@@ -36,7 +37,7 @@ class HealthController extends Controller
             Artisan::call('optimize:clear');
 
             return response()->json(['success' => true]);
-        } catch (\Throwable $th) {
+        } catch (Throwable $th) {
             return response()->json(['success' => false]);
         }
     }

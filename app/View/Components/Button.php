@@ -12,14 +12,14 @@ class Button extends Component
      * Create a new component instance.
      */
     public function __construct(
-		public string $tag = 'a',
-		public string $href = '#',
-		public string $label = 'Button',
-		public string $type = '',
-		public string $size = '',
-		public string $variant = '',
-		public string $hoverVariant = '',
-	) {}
+        public string $tag = 'a',
+        public string $href = '#',
+        public string $label = 'Button',
+        public string $type = '',
+        public string $size = '',
+        public string $variant = '',
+        public string $hoverVariant = '',
+    ) {}
 
     /**
      * Get the view / contents that represent the component.

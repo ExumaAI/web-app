@@ -7,16 +7,15 @@ use App\Events\UsersActivityEvent;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Mail\OtpEmail;
-use App\Jobs\SendConfirmationEmail;
 use App\Models\Setting;
 use App\Models\User;
+use Exception;
 use Google2FA;
 use GuzzleHttp\Client;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class AuthenticatedSessionController extends Controller
@@ -40,17 +39,17 @@ class AuthenticatedSessionController extends Controller
         $settings = Setting::first();
 
         if ($settings->recaptcha_login && ($settings->recaptcha_sitekey || $settings->recaptcha_secretkey)) {
-            $client = new Client();
+            $client = new Client;
             $response = $client->post('https://www.google.com/recaptcha/api/siteverify', [
                 'form_params' => [
-                    'secret' => config('services.recaptcha.secret'),
+                    'secret'   => config('services.recaptcha.secret'),
                     'response' => $request->input('g-recaptcha-response'),
                 ],
             ])->getBody()->getContents();
 
             if (! json_decode($response, true)['success']) {
                 return response()->json([
-                    'status' => 'error',
+                    'status'  => 'error',
                     'message' => __('Invalid Recaptcha.'),
                 ], 401);
             }
@@ -65,11 +64,11 @@ class AuthenticatedSessionController extends Controller
 
                 return response()->json($data, 401);
             }
-            if ($user && !$user->email_confirmed && !$user->isAdmin()) {
+            if ($user && ! $user->email_confirmed && ! $user->isAdmin()) {
                 EmailConfirmation::forUser($user)->send();
                 $data = [
                     'errors' => [__('We have sent you an email for account confirmation. Please confirm your account to continue. Please also check your spam folder. If you did not receive the email, you can try login again and you will receive new confirmation email after 1 hour.')],
-                    'type' => 'confirmation',
+                    'type'   => 'confirmation',
                 ];
 
                 return response()->json($data, 401);
@@ -79,10 +78,11 @@ class AuthenticatedSessionController extends Controller
 
         if ($settings->login_with_otp) {
             $user = User::where('email', $request->email)->first();
-            if (!$user) {
-                $data = array(
+            if (! $user) {
+                $data = [
                     'errors' => [trans('auth.failed')],
-                );
+                ];
+
                 return response()->json($data, 401);
             }
 
@@ -92,16 +92,17 @@ class AuthenticatedSessionController extends Controller
 
             try {
                 Mail::to($user->email)->send(new OtpEmail($user, $settings, $otp));
-            }catch (\Exception){
-                $data = array(
+            } catch (Exception) {
+                $data = [
                     'errors' => [__('Email could not be sent.')],
-                    'type' => 'error',
-                );
+                    'type'   => 'error',
+                ];
+
                 return response()->json($data, 401);
             }
 
             return response()->json([
-                'link' => "/verify-otp"
+                'link' => '/verify-otp',
             ]);
 
         }
@@ -133,7 +134,7 @@ class AuthenticatedSessionController extends Controller
 
         if ($plan = $request->get('plan')) {
             return response()->json([
-                'link' => '/dashboard/user/payment?plan='.$plan,
+                'link' => '/dashboard/user/payment?plan=' . $plan,
             ]);
         }
 
@@ -167,14 +168,14 @@ class AuthenticatedSessionController extends Controller
             'otp' => 'required|array',
         ]);
 
-        $otp = implode('', $request->get("otp"));
+        $otp = implode('', $request->get('otp'));
 
-        $user = User::query()->where("otp", $otp)->first();
+        $user = User::query()->where('otp', $otp)->first();
 
-        if (!$user) {
+        if (! $user) {
             return response()->json([
                 'errors' => [__('Invalid OTP Code')],
-                'type' => 'otp',
+                'type'   => 'otp',
             ], 422);
         }
 
@@ -185,7 +186,7 @@ class AuthenticatedSessionController extends Controller
         $request->session()->regenerate();
 
         return response()->json([
-            'link' => '/dashboard'
+            'link' => '/dashboard',
         ]);
     }
 }

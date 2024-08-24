@@ -1,7 +1,7 @@
 @extends('panel.layout.app')
 @section('title', __('Support Requests'))
 @section('titlebar_actions')
-    @if (Auth::user()->type != 'admin')
+    @if (!Auth::user()->isAdmin())
         <x-button href="{{ route('dashboard.support.new') }}">
             {{ __('Create New Support Request') }}
             <x-tabler-plus class="size-4" />

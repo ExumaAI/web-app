@@ -13,14 +13,13 @@ class CreateActivity
         string $activity_type,
         string $activity_title,
         ?string $url = null
-    ): void
-    {
+    ): void {
         $user = $userOrId instanceof User ? $userOrId : User::findOrFail($userOrId);
 
         $user->activities()->create([
-            'activity_type' => $activity_type,
+            'activity_type'  => $activity_type,
             'activity_title' => $activity_title,
-            'url' => $url,
+            'url'            => $url,
         ]);
 
         Notify::toMany(

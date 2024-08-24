@@ -13,12 +13,12 @@ return new class extends Migration
     {
         Schema::create('coupons', function (Blueprint $table) {
             $table->id();
-            $table->string('name'); 
-            $table->string('code'); 
-            $table->decimal('discount', 5, 2);  
-            $table->integer('limit')->nullable();  
-            $table->unsignedBigInteger('created_by'); 
-            $table->foreign('created_by')->references('id')->on('users'); 
+            $table->string('name');
+            $table->string('code');
+            $table->decimal('discount', 5, 2);
+            $table->integer('limit')->nullable();
+            $table->unsignedBigInteger('created_by');
+            $table->foreign('created_by')->references('id')->on('users');
             $table->timestamps();
         });
     }

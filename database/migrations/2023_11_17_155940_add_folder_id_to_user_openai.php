@@ -6,9 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         // Add the new column with the default value
@@ -18,15 +15,15 @@ return new class extends Migration
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::table('user_openai', function (Blueprint $table) {
-            $table->dropForeign(['folder_id']);
-            $table->dropColumn('folder_id');
 
+            if (! isDBDriverSQLite()) {
+                $table->dropForeign(['folder_id']);
+            }
+
+            $table->dropColumn('folder_id');
         });
     }
 };

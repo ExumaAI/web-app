@@ -25,10 +25,12 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('subscriptions', function (Blueprint $table) {
-            $table->dropColumn('tax_rate');
-            $table->dropColumn('tax_value');
-            $table->dropColumn('coupon');
-            $table->dropColumn('total_amount');
+            $table->dropColumn([
+                'tax_rate',
+                'tax_value',
+                'coupon',
+                'total_amount',
+            ]);
         });
     }
 };

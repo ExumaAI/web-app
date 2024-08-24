@@ -17,6 +17,7 @@ use App\Models\PaymentPlans;
 use App\Models\Setting;
 use App\Models\User;
 use App\Models\UserOrder;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -28,6 +29,8 @@ use Stripe\Exception\InvalidArgumentException;
 use Stripe\PaymentIntent;
 use Stripe\Stripe;
 use Stripe\StripeClient;
+use Throwable;
+use UnexpectedValueException;
 
 /**
  * Base functions foreach payment gateway
@@ -55,6 +58,7 @@ class StripeService
     public static function saveAllProducts()
     {
         $key = self::getKey();
+
         try {
             $stripe = new StripeClient($key);
             // ------------ start creation of users stripe ids, for the first time only ------------------
@@ -78,16 +82,16 @@ class StripeService
             foreach ($allUsers as $aUser) {
                 if (! in_array($aUser->stripe_id, $existingCustomerIds->pluck('id')->toArray())) {
                     $userData = [
-                        'email' => $aUser->email,
-                        'name' => $aUser->name.' '.$aUser->surname,
-                        'phone' => $aUser->phone,
+                        'email'   => $aUser->email,
+                        'name'    => $aUser->name . ' ' . $aUser->surname,
+                        'phone'   => $aUser->phone,
                         'address' => [
-                            'line1' => $aUser->address,
+                            'line1'       => $aUser->address,
                             'postal_code' => $aUser->postal,
                         ],
                     ];
                     $userUpdates[] = [
-                        'user' => $aUser,
+                        'user'     => $aUser,
                         'userData' => $userData,
                     ];
                 }
@@ -102,8 +106,8 @@ class StripeService
             }
             // create webhooks after saving the products
             $tmp = self::createWebhook();
-        } catch (\Exception $ex) {
-            Log::error(self::$GATEWAY_CODE.'-> saveAllProducts(): '.$ex->getMessage());
+        } catch (Exception $ex) {
+            Log::error(self::$GATEWAY_CODE . '-> saveAllProducts(): ' . $ex->getMessage());
 
             return back()->with(['message' => $ex->getMessage(), 'type' => 'error']);
         }
@@ -112,6 +116,7 @@ class StripeService
     public static function saveProduct($plan)
     {
         $gateway = Gateways::where('code', self::$GATEWAY_CODE)->first() ?? abort(404);
+
         try {
             DB::beginTransaction();
             $price = (int) (((float) $plan->price) * 100); // Must be in cents level for stripe
@@ -127,7 +132,7 @@ class StripeService
                     $oldProductId = $product->product_id; // Product has been created before
                 } // ELSE Product has not been created before but record exists. Create new product and update record.
             } else {
-                $product = new GatewayProducts();
+                $product = new GatewayProducts;
                 $product->plan_id = $plan->id;
                 $product->gateway_code = self::$GATEWAY_CODE;
                 $product->gateway_title = self::$GATEWAY_NAME;
@@ -137,8 +142,8 @@ class StripeService
             $product->save();
             $data = [
                 'unit_amount' => $price,
-                'currency' => $currency,
-                'product' => $product->product_id,
+                'currency'    => $currency,
+                'product'     => $product->product_id,
             ];
             // if Subscription price and its not lifetime subscription
             if ($plan->price != 0 && $plan->type == 'subscription' && $plan->frequency !== 'lifetime_monthly' && $plan->frequency !== 'lifetime_yearly') {
@@ -150,13 +155,13 @@ class StripeService
                     foreach ($stripe->prices->all(['product' => $product->product_id]) as $oldPrice) {
                         try {
                             $stripe->prices->update($oldPrice->id, ['active' => false]);
-                        } catch (\Exception $ex) {
+                        } catch (Exception $ex) {
                         }
                     }
                     $updatedPrice = $stripe->prices->create($data);
                     // save history and update all plans prices and cancel the plan subs with updateUserData()
                     // --------- start create history for old priceID ---------
-                    $history = new OldGatewayProducts();
+                    $history = new OldGatewayProducts;
                     $history->plan_id = $plan->id;
                     $history->plan_name = $plan->name;
                     $history->gateway_code = self::$GATEWAY_CODE;
@@ -179,9 +184,9 @@ class StripeService
 
             $product->save();
             DB::commit();
-        } catch (\Exception $ex) {
+        } catch (Exception $ex) {
             DB::rollBack();
-            Log::error(self::$GATEWAY_CODE."-> saveProduct():\n".$ex->getMessage());
+            Log::error(self::$GATEWAY_CODE . "-> saveProduct():\n" . $ex->getMessage());
 
             return back()->with(['message' => $ex->getMessage(), 'type' => 'error']);
         }
@@ -190,6 +195,7 @@ class StripeService
     public static function subscribe($plan)
     {
         $gateway = Gateways::where('code', self::$GATEWAY_CODE)->where('is_active', 1)->first() ?? abort(404);
+
         try {
             DB::beginTransaction();
             $exception = null;
@@ -197,6 +203,7 @@ class StripeService
             Stripe::setApiKey($key);
             $stripe = new StripeClient($key);
             $user = auth()->user();
+
             try {
                 if ($user->stripe_id != null) {
                     // Check if the customer already exists in Stripe
@@ -204,11 +211,11 @@ class StripeService
                 } else {
                     // Customer doesn't exist, create a new customer
                     $userData = [
-                        'email' => $user->email,
-                        'name' => $user->name.' '.$user->surname,
-                        'phone' => $user->phone,
+                        'email'   => $user->email,
+                        'name'    => $user->name . ' ' . $user->surname,
+                        'phone'   => $user->phone,
                         'address' => [
-                            'line1' => $user->address,
+                            'line1'       => $user->address,
                             'postal_code' => $user->postal,
                         ],
                     ];
@@ -219,11 +226,11 @@ class StripeService
             } catch (\Stripe\Exception\InvalidRequestException $e) {
                 // Customer doesn't exist, create a new customer
                 $userData = [
-                    'email' => $user->email,
-                    'name' => $user->name.' '.$user->surname,
-                    'phone' => $user->phone,
+                    'email'   => $user->email,
+                    'name'    => $user->name . ' ' . $user->surname,
+                    'phone'   => $user->phone,
                     'address' => [
-                        'line1' => $user->address,
+                        'line1'       => $user->address,
                         'postal_code' => $user->postal,
                     ],
                 ];
@@ -241,22 +248,23 @@ class StripeService
                     foreach ($stripe_taxs as $s_tax) {
                         if ($s_tax->percentage == $taxRate) {
                             $tax_rate_id = $s_tax->id;
+
                             break;
                         }
                     }
                     if ($tax_rate_id == null) {
                         $new_tax = $stripe->taxRates->create([
-                            'percentage' => $taxRate,
+                            'percentage'   => $taxRate,
                             'display_name' => Str::random(13),
-                            'inclusive' => false,
+                            'inclusive'    => false,
                         ]);
                         $tax_rate_id = $new_tax->id ?? null;
                     }
                 } catch (\Stripe\Exception\InvalidRequestException $e) {
                     $new_tax = $stripe->taxRates->create([
-                        'percentage' => $taxRate,
+                        'percentage'   => $taxRate,
                         'display_name' => Str::random(13),
-                        'inclusive' => false,
+                        'inclusive'    => false,
                     ]);
                     $tax_rate_id = $new_tax->id ?? null;
                 }
@@ -289,10 +297,10 @@ class StripeService
                 }
 
                 // Create the subscription with the customer ID, price ID, and necessary options.
-                $subscription = new Subscriptions();
+                $subscription = new Subscriptions;
                 $subscription->user_id = $user->id;
                 $subscription->name = $plan->id;
-                $subscription->stripe_id = 'SLS-'.strtoupper(Str::random(13));
+                $subscription->stripe_id = 'SLS-' . strtoupper(Str::random(13));
                 $subscription->stripe_status = 'AwaitingPayment'; // $plan->trial_days != 0 ? "trialing" : "AwaitingPayment";
                 $subscription->stripe_price = $price_id_product;
                 $subscription->quantity = 1;
@@ -312,35 +320,35 @@ class StripeService
                 // $subscriptionItem->save();
 
                 $paymentIntent = PaymentIntent::create([
-                    'amount' => $newDiscountedPriceCents,
-                    'currency' => $currency,
-					'description' => 'AI Services',
+                    'amount'                    => $newDiscountedPriceCents,
+                    'currency'                  => $currency,
+                    'description'               => 'AI Services',
                     'automatic_payment_methods' => [
                         'enabled' => true,
                     ],
                     'metadata' => [
                         'product_id' => $product->product_id,
-                        'price_id' => $product->price_id,
-                        'plan_id' => $plan->id,
+                        'price_id'   => $product->price_id,
+                        'plan_id'    => $plan->id,
                     ],
                 ]);
 
             } else {
                 $subscriptionInfo = [
                     'customer' => $user->stripe_id,
-                    'items' => [
+                    'items'    => [
                         [
-                            'price' => $price_id_product,
+                            'price'     => $price_id_product,
                             'tax_rates' => $tax_rate_id ? [$tax_rate_id] : [],
                         ],
                     ],
                     'payment_behavior' => 'default_incomplete',
                     'payment_settings' => ['save_default_payment_method' => 'on_subscription'],
-                    'expand' => ['latest_invoice.payment_intent'],
-                    'metadata' => [
+                    'expand'           => ['latest_invoice.payment_intent'],
+                    'metadata'         => [
                         'product_id' => $product->product_id,
-                        'price_id' => $price_id_product,
-                        'plan_id' => $plan->id,
+                        'price_id'   => $price_id_product,
+                        'plan_id'    => $plan->id,
                     ],
                 ];
                 if ($coupon) {
@@ -349,6 +357,7 @@ class StripeService
                     if ($newDiscountedPrice != floor($newDiscountedPrice)) {
                         $newDiscountedPrice = number_format($newDiscountedPrice, 2);
                     }
+
                     // search for exist coupon with same percentage created before in stripe then use it, else create new one. $new_coupon
                     try {
                         $new_coupon = null;
@@ -356,19 +365,20 @@ class StripeService
                         foreach ($stripe_coupons ?? [] as $s_coupon) {
                             if ($s_coupon->percent_off == $coupon->discount) {
                                 $new_coupon = $s_coupon;
+
                                 break;
                             }
                         }
                         if ($new_coupon == null) {
                             $new_coupon = $stripe->coupons->create([
                                 'percent_off' => $coupon->discount,
-                                'duration' => 'once',
+                                'duration'    => 'once',
                             ]);
                         }
                     } catch (\Stripe\Exception\InvalidRequestException $e) {
                         $new_coupon = $stripe->coupons->create([
                             'percent_off' => $coupon->discount,
-                            'duration' => 'once',
+                            'duration'    => 'once',
                         ]);
                     }
                     $subscriptionInfo['coupon'] = $new_coupon->id ?? null;
@@ -376,13 +386,13 @@ class StripeService
                 if ($plan->trial_days != 0) {
                     $trialEndTimestamp = \Carbon\Carbon::now()->addDays($plan->trial_days)->timestamp;
                     $subscriptionInfo += [
-                        'trial_end' => strval($trialEndTimestamp),
+                        'trial_end'            => strval($trialEndTimestamp),
                         'billing_cycle_anchor' => strval($trialEndTimestamp),
                     ];
                 }
                 // Create the subscription with the customer ID, price ID, and necessary options.
                 $newSubscription = $stripe->subscriptions->create($subscriptionInfo);
-                $subscription = new Subscriptions();
+                $subscription = new Subscriptions;
                 $subscription->user_id = $user->id;
                 $subscription->name = $plan->id;
                 $subscription->stripe_id = $newSubscription->id;
@@ -404,21 +414,21 @@ class StripeService
                 // $subscriptionItem->save();
                 $paymentIntent = [
                     'subscription_id' => $newSubscription->id,
-                    'client_secret' => ($plan->trial_days != 0)
+                    'client_secret'   => ($plan->trial_days != 0)
                         ? $stripe->setupIntents->retrieve($newSubscription->pending_setup_intent, [])->client_secret
                         : $newSubscription->latest_invoice->payment_intent->client_secret,
-                    'trial' => ($plan->trial_days != 0),
-                    'currency' => $currency,
-                    'amount' => $newDiscountedPriceCents,
-					'description' => 'AI Services',
+                    'trial'       => ($plan->trial_days != 0),
+                    'currency'    => $currency,
+                    'amount'      => $newDiscountedPriceCents,
+                    'description' => 'AI Services',
                 ];
             }
             DB::commit();
 
-            return view('panel.user.finance.subscription.'.self::$GATEWAY_CODE, compact('plan', 'newDiscountedPrice', 'taxValue', 'taxRate', 'gateway', 'paymentIntent', 'product'));
-        } catch (\Exception $ex) {
+            return view('panel.user.finance.subscription.' . self::$GATEWAY_CODE, compact('plan', 'newDiscountedPrice', 'taxValue', 'taxRate', 'gateway', 'paymentIntent', 'product'));
+        } catch (Exception $ex) {
             DB::rollBack();
-            Log::error(self::$GATEWAY_CODE.'-> subscribe(): '.$ex->getMessage());
+            Log::error(self::$GATEWAY_CODE . '-> subscribe(): ' . $ex->getMessage());
 
             return back()->with(['message' => Str::before($ex->getMessage(), ':'), 'type' => 'error']);
         }
@@ -446,13 +456,14 @@ class StripeService
         $previousRequest = app('request')->create(url()->previous());
         $intentType = $request->has('payment_intent') ? 'payment_intent' : ($request->has('setup_intent') ? 'setup_intent' : null);
         $intentId = $request->input($intentType);
-        $clientSecret = $request->input($intentType.'_client_secret');
+        $clientSecret = $request->input($intentType . '_client_secret');
         $redirectStatus = $request->input('redirect_status');
         if ($redirectStatus != 'succeeded') {
             return back()->with(['message' => __("A problem occurred! $redirectStatus"), 'type' => 'error']);
         }
         $intentStripe = $request->has('payment_intent') ? 'paymentIntents' : ($request->has('setup_intent') ? 'setupIntents' : null);
         $intent = $stripe->{$intentStripe}->retrieve($intentId) ?? abort(404);
+
         try {
             DB::beginTransaction();
             // check validity of the intent
@@ -490,7 +501,7 @@ class StripeService
                 $subscription->total_amount = $total;
                 $subscription->save();
                 // save the order
-                $order = new UserOrder();
+                $order = new UserOrder;
                 $order->order_id = $subscription->stripe_id;
                 $order->plan_id = $planId;
                 $order->user_id = $user->id;
@@ -514,7 +525,7 @@ class StripeService
                 // }
                 // inform the admin
                 CreateActivity::for($user, __('Subscribed to'), $plan->name . ' ' . __('Plan'));
-				\App\Models\Usage::getSingle()->updateSalesCount($total);
+                \App\Models\Usage::getSingle()->updateSalesCount($total);
             } else {
                 Log::error("StripeController::subscribeCheckout() - Invalid $intentType");
                 DB::rollBack();
@@ -529,11 +540,11 @@ class StripeService
 
             return redirect()->route('dashboard.user.payment.succesful')->with([
                 'message' => __('Thank you for your purchase. Enjoy your remaining words and images.'),
-                'type' => 'success',
+                'type'    => 'success',
             ]);
-        } catch (\Exception $ex) {
+        } catch (Exception $ex) {
             DB::rollBack();
-            Log::error(self::$GATEWAY_CODE.'-> subscribeCheckout(): '.$ex->getMessage());
+            Log::error(self::$GATEWAY_CODE . '-> subscribeCheckout(): ' . $ex->getMessage());
 
             return back()->with(['message' => Str::before($ex->getMessage(), ':'), 'type' => 'error']);
         }
@@ -542,11 +553,13 @@ class StripeService
     public static function prepaid($plan)
     {
         $gateway = Gateways::where('code', self::$GATEWAY_CODE)->where('is_active', 1)->first() ?? abort(404);
+
         try {
             $user = auth()->user();
             $key = self::getKey($gateway);
             Stripe::setApiKey($key);
             $stripe = new StripeClient($key);
+
             try {
                 if ($user->stripe_id != null) {
                     // Check if the customer already exists in Stripe
@@ -554,11 +567,11 @@ class StripeService
                 } else {
                     // Customer doesn't exist, create a new customer
                     $userData = [
-                        'email' => $user->email,
-                        'name' => $user->name.' '.$user->surname,
-                        'phone' => $user->phone,
+                        'email'   => $user->email,
+                        'name'    => $user->name . ' ' . $user->surname,
+                        'phone'   => $user->phone,
                         'address' => [
-                            'line1' => $user->address,
+                            'line1'       => $user->address,
                             'postal_code' => $user->postal,
                         ],
                     ];
@@ -569,11 +582,11 @@ class StripeService
             } catch (\Stripe\Exception\InvalidRequestException $e) {
                 // Customer doesn't exist, create a new customer
                 $userData = [
-                    'email' => $user->email,
-                    'name' => $user->name.' '.$user->surname,
-                    'phone' => $user->phone,
+                    'email'   => $user->email,
+                    'name'    => $user->name . ' ' . $user->surname,
+                    'phone'   => $user->phone,
                     'address' => [
-                        'line1' => $user->address,
+                        'line1'       => $user->address,
                         'postal_code' => $user->postal,
                     ],
                 ];
@@ -609,22 +622,22 @@ class StripeService
                 }
             }
             $paymentIntent = PaymentIntent::create([
-                'amount' => $newDiscountedPriceCents,
-				'description' => 'AI Services',
-                'currency' => $currency,
+                'amount'                    => $newDiscountedPriceCents,
+                'description'               => 'AI Services',
+                'currency'                  => $currency,
                 'automatic_payment_methods' => [
                     'enabled' => true,
                 ],
                 'metadata' => [
                     'product_id' => $product->product_id,
-                    'price_id' => $product->price_id,
-                    'plan_id' => $plan->id,
+                    'price_id'   => $product->price_id,
+                    'plan_id'    => $plan->id,
                 ],
             ]);
 
-            return view('panel.user.finance.prepaid.'.self::$GATEWAY_CODE, compact('plan', 'newDiscountedPrice', 'taxValue', 'taxRate', 'gateway', 'paymentIntent', 'product'));
-        } catch (\Exception $th) {
-            Log::error(self::$GATEWAY_CODE.'-> prepaid(): '.$th->getMessage());
+            return view('panel.user.finance.prepaid.' . self::$GATEWAY_CODE, compact('plan', 'newDiscountedPrice', 'taxValue', 'taxRate', 'gateway', 'paymentIntent', 'product'));
+        } catch (Exception $th) {
+            Log::error(self::$GATEWAY_CODE . '-> prepaid(): ' . $th->getMessage());
 
             return back()->with(['message' => Str::before($th->getMessage(), ':'), 'type' => 'error']);
         }
@@ -660,6 +673,7 @@ class StripeService
             if ($intent == null || $intent->client_secret != $payment_intent_client_secret || $intent->status != 'succeeded') {
                 return back()->with(['message' => __('A problem occurred!'), 'type' => 'error']);
             }
+
             try {
                 DB::beginTransaction();
 
@@ -685,8 +699,8 @@ class StripeService
                 }
                 $total += taxToVal($plan->price, $gateway->tax);
 
-                $order = new UserOrder();
-                $order->order_id = 'SPO-'.strtoupper(Str::random(13));
+                $order = new UserOrder;
+                $order->order_id = 'SPO-' . strtoupper(Str::random(13));
                 $order->plan_id = $plan->id;
                 $order->user_id = $user->id;
                 $order->type = 'prepaid';
@@ -709,10 +723,10 @@ class StripeService
                     dispatch(new CancelAwaitingPaymentSubscriptions($stripe, $waitingSubs));
                 }
                 CreateActivity::for($user, __('Purchased'), $plan->name . ' ' . __('Plan'));
-				\App\Models\Usage::getSingle()->updateSalesCount($total);
-            } catch (\Exception $th) {
+                \App\Models\Usage::getSingle()->updateSalesCount($total);
+            } catch (Exception $th) {
                 DB::rollBack();
-                Log::error(self::$GATEWAY_CODE.'-> prepaidCheckout(): '.$th->getMessage());
+                Log::error(self::$GATEWAY_CODE . '-> prepaidCheckout(): ' . $th->getMessage());
 
                 return back()->with(['message' => Str::before($th->getMessage(), ':'), 'type' => 'error']);
             }
@@ -723,7 +737,7 @@ class StripeService
 
         return redirect()->route('dashboard.user.payment.succesful')->with([
             'message' => __('Thank you for your purchase. Enjoy your remaining words and images.'),
-            'type' => 'success',
+            'type'    => 'success',
         ]);
     }
 
@@ -731,6 +745,7 @@ class StripeService
     public static function subscribeCancel($internalUser = null)
     {
         $key = self::getKey();
+
         try {
             $user = $internalUser ?? Auth::user();
             Stripe::setApiKey($key);
@@ -740,13 +755,14 @@ class StripeService
                 $plan = PaymentPlans::where('id', $activeSub->plan_id)->first();
                 $recent_words = $user->remaining_words - $plan->total_words;
                 $recent_images = $user->remaining_images - $plan->total_images;
+
                 try {
                     $subscription = $stripe->subscriptions->retrieve($activeSub->stripe_id);
                     if ($subscription != null) {
                         $subscription->delete();
                     }
-                } catch (\Exception $ex) {
-                    Log::error(self::$GATEWAY_CODE."::subscribeCancel()\n".$ex->getMessage());
+                } catch (Exception $ex) {
+                    Log::error(self::$GATEWAY_CODE . "::subscribeCancel()\n" . $ex->getMessage());
                     // return back()->with(['message' => __('Could not find active subscription. Nothing changed!'), 'type' => 'error']);
                 }
                 $activeSub->stripe_status = 'cancelled';
@@ -763,8 +779,8 @@ class StripeService
             }
 
             return back()->with(['message' => __('Could not find active subscription. Nothing changed!'), 'type' => 'error']);
-        } catch (\Exception $th) {
-            Log::error(self::$GATEWAY_CODE."-> subscribeCancel():\n".$th->getMessage());
+        } catch (Exception $th) {
+            Log::error(self::$GATEWAY_CODE . "-> subscribeCancel():\n" . $th->getMessage());
 
             return back()->with(['message' => $th->getMessage(), 'type' => 'error']);
         }
@@ -773,14 +789,15 @@ class StripeService
     public static function cancelSubscribedPlan($subscription, $planId)
     {
         $key = self::getKey();
+
         try {
             $user = Auth::user();
             $user->subscription($planId)->cancelNow();
             $user->save();
 
             return true;
-        } catch (\Exception $th) {
-            Log::error(self::$GATEWAY_CODE."-> cancelSubscribedPlan():\n".$th->getMessage());
+        } catch (Exception $th) {
+            Log::error(self::$GATEWAY_CODE . "-> cancelSubscribedPlan():\n" . $th->getMessage());
             $plan = PaymentPlans::where('id', $planId)->first();
             $recent_words = $user->remaining_words - $plan->total_words;
             $recent_images = $user->remaining_images - $plan->total_images;
@@ -802,7 +819,7 @@ class StripeService
         if ($sub != null) {
             try {
                 return $user->subscription($sub->name)->onTrial();
-            } catch (\Throwable $th) {
+            } catch (Throwable $th) {
                 return false;
             }
         }
@@ -816,6 +833,7 @@ class StripeService
         $settings = Setting::first();
         $key = self::getKey();
         $sub = getCurrentActiveSubscription($user->id);
+
         try {
             $activeSub = $sub->asStripeSubscription();
             if ($activeSub->status == 'active' || $activeSub->status == 'trialing') {
@@ -825,7 +843,7 @@ class StripeService
             } else {
                 return \Carbon\Carbon::now()->diffInDays(\Carbon\Carbon::parse($sub->trial_ends_at));
             }
-        } catch (\Throwable $th) {
+        } catch (Throwable $th) {
             if ($sub->stripe_status == 'stripe_approved') {
                 return \Carbon\Carbon::now()->diffInDays(\Carbon\Carbon::parse($sub->ends_at));
             } else {
@@ -851,7 +869,7 @@ class StripeService
 
                     return false;
                 }
-            } catch (\Throwable $th) {
+            } catch (Throwable $th) {
                 if ($sub->stripe_status == 'stripe_approved') {
                     return true;
                 } else {
@@ -889,6 +907,7 @@ class StripeService
     private static function updateUserData()
     {
         $key = self::getKey();
+
         try {
             $history = OldGatewayProducts::where(['gateway_code' => self::$GATEWAY_CODE, 'status' => 'check'])->get();
             if ($history != null) {
@@ -920,8 +939,8 @@ class StripeService
                     $record->save();
                 }
             }
-        } catch (\Exception $ex) {
-            Log::error(self::$GATEWAY_CODE."-> updateUserData():\n".$ex->getMessage());
+        } catch (Exception $ex) {
+            Log::error(self::$GATEWAY_CODE . "-> updateUserData():\n" . $ex->getMessage());
 
             return ['result' => Str::before($ex->getMessage(), ':')];
         }
@@ -930,6 +949,7 @@ class StripeService
     private static function cancelAllSubscriptions()
     {
         $key = self::getKey();
+
         try {
             $stripe = new StripeClient($key);
             $product = null;
@@ -953,8 +973,8 @@ class StripeService
                 //     }
                 // }
             }
-        } catch (\Exception $ex) {
-            Log::error(self::$GATEWAY_CODE."-> cancelAllSubscriptions():\n".$ex->getMessage());
+        } catch (Exception $ex) {
+            Log::error(self::$GATEWAY_CODE . "-> cancelAllSubscriptions():\n" . $ex->getMessage());
         }
     }
 
@@ -964,10 +984,11 @@ class StripeService
         $key = self::getKey();
         $end = null;
         $activeSub = getCurrentActiveSubscription($user->id);
+
         try {
             $activeSub->asStripeSubscription();
             $end = $activeSub->current_period_end;
-        } catch (\Throwable $th) {
+        } catch (Throwable $th) {
             $end = $activeSub->ends_at;
         }
 
@@ -991,20 +1012,21 @@ class StripeService
                 }
                 $payload = $request->getContent();
                 $event = null;
+
                 try {
                     $event = \Stripe\Webhook::constructEvent(
                         $payload, $sig_header, $endpoint_secret
                     );
 
                     return json_encode($event);
-                } catch (\UnexpectedValueException $e) {
+                } catch (UnexpectedValueException $e) {
                     // Invalid payload
-                    Log::error('(Webhooks) StripeController::verifyIncomingJson() -> Invalid payload : '.$payload);
+                    Log::error('(Webhooks) StripeController::verifyIncomingJson() -> Invalid payload : ' . $payload);
 
                     return null;
                 } catch (\Stripe\Exception\SignatureVerificationException $e) {
                     // Invalid signature
-                    Log::error('(Webhooks) StripeController::verifyIncomingJson() -> Invalid signature : '.$payload);
+                    Log::error('(Webhooks) StripeController::verifyIncomingJson() -> Invalid signature : ' . $payload);
 
                     return null;
                 }
@@ -1033,6 +1055,7 @@ class StripeService
     public static function createWebhook()
     {
         $gateway = Gateways::where('code', self::$GATEWAY_CODE)->where('is_active', 1)->first() ?? abort(404);
+
         try {
             $stripe = new StripeClient(self::getKey($gateway));
             $webhooks = $stripe->webhookEndpoints->all();
@@ -1042,70 +1065,70 @@ class StripeService
                     $tmp = json_decode($stripe->webhookEndpoints->delete($hook->id, []));
                     if (isset($tmp->deleted)) {
                         if ($tmp->deleted == false) {
-                            Log::error('Webhook '.$hook->id.' could not deleted.');
+                            Log::error('Webhook ' . $hook->id . ' could not deleted.');
                         }
                     } else {
-                        Log::error('Webhook '.$hook->id.' could not deleted.');
+                        Log::error('Webhook ' . $hook->id . ' could not deleted.');
                     }
                 }
             }
             // Create new webhook
-            $url = url('/').'/webhooks/stripe';
+            $url = url('/') . '/webhooks/stripe';
             $events = [
                 'invoice.paid',                     // A payment is made on a subscription.
                 'customer.subscription.deleted',     // A subscription is cancelled.
             ];
             $response = $stripe->webhookEndpoints->create([
-                'url' => $url,
+                'url'            => $url,
                 'enabled_events' => $events,
             ]);
             $gateway->webhook_id = $response->id;
             $gateway->webhook_secret = $response->secret;
             $gateway->save();
         } catch (AuthenticationException $th) {
-            Log::error('StripeController::createWebhook(): '.$th->getMessage());
+            Log::error('StripeController::createWebhook(): ' . $th->getMessage());
 
             return back()->with(['message' => __('Stripe Authentication Error. Invalid API Key provided.'), 'type' => 'error']);
         } catch (InvalidArgumentException $th) {
-            Log::error('StripeController::createWebhook(): '.$th->getMessage());
+            Log::error('StripeController::createWebhook(): ' . $th->getMessage());
 
             return back()->with(['message' => __('You must provide Stripe API Key.'), 'type' => 'error']);
-        } catch (\Exception $th) {
-            Log::error('StripeController::createWebhook(): '.$th->getMessage());
+        } catch (Exception $th) {
+            Log::error('StripeController::createWebhook(): ' . $th->getMessage());
 
-            return back()->with(['message' => 'Stripe Error : '.$th->getMessage(), 'type' => 'error']);
+            return back()->with(['message' => 'Stripe Error : ' . $th->getMessage(), 'type' => 'error']);
         }
     }
 
     public static function gatewayDefinitionArray(): array
     {
         return [
-            'code' => 'stripe',
-            'title' => 'Stripe',
-            'link' => 'https://stripe.com/',
-            'active' => 0,                      //if user activated this gateway - dynamically filled in main page
-            'available' => 1,                   //if gateway is available to use
-            'img' => '/assets/img/payments/stripe.svg',
-            'whiteLogo' => 0,                   //if gateway logo is white
-            'mode' => 1,                        // Option in settings - Automatically set according to the "Development" mode. "Development" ? sandbox : live (PAYPAL - 1)
-            'sandbox_client_id' => 1,           // Option in settings 0-Hidden 1-Visible
+            'code'                  => 'stripe',
+            'title'                 => 'Stripe',
+            'link'                  => 'https://stripe.com/',
+            'active'                => 0,                      //if user activated this gateway - dynamically filled in main page
+            'available'             => 1,                   //if gateway is available to use
+            'img'                   => '/assets/img/payments/stripe.svg',
+            'whiteLogo'             => 0,                   //if gateway logo is white
+            'mode'                  => 1,                        // Option in settings - Automatically set according to the "Development" mode. "Development" ? sandbox : live (PAYPAL - 1)
+            'sandbox_client_id'     => 1,           // Option in settings 0-Hidden 1-Visible
             'sandbox_client_secret' => 1,       // Option in settings
-            'sandbox_app_id' => 0,              // Option in settings
-            'live_client_id' => 1,              // Option in settings
-            'live_client_secret' => 1,          // Option in settings
-            'live_app_id' => 0,                 // Option in settings
-            'currency' => 1,                    // Option in settings
-            'currency_locale' => 0,             // Option in settings
-            'base_url' => 1,                    // Option in settings
-            'sandbox_url' => 0,                 // Option in settings
-            'locale' => 0,                      // Option in settings
-            'validate_ssl' => 0,                // Option in settings
-            'logger' => 0,                      // Option in settings
-            'notify_url' => 0,                  // Gateway notification url at our side
-            'webhook_secret' => 0,              // Option in settings
-            'tax' => 1,              // Option in settings
-            'bank_account_details' => 0,
-            'bank_account_other' => 0,
+            'sandbox_app_id'        => 0,              // Option in settings
+            'live_client_id'        => 1,              // Option in settings
+            'live_client_secret'    => 1,          // Option in settings
+            'live_app_id'           => 0,                 // Option in settings
+            'currency'              => 1,                    // Option in settings
+            'currency_locale'       => 0,             // Option in settings
+            'base_url'              => 1,                    // Option in settings
+            'sandbox_url'           => 0,                 // Option in settings
+            'locale'                => 0,                      // Option in settings
+            'validate_ssl'          => 0,                // Option in settings
+            'logger'                => 0,                      // Option in settings
+            'notify_url'            => 0,                  // Gateway notification url at our side
+            'webhook_secret'        => 0,              // Option in settings
+            'tax'                   => 1,              // Option in settings
+            'bank_account_details'  => 0,
+            'bank_account_other'    => 0,
         ];
     }
 }

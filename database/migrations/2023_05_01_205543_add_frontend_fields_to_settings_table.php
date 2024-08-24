@@ -6,9 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::table('settings', function (Blueprint $table) {
@@ -24,21 +21,20 @@ return new class extends Migration
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::table('settings', function (Blueprint $table) {
-            $table->dropColumn('frontend_pricing_section');
-            $table->dropColumn('frontend_custom_templates_section');
-            $table->dropColumn('frontend_business_partners_section');
-            $table->dropColumn('frontend_additional_url');
-            $table->dropColumn('frontend_custom_js');
-            $table->dropColumn('frontend_custom_css');
-            $table->dropColumn('frontend_footer_facebook');
-            $table->dropColumn('frontend_footer_twitter');
-            $table->dropColumn('frontend_footer_instagram');
+            $table->dropColumn([
+                'frontend_pricing_section',
+                'frontend_custom_templates_section',
+                'frontend_business_partners_section',
+                'frontend_additional_url',
+                'frontend_custom_js',
+                'frontend_custom_css',
+                'frontend_footer_facebook',
+                'frontend_footer_twitter',
+                'frontend_footer_instagram',
+            ]);
         });
     }
 };

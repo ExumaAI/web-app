@@ -7,17 +7,17 @@ namespace App\Http\Middleware;
 use App\Support\Chatbot\ChatbotHelper;
 use Closure;
 use Illuminate\Http\Request;
+use JsonException;
 use Livewire\LivewireManager;
+use ReflectionException;
 
 trait ChatbotCsrf
 {
     /**
-     * @param \Illuminate\Http\Request $request
-     * @param \Closure                 $next
+     * @param  \Illuminate\Http\Request  $request
      *
-     * @return mixed
      * @throws \Illuminate\Session\TokenMismatchException
-     * @throws \ReflectionException|\JsonException
+     * @throws ReflectionException|JsonException
      */
     public function handle($request, Closure $next): mixed
     {
@@ -34,11 +34,6 @@ trait ChatbotCsrf
         return $next($request);
     }
 
-    /**
-     * @param \Illuminate\Http\Request $request
-     *
-     * @return bool
-     */
     private function isLivewireUpdateRequest(Request $request): bool
     {
         return $request->isMethod('POST') &&
@@ -48,15 +43,12 @@ trait ChatbotCsrf
     }
 
     /**
-     * @param array $component
-     *
-     * @return string|null
-     * @throws \JsonException
+     * @throws JsonException
      */
     private function getComponentNameFromSnapshot(array $component): ?string
     {
         $snapshot = json_decode($component['snapshot'], true, 512, JSON_THROW_ON_ERROR);
+
         return $snapshot['memo']['name'] ?? null;
     }
-
 }

@@ -4,7 +4,7 @@
 @section('content')
     <div class="py-10">
         <div class="container-xl">
-            @if (Auth::user()->type == 'admin')
+            @if (Auth::user()->isAdmin())
                 <div class="col-12 md:px-10">
                     @if ($app_is_not_demo)
 
@@ -143,7 +143,7 @@
 @push('script')
     @auth()
         <script>
-            @if (\Illuminate\Support\Facades\Auth::user()->type == 'admin')
+            @if (\Illuminate\Support\Facades\Auth::user()->isAdmin())
                 $(document).ready(function() {
                     $.ajax({
                         type: 'GET',

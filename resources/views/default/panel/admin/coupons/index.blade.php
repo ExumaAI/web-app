@@ -58,7 +58,6 @@
                     x-data="{
                         codeType: 'auto',
                         changeCodeType(value) {
-                            console.log(value);
                             this.codeType = value;
                         }
                     }"

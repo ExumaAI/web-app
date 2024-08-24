@@ -6,14 +6,14 @@ namespace App\Http\Controllers\Chatbot;
 
 use App\Http\Requests\Chatbot\ChatbotEmbedRequest;
 use App\Support\Chatbot\ChatbotHelper;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Blade;
 use Livewire\Features\SupportScriptsAndAssets\SupportScriptsAndAssets;
+use ReflectionException;
 
 class ChatbotEmbedController
 {
     /**
-     * @throws \ReflectionException
+     * @throws ReflectionException
      */
     public function __invoke(ChatbotEmbedRequest $request)
     {
@@ -29,13 +29,13 @@ class ChatbotEmbedController
         $components = collect([
             $componentName => Blade::render('@livewire($component, $params)', [
                 'component' => $componentName,
-                'params' => $componentParams,
+                'params'    => $componentParams,
             ], true),
         ]);
 
         return [
             'components' => $components,
-            'assets' => SupportScriptsAndAssets::getAssets(),
+            'assets'     => SupportScriptsAndAssets::getAssets(),
         ];
     }
 }

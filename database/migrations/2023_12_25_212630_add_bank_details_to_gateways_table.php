@@ -23,8 +23,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('gateways', function (Blueprint $table) {
-            $table->dropColumn('bank_account_details');
-            $table->dropColumn('bank_account_other');
+            $table->dropColumn(['bank_account_details', 'bank_account_other']);
         });
     }
 };

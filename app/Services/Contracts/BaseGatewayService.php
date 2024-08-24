@@ -13,9 +13,9 @@ interface BaseGatewayService
 
     public static function subscribe($plan);
 
-    public static function subscribeCheckout(Request $request, $referral= null);
+    public static function subscribeCheckout(Request $request, $referral = null);
 
-    public static function prepaidCheckout(Request $request, $referral= null);
+    public static function prepaidCheckout(Request $request, $referral = null);
 
     public static function prepaid($plan);
 

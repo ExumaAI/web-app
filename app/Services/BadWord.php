@@ -9,26 +9,23 @@ class BadWord
 {
     /**
      * Varsayılan olarak hatasız olarak başlatılır. Eğer hata varsa true olur.
-     * @var bool
      */
     protected bool $error = false;
 
     /**
      * Uygunsuz kelimeleri tutar. Bu kelimeler, kullanıcının veritabanına kaydettiği kelimelerdir.
-     * @var array
      */
     protected array $badWords = [];
 
     /**
      * Hata olan kelimeleri tutar.
-     * @var Collection
      */
     protected Collection $errorWords;
 
-
     /**
      * BadWord constructor.
-     * @param string $text Kullanıcının girdiği metin ya da prompt.
+     *
+     * @param  string  $text  kullanıcının girdiği metin ya da prompt
      */
     public function __construct(
         public string $text,
@@ -41,7 +38,6 @@ class BadWord
     /**
      * Kullanıcının girdiği metni, veritabanındaki uygunsuz kelimelerle karşılaştırır.
      * Büyük küçük harf duyarlılığı yoktur.
-     * @return void
      */
     public function check(): void
     {
@@ -50,12 +46,11 @@ class BadWord
                 $this->error = true;
                 $this->errorWords->push($badWord);
             }
-        };
+        }
     }
 
     /**
      * Eğer hata varsa true döner.
-     * @return bool
      */
     public function hasError(): bool
     {
@@ -64,7 +59,6 @@ class BadWord
 
     /**
      * Eğer hata varsa, hatalı kelimeleri döner.
-     * @return Collection
      */
     public function getErrors(): Collection
     {
@@ -73,7 +67,6 @@ class BadWord
 
     /**
      * Kullanıcının veritabanına kaydettiği uygunsuz kelimeleri döner.
-     * @return array
      */
     protected function getBadWords(): array
     {

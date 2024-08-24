@@ -11,7 +11,7 @@ class DeFiMarketDataService
     {
         $single = base64_decode($slug);
 
-        $cacheKey = 'defi-market-data-single-new-'.md5($slug);
+        $cacheKey = 'defi-market-data-single-new-' . md5($slug);
 
         return Cache::remember($cacheKey, 15, function () use ($single) {
 
@@ -29,7 +29,7 @@ class DeFiMarketDataService
 
     public function data()
     {
-        $cacheKey = 'defi-market-data'.md5($this->assets());
+        $cacheKey = 'defi-market-data' . md5($this->assets());
 
         return Cache::remember($cacheKey, 15, function () {
 

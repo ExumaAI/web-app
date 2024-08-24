@@ -21,10 +21,10 @@ class StableDiffusion
     ) {
         $this->client = new Client([
             'base_uri' => 'https://api.stability.ai/v1/',
-            'headers' => [
+            'headers'  => [
                 'Authorization' => 'Bearer ' . $this->apiKey,
-                'Accept' => $this->accept,
-            ]
+                'Accept'        => $this->accept,
+            ],
         ]);
     }
 
@@ -38,17 +38,17 @@ class StableDiffusion
         $response = $this->client->post('generation/stable-diffusion-v1-6/text-to-image', [
             'json' => [
                 'text_prompts' => [[
-                    'text' => $text,
-                    'weight' => $weight
-                ]]
-            ]
+                    'text'   => $text,
+                    'weight' => $weight,
+                ]],
+            ],
         ]);
 
         $this->response = $response;
 
         return match ($this->accept) {
             'application/json' => json_decode($response->getBody()->getContents(), true),
-            'image/png' => $response->getBody()->getContents(),
+            'image/png'        => $response->getBody()->getContents(),
         };
     }
 

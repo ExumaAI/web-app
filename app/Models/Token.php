@@ -12,12 +12,12 @@ class Token extends Model
 {
     protected $fillable = [
         'type',
-        'cost_per_token'
+        'cost_per_token',
     ];
 
     protected $casts = [
         'type'           => AITokenType::class,
-        'cost_per_token' => 'decimal:2'
+        'cost_per_token' => 'decimal:2',
     ];
 
     public function aiModel(): BelongsTo

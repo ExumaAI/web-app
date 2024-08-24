@@ -4,7 +4,7 @@
 @section('titlebar_title', $workbook->title)
 @section('titlebar_actions')
     {{-- Edit with AI Editor --}}
-    @if ($setting->feature_ai_advanced_editor && $workbook->generator->type !== 'voiceover')
+    @if ($setting->feature_ai_advanced_editor && $workbook->generator->type !== 'voiceover' && $workbook->generator->type !== 'isolator')
         <x-button
             variant="ghost-shadows"
             href="{{ route('dashboard.user.generator.index', $workbook->slug) }}"
@@ -128,7 +128,7 @@
     <script src="{{ custom_theme_url('/assets/js/panel/tinymce-theme-handler.js') }}"></script>
     <script src="{{ custom_theme_url('/assets/js/panel/workbook.js') }}"></script>
 
-    @if ($openai->type === 'voiceover')
+    @if ($openai->type === 'voiceover' || $openai->type === 'isolator')
         <script src="{{ custom_theme_url('/assets/libs/wavesurfer/wavesurfer.js') }}"></script>
         <script src="{{ custom_theme_url('/assets/js/panel/voiceover.js') }}"></script>
     @endif

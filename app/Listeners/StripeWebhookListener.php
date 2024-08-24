@@ -10,6 +10,7 @@ use App\Models\UserOrder;
 use App\Models\WebhookHistory;
 use App\Services\GatewaySelector;
 use Carbon\Carbon;
+use Exception;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Facades\Log;
@@ -82,7 +83,7 @@ class StripeWebhookListener implements ShouldQueue
 
             // save incoming data
 
-            $newData = new WebhookHistory();
+            $newData = new WebhookHistory;
             $newData->gatewaycode = 'stripe';
             $newData->webhook_id = $incomingJson->id;
             $newData->create_time = $incomingJson->created;
@@ -141,7 +142,7 @@ class StripeWebhookListener implements ShouldQueue
                                 $activeSub->stripe_status = 'active';
                                 $activeSub->save();
 
-                                $payment = new UserOrder();
+                                $payment = new UserOrder;
                                 $payment->order_id = $incomingJson->id;
                                 $payment->plan_id = $plan->id;
                                 $payment->user_id = $activeSub->user_id;
@@ -172,7 +173,7 @@ class StripeWebhookListener implements ShouldQueue
                         $newData->status = 'checked';
                         $newData->save();
                     }
-                    Log::error('Payment on a deleted plan. Please check: '.$resource_id.' with incoming webhook : '.json_encode($incomingJson));
+                    Log::error('Payment on a deleted plan. Please check: ' . $resource_id . ' with incoming webhook : ' . json_encode($incomingJson));
                 }
 
             }
@@ -180,8 +181,8 @@ class StripeWebhookListener implements ShouldQueue
             // save new order if required
             // on cancel we do not delete anything. just check if subs cancelled
 
-        } catch (\Exception $ex) {
-            Log::error("StripeWebhookListener::handle()\n".$ex->getMessage());
+        } catch (Exception $ex) {
+            Log::error("StripeWebhookListener::handle()\n" . $ex->getMessage());
         }
     }
 
@@ -192,11 +193,11 @@ class StripeWebhookListener implements ShouldQueue
     {
         // $space = "*************************************************************************************************************";
         $space = '*****';
-        $msg = '\n'.$space.'\n'.$space;
-        $msg = $msg.json_encode($event->payload);
-        $msg = $msg.'\n'.$space.'\n';
-        $msg = $msg.'\n'.$exception.'\n';
-        $msg = $msg.'\n'.$space.'\n'.$space;
+        $msg = '\n' . $space . '\n' . $space;
+        $msg = $msg . json_encode($event->payload);
+        $msg = $msg . '\n' . $space . '\n';
+        $msg = $msg . '\n' . $exception . '\n';
+        $msg = $msg . '\n' . $space . '\n' . $space;
 
         Log::error($msg);
     }

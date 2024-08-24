@@ -2,37 +2,33 @@
 
 namespace App\Services\Chatbot;
 
-use App\Helpers\StringHelper;
-use Exception;
-use Illuminate\Support\Arr;
-use OpenAI\Laravel\Facades\OpenAI;
 use Smalot\PdfParser\Parser;
 
 class ParserService
 {
     public string $text;
+
     public string $pdfPath;
 
     public function __construct(
         public Parser $parser
-    ) {
-    }
+    ) {}
 
     public function parse(): string
     {
         $this->setText(
             $this->parser
-            ->parseFile($this->getPdfPath())
-            ->getText()
+                ->parseFile($this->getPdfPath())
+                ->getText()
         );
 
         return $this->getText();
     }
 
-
     public function setPdfPath(string $pdfPath): ParserService
     {
         $this->pdfPath = $pdfPath;
+
         return $this;
     }
 

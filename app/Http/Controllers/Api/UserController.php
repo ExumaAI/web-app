@@ -4,14 +4,12 @@ namespace App\Http\Controllers\Api;
 
 use App\Actions\CreateActivity;
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use App\Models\User;
-use App\Models\Setting;
-use Illuminate\Validation\Rules\Password;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rules\Password;
 
 class UserController extends Controller
 {
@@ -27,23 +25,26 @@ class UserController extends Controller
      *      summary="Get user profile",
      *      description="Get the profile of the authenticated user.",
      *      security={{ "passport": {} }},
+     *
      *      @OA\Response(
      *          response=200,
      *          description="Successful operation",
+     *
      *          @OA\JsonContent(
      *              type="object",
      *          ),
      *      ),
+     *
      *      @OA\Response(
      *          response=401,
      *          description="Unauthenticated",
      *      ),
      * )
-    */
+     */
     public function index(Request $request)
     {
         $user = $request->user();
-        if($user->revenuecat_id == null){
+        if ($user->revenuecat_id == null) {
             // Added here because there is no other way to use RevenueCat's API rather than using the SDK
             // which is added to mobile app only. Workflow starts from mobile app.
             // Also, by this way we are sure that revenuecat_id is unique and not null.
@@ -96,13 +97,17 @@ class UserController extends Controller
      *      summary="!!PATCH REQUEST!! see payload '_method' Update user profile -  post used only for test",
      *      description="Updates the user's profile information, including name, surname, phone, country, password, and avatar.",
      *      security={{ "passport": {} }},
+     *
      *      @OA\RequestBody(
      *          required=true,
      *          description="User data",
+     *
      *          @OA\MediaType(
      *              mediaType="multipart/form-data",
+     *
      *              @OA\Schema(
      *                  type="object",
+     *
      *                  @OA\Property(
      *                      property="name",
      *                      description="User's first name",
@@ -153,6 +158,7 @@ class UserController extends Controller
      *              ),
      *          ),
      *      ),
+     *
      *      @OA\Response(
      *          response=400,
      *          description="Bad request"
@@ -164,8 +170,10 @@ class UserController extends Controller
      *      @OA\Response(
      *          response=200,
      *          description="User settings saved successfully",
+     *
      *          @OA\MediaType(mediaType="application/json")
      *      ),
+     *
      *      @OA\Response(
      *          response=401,
      *          description="Unauthorized: User not authenticated",
@@ -175,20 +183,20 @@ class UserController extends Controller
      *          description="Validation error or unsupported file extension",
      *      ),
      * )
-    */
+     */
     public function update(Request $request)
     {
         $user = $request->user();
-        if($request->name != null) {
+        if ($request->name != null) {
             $user->name = $request->name;
         }
-        if($request->surname != null) {
+        if ($request->surname != null) {
             $user->surname = $request->surname;
         }
-        if($request->phone != null) {
+        if ($request->phone != null) {
             $user->phone = $request->phone;
         }
-        if($request->country != null) {
+        if ($request->country != null) {
             $user->country = $request->country;
         }
 
@@ -217,7 +225,7 @@ class UserController extends Controller
 
             // Image extension check
             $imageTypes = ['jpg', 'jpeg', 'png', 'svg', 'webp'];
-            if (!in_array(Str::lower($image->getClientOriginalExtension()), $imageTypes)) {
+            if (! in_array(Str::lower($image->getClientOriginalExtension()), $imageTypes)) {
                 return response()->json(['error' => __('The file extension must be jpg, jpeg, png, webp or svg.')], 419);
             }
 
@@ -232,7 +240,6 @@ class UserController extends Controller
         return response()->json(['message' => 'User settings saved successfully'], 200);
     }
 
-
     /**
      * Delete user account
      *
@@ -245,27 +252,30 @@ class UserController extends Controller
      *      summary="Delete user account",
      *      description="Get the profile of the authenticated user and delete account.",
      *      security={{ "passport": {} }},
+     *
      *      @OA\Response(
      *          response=200,
      *          description="Successful operation",
+     *
      *          @OA\JsonContent(
      *              type="object",
      *          ),
      *      ),
+     *
      *      @OA\Response(
      *          response=401,
      *          description="Unauthenticated",
      *      ),
      * )
-    */
+     */
     public function destroy(Request $request)
     {
 
         $user = $request->user();
 
-        if(!$user) {
+        if (! $user) {
             return response()->json([
-                'status' => false,
+                'status'  => false,
                 'message' => __('User not found'),
             ], 404);
         }
@@ -276,7 +286,7 @@ class UserController extends Controller
         $user->delete();
 
         return response()->json([
-            'status' => true,
+            'status'  => true,
             'message' => __('User deleted successfully'),
         ], 200);
     }

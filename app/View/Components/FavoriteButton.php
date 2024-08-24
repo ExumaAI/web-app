@@ -12,11 +12,10 @@ class FavoriteButton extends Component
      * Create a new component instance.
      */
     public function __construct(
-		public string $id,
-		public string $updateUrl = '',
-		public bool $isFavorite = false,
-	)
-    {
+        public string $id,
+        public string $updateUrl = '',
+        public bool $isFavorite = false,
+    ) {
         //
     }
 

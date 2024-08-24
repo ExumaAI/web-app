@@ -3,11 +3,11 @@
 namespace App\Http\Middleware;
 
 use Closure;
+use Google2FA;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Auth\Middleware\Authenticate as Middleware;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Google2FA;
 
 class Authenticate extends Middleware
 {
@@ -16,6 +16,7 @@ class Authenticate extends Middleware
      *
      * @param  \Illuminate\Http\Request  $request
      * @param  string[]  ...$guards
+     *
      * @return mixed
      *
      * @throws \Illuminate\Auth\AuthenticationException
@@ -25,7 +26,7 @@ class Authenticate extends Middleware
         $this->authenticate($request, $guards);
 
         if (Auth::check()) {
-            if (Google2FA::isActivated() && !session()->has('save_login_2fa')) {
+            if (Google2FA::isActivated() && ! session()->has('save_login_2fa')) {
                 $user = Auth::id();
 
                 Auth::logout();
@@ -36,7 +37,6 @@ class Authenticate extends Middleware
                 return redirect()->route('2fa.login');
             }
         }
-
 
         return $next($request);
     }
@@ -58,6 +58,7 @@ class Authenticate extends Middleware
     {
 
         $text = $request->routeIs('dashboard.user.openai.chat.*') ? 'Please log in to your account to start using Live Chat.' : 'Unauthenticated.';
+
         throw new AuthenticationException(
             $text, $guards, $this->redirectTo($request)
         );

@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('pages', function (Blueprint $table) {
- 			$table->tinyInteger("titlebar_status")->default(1);
+            $table->tinyInteger('titlebar_status')->default(1);
         });
     }
 
@@ -22,7 +22,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('pages', function (Blueprint $table) {
-            $table->dropIfExists('pages');
+            $table->dropColumn('titlebar_status');
         });
     }
 };

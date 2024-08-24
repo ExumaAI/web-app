@@ -15,10 +15,10 @@ return [
     */
 
     'mailgun' => [
-        'domain' => env('MAILGUN_DOMAIN'),
-        'secret' => env('MAILGUN_SECRET'),
+        'domain'   => env('MAILGUN_DOMAIN'),
+        'secret'   => env('MAILGUN_SECRET'),
         'endpoint' => env('MAILGUN_ENDPOINT', 'api.mailgun.net'),
-        'scheme' => 'https',
+        'scheme'   => 'https',
     ],
 
     'postmark' => [
@@ -26,30 +26,30 @@ return [
     ],
 
     'ses' => [
-        'key' => env('AWS_ACCESS_KEY_ID'),
+        'key'    => env('AWS_ACCESS_KEY_ID'),
         'secret' => env('AWS_SECRET_ACCESS_KEY'),
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
     'github' => [
-        'client_id' => env('GITHUB_CLIENT_ID'),
+        'client_id'     => env('GITHUB_CLIENT_ID'),
         'client_secret' => env('GITHUB_CLIENT_SECRET'),
-        'redirect' => '/github/callback',
+        'redirect'      => '/github/callback',
     ],
     'google' => [
-        'client_id' => env('GOOGLE_CLIENT_ID'),
+        'client_id'     => env('GOOGLE_CLIENT_ID'),
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),
-        'redirect' => '/google/callback',
+        'redirect'      => '/google/callback',
     ],
     'facebook' => [
-        'client_id' => env('FACEBOOK_CLIENT_ID'),
+        'client_id'     => env('FACEBOOK_CLIENT_ID'),
         'client_secret' => env('FACEBOOK_CLIENT_SECRET'),
-        'redirect' => '/facebook/callback',
+        'redirect'      => '/facebook/callback',
     ],
     'apple' => [
         'client_id' => env('APPLE_BUNDLE_ID'),
     ],
     'recaptcha' => [
-        'key' => env('RECAPTCHA_SITE_KEY'),
+        'key'    => env('RECAPTCHA_SITE_KEY'),
         'secret' => env('RECAPTCHA_SECRET_KEY'),
     ],
 
@@ -59,7 +59,7 @@ return [
     |--------------------------------------------------------------------------
     */
 
-    'stripe' => [             
+    'stripe' => [
         'class' => App\Services\PaymentGateways\StripeService::class,
     ],
 
@@ -71,14 +71,13 @@ return [
         'class' => App\Services\PaymentGateways\PaystackService::class,
     ],
 
-    'yokassa' => [             
+    'yokassa' => [
         'class' => App\Services\PaymentGateways\YokassaService::class,
     ],
 
-    'iyzico' => [             
+    'iyzico' => [
         'class' => App\Services\PaymentGateways\IyzicoService::class,
     ],
-
 
     'razorpay' => [
         'class' => App\Services\PaymentGateways\RazorpayService::class,
@@ -96,7 +95,7 @@ return [
         'class' => App\Services\PaymentGateways\RevenueCatService::class,
     ],
 
-	'coinbase' => [
+    'coinbase' => [
         'class' => App\Services\PaymentGateways\CoinbaseService::class,
     ],
 
@@ -110,5 +109,9 @@ return [
 
     'cryptomus' => [
         'class' => App\Services\PaymentGateways\CryptomusService::class,
+    ],
+
+    'midtrans' => [
+        'class' => App\Services\PaymentGateways\MidtransService::class,
     ],
 ];

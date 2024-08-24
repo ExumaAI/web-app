@@ -209,19 +209,23 @@
                         @php
                             $planId = getCurrentActiveSubscription()?->plan_id ?? 0;
 
-
-                            $default_ai_engine = setting('default_ai_engine', 'openai');
-
-                            $models = \App\Models\AiModel::query()
+                            if ($planId) {
+                                $models = \App\Models\AiModel::query()
                                     ->whereHas('aiFinance', function ($query) use ($planId) {
                                         $query->where('plan_id', $planId);
                                     })
-                                    ->where('is_selected', 1)
-                                    ->where('ai_engine', $default_ai_engine)
                                     ->whereHas('tokens', function ($query) {
                                         $query->where('type', 'word');
                                     })
                                     ->get();
+                            }else {
+                                $models = \App\Models\AiModel::query()
+                                    ->where('is_selected', 1)
+                                    ->whereHas('tokens', function ($query) {
+                                        $query->where('type', 'word');
+                                    })
+                                    ->get();
+                            }
                         @endphp
                         @if($models->count())
                             {{-- Chatbot front model --}}
@@ -330,6 +334,11 @@
             </div>
         </div>
 
+        <input
+                id="assistant"
+                type="hidden"
+                value="{{ $category->assistant }}"
+        />
         <input
             id="chatbot_id"
             type="hidden"

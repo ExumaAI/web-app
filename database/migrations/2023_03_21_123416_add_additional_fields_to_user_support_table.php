@@ -6,9 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::table('user_support', function (Blueprint $table) {
@@ -18,15 +15,10 @@ return new class extends Migration
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::table('user_support', function (Blueprint $table) {
-            $table->dropColumn('ticket_id');
-            $table->dropColumn('priority');
-            $table->dropColumn('category');
+            $table->dropColumn(['ticket_id', 'priority', 'category']);
         });
     }
 };

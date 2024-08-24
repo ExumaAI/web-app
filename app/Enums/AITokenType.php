@@ -20,7 +20,7 @@ enum AITokenType: string implements Contracts\WithStringBackedEnum
     {
         return match ($this) {
             self::WORD   => __('Word'),
-            self::IMAGE => __('Image'),
+            self::IMAGE  => __('Image'),
         };
     }
 }

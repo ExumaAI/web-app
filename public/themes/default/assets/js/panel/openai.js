@@ -206,64 +206,6 @@ function templateSave(template_id) {
     return false;
 }
 
-
-function templateChatSave( template_id ) {
-	'use strict';
-
-	document.getElementById( 'custom_template_button' ).disabled = true;
-	document.getElementById( 'custom_template_button' ).innerHTML = magicai_localize.please_wait;
-
-
-	var formData = new FormData();
-	formData.append( 'template_id', template_id );
-	formData.append( 'name', $( "#name" ).val() );
-	formData.append( 'category', $( "#chat_category" ).val() );
-	formData.append( 'short_name', $( "#short_name" ).val() );
-	formData.append( 'description', $( "#description" ).val() );
-	formData.append( 'instructions', $( "#instructions" ).val() );
-	formData.append( 'first_message', $( "#first_message" ).val() );
-	formData.append( 'role', $( "#role" ).val() );
-	formData.append( 'human_name', $( "#human_name" ).val() );
-	formData.append( 'helps_with', $( "#helps_with" ).val() );
-	formData.append( 'chatbot_id', $( "#chatbot_id" ).val() );
-
-	formData.append( 'color', $( '#color' ).val() );
-
-	if ( $( '#avatar' ).val() != 'undefined' ) {
-		formData.append( 'avatar', $( '#avatar' ).prop( 'files' )[ 0 ] );
-	}
-
-	console.log( editor_chat_completions.getValue() );
-	if ( editor_chat_completions ) {
-		formData.append( 'chat_completions', editor_chat_completions.getValue() );
-	}
-
-
-	$.ajax( {
-		type: 'post',
-		url: '/dashboard/admin/openai/chat/save',
-		data: formData,
-		contentType: false,
-		processData: false,
-		success: function ( data ) {
-			toastr.success(magicai_localize?.chat_template_saved ||'Chat Template Saved Succesfully');
-			location.href = '/dashboard/admin/openai/chat';
-			document.getElementById( 'custom_template_button' ).disabled = false;
-			document.getElementById( 'custom_template_button' ).innerHTML = 'Save';
-		},
-		error: function ( data ) {
-			var err = data.responseJSON.errors;
-			$.each( err, function ( index, value ) {
-				toastr.error( value );
-			} );
-			document.getElementById( 'custom_template_button' ).disabled = false;
-			document.getElementById( 'custom_template_button' ).innerHTML = 'Save';
-		}
-	} );
-	return false;
-}
-
-
 $( document ).ready( function () {
 	'use strict';
 

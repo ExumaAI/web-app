@@ -3,7 +3,6 @@
 namespace App\Http;
 
 use Illuminate\Foundation\Http\Kernel as HttpKernel;
-use RachidLaasri\LaravelInstaller\Middleware\ApplicationStatus;
 
 class Kernel extends HttpKernel
 {
@@ -39,12 +38,12 @@ class Kernel extends HttpKernel
             \RachidLaasri\LaravelInstaller\Middleware\ApplicationStatus::class,
             \App\Http\Middleware\VerifyCsrfToken::class,
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
-			\App\Http\Middleware\UpdateUserActivity::class,
+            \App\Http\Middleware\UpdateUserActivity::class,
         ],
 
         'api' => [
             // \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
-            \Illuminate\Routing\Middleware\ThrottleRequests::class.':api',
+            \Illuminate\Routing\Middleware\ThrottleRequests::class . ':api',
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
         ],
     ];
@@ -58,7 +57,6 @@ class Kernel extends HttpKernel
      */
     protected $middlewareAliases = [
         'auth' => \App\Http\Middleware\Authenticate::class,
-        'admin' => \App\Http\Middleware\isAdmin::class,
         'hasTokens' => \App\Http\Middleware\hasTokens::class,
         'hasImageTokens' => \App\Http\Middleware\hasImageTokens::class,
         'hasWordTokens' => \App\Http\Middleware\hasWordTokens::class,
@@ -71,6 +69,7 @@ class Kernel extends HttpKernel
         'signed' => \App\Http\Middleware\ValidateSignature::class,
         'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
+        'admin' => \App\Http\Middleware\AdminPermissionMiddleware::class,
     ];
 
     /**
@@ -86,6 +85,6 @@ class Kernel extends HttpKernel
         'localeCookieRedirect'    => \Mcamara\LaravelLocalization\Middleware\LocaleCookieRedirect::class,
         'localeViewPath'          => \Mcamara\LaravelLocalization\Middleware\LaravelLocalizationViewPath::class,
         'checkInstallation'       => \App\Http\Middleware\CheckInstallation::class,
-		'custom'                  => \App\Http\Middleware\Custom::class,
+        'custom'                  => \App\Http\Middleware\Custom::class,
     ];
 }

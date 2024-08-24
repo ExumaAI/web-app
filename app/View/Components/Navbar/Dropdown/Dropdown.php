@@ -12,8 +12,8 @@ class Dropdown extends Component
      * Create a new component instance.
      */
     public function __construct(
-		public string $open = ''
-	){}
+        public string $open = ''
+    ) {}
 
     /**
      * Get the view / contents that represent the component.

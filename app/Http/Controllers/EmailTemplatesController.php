@@ -29,10 +29,10 @@ class EmailTemplatesController extends Controller
     public function edit(int $id)
     {
         return view('panel.email.form', [
-            'action' => route('dashboard.email-templates.update', $id),
-            'method' => 'PUT',
+            'action'   => route('dashboard.email-templates.update', $id),
+            'method'   => 'PUT',
             'template' => EmailTemplates::query()->findOrFail($id),
-            'title' => 'Edit Email Template',
+            'title'    => 'Edit Email Template',
         ]);
     }
 
@@ -40,7 +40,7 @@ class EmailTemplatesController extends Controller
     {
         if (Helper::appIsDemo()) {
             return response()->json([
-                'status' => 'error',
+                'status'  => 'error',
                 'message' => trans('This feature is disabled in demo mode.'),
             ]);
         }
@@ -50,7 +50,7 @@ class EmailTemplatesController extends Controller
         $request['content'] = $request->get('content_ace');
 
         $data = $request->validate([
-            'title' => $template->system ? 'sometimes|nullable' : 'required',
+            'title'   => $template->system ? 'sometimes|nullable' : 'required',
             'subject' => 'required',
             'content' => 'required',
         ]);
@@ -68,7 +68,7 @@ class EmailTemplatesController extends Controller
     {
         if (Helper::appIsDemo()) {
             return response()->json([
-                'status' => 'error',
+                'status'  => 'error',
                 'message' => trans('This feature is disabled in demo mode.'),
             ]);
         }
@@ -90,7 +90,7 @@ class EmailTemplatesController extends Controller
     {
         return view('panel.email.send', [
             'template' => EmailTemplates::query()->findOrFail($id),
-            'title' => 'Send Email',
+            'title'    => 'Send Email',
         ]);
     }
 
@@ -151,7 +151,7 @@ class EmailTemplatesController extends Controller
 
         return back()->with([
             'message' => __('Emails are being sent'),
-            'type' => 'success',
+            'type'    => 'success',
         ]);
     }
 
@@ -160,7 +160,7 @@ class EmailTemplatesController extends Controller
         $data = array_map(function ($item, $key) {
             return [
                 'email' => $key,
-                'name' => $item,
+                'name'  => $item,
             ];
         }, $data, array_keys($data));
 

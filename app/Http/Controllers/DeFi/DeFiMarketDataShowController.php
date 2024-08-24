@@ -7,9 +7,7 @@ use App\Services\DeFi\DeFiMarketDataService;
 
 class DeFiMarketDataShowController extends Controller
 {
-    public function __construct(public DeFiMarketDataService $service)
-    {
-    }
+    public function __construct(public DeFiMarketDataService $service) {}
 
     public function __invoke(string $slug)
     {

@@ -8,9 +8,11 @@ use Illuminate\Database\Eloquent\Model;
 class UserAffiliate extends Model
 {
     use HasFactory;
+
     protected $table = 'user_affiliates';
 
-    public function user(){
+    public function user()
+    {
         return $this->belongsTo(User::class);
     }
 }

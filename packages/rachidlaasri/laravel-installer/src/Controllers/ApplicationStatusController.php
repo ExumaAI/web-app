@@ -3,6 +3,7 @@
 namespace RachidLaasri\LaravelInstaller\Controllers;
 
 use App\Helpers\Classes\Helper;
+use Exception;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;
 use Illuminate\Foundation\Application;
@@ -14,13 +15,11 @@ use RachidLaasri\LaravelInstaller\Requests\LicenseKeyRequest;
 
 class ApplicationStatusController extends Controller
 {
-    public function __construct(public ApplicationStatusRepositoryInterface $licenseRepository)
-    {
-    }
+    public function __construct(public ApplicationStatusRepositoryInterface $licenseRepository) {}
 
     public function license(Request $request, $regenerate = null)
     {
-        cache()->forget('check_license_domain_'.$request->getHost());
+        cache()->forget('check_license_domain_' . $request->getHost());
 
         $this->licenseRepository->generate($request);
 
@@ -37,37 +36,37 @@ class ApplicationStatusController extends Controller
 
                     if ($success) {
                         return to_route('dashboard.user.index')->with([
-                            'type' => 'success',
+                            'type'    => 'success',
                             'message' => 'License activated successfully',
                         ]);
                     }
                 }
             }
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
         }
 
         return view('vendor.installer.license', [
             'portal' => $portalData,
-            'text' => 'Activate',
+            'text'   => 'Activate',
         ]);
     }
 
     public function upgrade(Request $request): View|Application|Factory|\Illuminate\View\View|\Illuminate\Contracts\Foundation\Application
     {
-        cache()->forget('check_license_domain_'.$request->getHost());
+        cache()->forget('check_license_domain_' . $request->getHost());
 
         $this->licenseRepository->generate($request);
 
         return view('vendor.installer.license', [
             'portal' => null,
-            'text' => 'Upgrade',
+            'text'   => 'Upgrade',
         ]);
     }
 
     public function licenseCheck(LicenseKeyRequest $request): RedirectResponse
     {
-        cache()->forget('check_license_domain_'.$request->getHost());
+        cache()->forget('check_license_domain_' . $request->getHost());
 
         $this->licenseRepository->setLicense();
 
@@ -76,7 +75,7 @@ class ApplicationStatusController extends Controller
 
     public function webhook(Request $request)
     {
-        cache()->forget('check_license_domain_'.$request->getHost());
+        cache()->forget('check_license_domain_' . $request->getHost());
 
         $this->licenseRepository->webhook($request);
 

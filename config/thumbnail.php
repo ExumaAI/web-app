@@ -8,13 +8,11 @@ return [
      */
     'signing_key' => sha1(env('APP_KEY', '')),
 
-
     /**
      * Memory limit for generating the thumbnails.
      * e.g. 256M, 512M 1024M 2048M
      */
     'memory_limit' => '1024M',
-
 
     /**
      * Load the original images from the following sources.
@@ -24,16 +22,15 @@ return [
      *       E.g. add `storage_path('useruploads')` instead of `storage_path()`.
      */
     'allowedSources' => [
-        'a' => app_path(),
-        'r' => resource_path(),
-        'p' => public_path(),
-        's' => storage_path(),
-        'http' => 'http://', //allow images to be loaded from http
+        'a'     => app_path(),
+        'r'     => resource_path(),
+        'p'     => public_path(),
+        's'     => storage_path(),
+        'http'  => 'http://', //allow images to be loaded from http
         'https' => 'https://',
-        'ld' => ['disk' => 'local', 'path' => ''], //allow images to be loaded from `Storage::disk('local')`
-        'pd' => ['disk' => 'public', 'path' => ''],
+        'ld'    => ['disk' => 'local', 'path' => ''], //allow images to be loaded from `Storage::disk('local')`
+        'pd'    => ['disk' => 'public', 'path' => ''],
     ],
-
 
     /**
      * Thumbnail settings are grouped in presets.
@@ -58,7 +55,6 @@ return [
             'smartcrop' => '64x64',
         ],
     ],
-
 
     /**
      * Available filters to modify the images.

@@ -20,17 +20,17 @@ class ChatbotTrainingController extends Controller
     {
         if (Helper::appIsDemo()) {
             return response()->json([
-                'status' => 'error',
+                'status'  => 'error',
                 'message' => trans('This feature is disabled in demo mode.'),
                 'content' => view('panel.admin.chatbot.particles.qa.list', [
-                    'items' => $chatbot->data()->where('type', 'qa')->get()
-                ])->render()
+                    'items' => $chatbot->data()->where('type', 'qa')->get(),
+                ])->render(),
             ]);
         }
 
         $request->validate([
             'question' => 'required|string|max:255',
-            'answer' => 'required|string'
+            'answer'   => 'required|string',
         ]);
 
         $id = $request->get('qa_id');
@@ -40,28 +40,28 @@ class ChatbotTrainingController extends Controller
         if ($chatBotData) {
             $chatBotData->update([
                 'type_value' => $request->get('question'),
-                'content' => $request->get('answer'),
-                'status' => 'waiting'
+                'content'    => $request->get('answer'),
+                'status'     => 'waiting',
             ]);
 
             ChatbotDataVector::query()->where('chatbot_data_id', $id)->delete();
         } else {
             ChatBotData::query()->firstOrCreate([
                 'chatbot_id' => $chatbot->getAttribute('id'),
-                'type' => 'qa',
-                'type_value' => $request->get('question')
+                'type'       => 'qa',
+                'type_value' => $request->get('question'),
             ], [
                 'content' => $request->get('answer'),
-                'status' => 'waiting'
+                'status'  => 'waiting',
             ]);
         }
 
         return response()->json([
             'content' => view('panel.admin.chatbot.particles.qa.list', [
-                'items' => $chatbot->data()->where('type', 'qa')->get()
+                'items' => $chatbot->data()->where('type', 'qa')->get(),
             ])->render(),
             'message' => trans('Qa uploaded successfully.'),
-            'count' => $chatbot->data()->where('type', 'qa')->count()
+            'count'   => $chatbot->data()->where('type', 'qa')->count(),
         ]);
     }
 
@@ -69,17 +69,17 @@ class ChatbotTrainingController extends Controller
     {
         if (Helper::appIsDemo()) {
             return response()->json([
-                'status' => 'error',
+                'status'  => 'error',
                 'message' => trans('This feature is disabled in demo mode.'),
                 'content' => view('panel.admin.chatbot.particles.text.list', [
-                    'items' => $chatbot->data()->where('type', 'text')->get()
-                ])->render()
+                    'items' => $chatbot->data()->where('type', 'text')->get(),
+                ])->render(),
             ]);
         }
 
         $request->validate([
             'title' => 'required|string|max:255',
-            'text' => 'required|string'
+            'text'  => 'required|string',
         ]);
 
         $id = $request->get('text_id');
@@ -89,28 +89,28 @@ class ChatbotTrainingController extends Controller
         if ($chatBotData) {
             $chatBotData->update([
                 'type_value' => $request->get('title'),
-                'content' => $request->get('text'),
-                'status' => 'waiting'
+                'content'    => $request->get('text'),
+                'status'     => 'waiting',
             ]);
 
             ChatbotDataVector::query()->where('chatbot_data_id', $id)->delete();
         } else {
             ChatBotData::query()->firstOrCreate([
                 'chatbot_id' => $chatbot->getAttribute('id'),
-                'type' => 'text',
-                'type_value' => $request->get('title')
+                'type'       => 'text',
+                'type_value' => $request->get('title'),
             ], [
                 'content' => $request->get('text'),
-                'status' => 'waiting'
+                'status'  => 'waiting',
             ]);
         }
 
         return response()->json([
             'content' => view('panel.admin.chatbot.particles.text.list', [
-                'items' => $chatbot->data()->where('type', 'text')->get()
+                'items' => $chatbot->data()->where('type', 'text')->get(),
             ])->render(),
             'message' => trans('Text uploaded successfully.'),
-            'count' => $chatbot->data()->where('type', 'text')->count()
+            'count'   => $chatbot->data()->where('type', 'text')->count(),
         ]);
     }
 
@@ -118,22 +118,21 @@ class ChatbotTrainingController extends Controller
     {
         if (Helper::appIsDemo()) {
             return response()->json([
-                'status' => 'error',
+                'status'  => 'error',
                 'message' => trans('This feature is disabled in demo mode.'),
                 'content' => view('panel.admin.chatbot.particles.pdf.list', [
-                    'items' => $chatbot->data()->where('type', 'pdf')->get()
-                ])->render()
+                    'items' => $chatbot->data()->where('type', 'pdf')->get(),
+                ])->render(),
             ]);
         }
 
         $request->validate([
-            'file' => 'required|mimes:pdf,xls,xlsx,csv'
+            'file' => 'required|mimes:pdf,xls,xlsx,csv',
         ]);
 
         $file = $request->file('file');
 
         $extension = $file->getClientOriginalExtension();
-
 
         $defaultDisk = 'public';
 
@@ -141,7 +140,7 @@ class ChatbotTrainingController extends Controller
 
         $name = $file->getClientOriginalName();
 
-        $storagePath = config("filesystems.disks." . $defaultDisk . ".root" ). '/' . $path;
+        $storagePath = config('filesystems.disks.' . $defaultDisk . '.root') . '/' . $path;
 
         if ($extension == 'xls' || $extension == 'xlsx' || $extension == 'csv') {
             $parser = app(ParserExcelService::class);
@@ -156,27 +155,28 @@ class ChatbotTrainingController extends Controller
 
         ChatBotData::query()->firstOrCreate([
             'chatbot_id' => $chatbot->getAttribute('id'),
-            'type' => 'pdf',
+            'type'       => 'pdf',
             'type_value' => $name,
         ], [
             'content' => $parser->getText(),
-            'status' => 'waiting',
-            'path' => $path
+            'status'  => 'waiting',
+            'path'    => $path,
         ]);
 
         return response()->json([
             'content' => view('panel.admin.chatbot.particles.pdf.list', [
-                'items' => $chatbot->data()->where('type', 'pdf')->get()
+                'items' => $chatbot->data()->where('type', 'pdf')->get(),
             ])->render(),
-            'message' => trans('Pdf file uploaded successfully.')
+            'message' => trans('Pdf file uploaded successfully.'),
         ]);
     }
+
     public function getWebSites(Request $request, Chatbot $chatbot)
     {
         return response()->json([
             'content' => view('panel.admin.chatbot.particles.web-site.crawler', [
-                'items' => $chatbot->data()->where('type', 'url')->get()
-            ])->render()
+                'items' => $chatbot->data()->where('type', 'url')->get(),
+            ])->render(),
         ]);
     }
 
@@ -184,15 +184,15 @@ class ChatbotTrainingController extends Controller
     {
         if (Helper::appIsDemo()) {
             return response()->json([
-                'status' => 'error',
+                'status'  => 'error',
                 'message' => trans('This feature is disabled in demo mode.'),
                 'content' => view('panel.admin.chatbot.particles.web-site.crawler', [
-                    'items' => $chatbot->data()->where('type', 'url')->get()
+                    'items' => $chatbot->data()->where('type', 'url')->get(),
                 ])->render(),
             ]);
         }
         $request->validate([
-            'url' => 'required|url'
+            'url' => 'required|url',
         ]);
 
         $single = $request->input('type') == 'single';
@@ -202,27 +202,27 @@ class ChatbotTrainingController extends Controller
         $crawler->crawl($single);
 
         $content = $crawler->getContents();
-		if (!mb_check_encoding($content, 'UTF-8')) {
-			// Convert the content to UTF-8 encoding if needed
-			$content = mb_convert_encoding($content, 'UTF-8');
-		}
+        if (! mb_check_encoding($content, 'UTF-8')) {
+            // Convert the content to UTF-8 encoding if needed
+            $content = mb_convert_encoding($content, 'UTF-8');
+        }
 
         foreach ($content as $url => $data) {
             ChatBotData::query()->firstOrCreate([
                 'chatbot_id' => $chatbot->getAttribute('id'),
-                'type' => 'url',
-                'type_value' => $url
+                'type'       => 'url',
+                'type_value' => $url,
             ], [
                 'content' => $data,
-                'status' => 'waiting'
+                'status'  => 'waiting',
             ]);
         }
 
         return response()->json([
             'content' => view('panel.admin.chatbot.particles.web-site.crawler', [
-                'items' => $chatbot->data()->where('type', 'url')->get()
+                'items' => $chatbot->data()->where('type', 'url')->get(),
             ])->render(),
-            'message' => trans('Web sites added successfully.')
+            'message' => trans('Web sites added successfully.'),
         ]);
     }
 
@@ -232,8 +232,8 @@ class ChatbotTrainingController extends Controller
     ) {
         if (Helper::appIsDemo()) {
             return response()->json([
-                'status' => 'error',
-                'message' => trans('This feature is disabled in demo mode.')
+                'status'  => 'error',
+                'message' => trans('This feature is disabled in demo mode.'),
             ]);
         }
 
@@ -250,21 +250,21 @@ class ChatbotTrainingController extends Controller
         $type = $request->get('type');
 
         $matchView = match ($type) {
-            'url' => 'panel.admin.chatbot.particles.web-site.crawler',
-            'pdf' => 'panel.admin.chatbot.particles.pdf.list',
+            'url'  => 'panel.admin.chatbot.particles.web-site.crawler',
+            'pdf'  => 'panel.admin.chatbot.particles.pdf.list',
             'text' => 'panel.admin.chatbot.particles.text.list',
-            'qa' => 'panel.admin.chatbot.particles.qa.list',
+            'qa'   => 'panel.admin.chatbot.particles.qa.list',
         };
 
         $chatbot->update([
-            'status' => 'trained'
+            'status' => 'trained',
         ]);
 
         return response()->json([
             'content' => view($matchView, [
                 'items' => $chatbot->data()->where('type', $request->get('type'))->get(),
             ])->render(),
-            'message' => trans('Training Completed Successfully.')
+            'message' => trans('Training Completed Successfully.'),
         ]);
     }
 
@@ -272,8 +272,8 @@ class ChatbotTrainingController extends Controller
     {
         if (Helper::appIsDemo()) {
             return response()->json([
-                'status' => 'error',
-                'message' => trans('This feature is disabled in demo mode.')
+                'status'  => 'error',
+                'message' => trans('This feature is disabled in demo mode.'),
             ]);
         }
 
@@ -282,7 +282,7 @@ class ChatbotTrainingController extends Controller
         ChatbotDataVector::query()->where('chatbot_data_id', $id)->delete();
 
         return response()->json([
-            'message' => trans('Item deleted successfully.')
+            'message' => trans('Item deleted successfully.'),
         ]);
     }
 
@@ -298,14 +298,14 @@ class ChatbotTrainingController extends Controller
             ->map(function ($item) {
 
                 $content = $item->getAttribute('type') == 'qa'
-                    ? "When you receive the following question or a similar one, answer it like this: '". $item->getAttribute('content')."' \n Question: '".$item->getAttribute('type_value')."'"
+                    ? "When you receive the following question or a similar one, answer it like this: '" . $item->getAttribute('content') . "' \n Question: '" . $item->getAttribute('type_value') . "'"
                     : $item->getAttribute('content');
 
                 return [
-                    'id' => $item->getAttribute('id'),
-                    'content' => $content
+                    'id'      => $item->getAttribute('id'),
+                    'content' => $content,
                 ];
             })
-            ->pluck( 'content', 'id');
+            ->pluck('content', 'id');
     }
 }

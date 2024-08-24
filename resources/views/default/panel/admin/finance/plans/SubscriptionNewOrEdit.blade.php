@@ -122,6 +122,7 @@
                     required
                 />
                 <x-forms.input
+
                     class:container="w-full mt-4"
                     id="is_team_plan"
                     type="checkbox"
@@ -583,28 +584,24 @@
                         </option>
                     @endif
                 </x-forms.input>
+{{--                    <h2 class="text-lg mt-5">{{ __('Ai Chat Models') }}</h2>--}}
 
-
-
-                    <h2 class="text-lg mt-5">{{ __('Ai Chat Models') }}</h2>
-
-                    <div class="">
-                        @foreach($models as $model)
-                            <x-forms.input
-                                    class:container="h-full bg-input-background mt-2"
-                                    class:label="w-full border h-full rounded px-3 py-4 hover:bg-foreground/5 transition-colors"
-                                    id="ai_model_{{ $model->key }}"
-                                    data-filter="{{ $model }}"
-                                    :checked="in_array($model->id, $selectedModels)"
-                                    type="checkbox"
-                                    name="aiChatModelItems[]"
-                                    value="{{ $model->id }}"
-                                    label="{{ $model->selected_title }}"
-                                    custom
-                            />
-                        @endforeach
-
-                    </div>
+{{--                    <div class="">--}}
+{{--                        @foreach($models as $model)--}}
+{{--                            <x-forms.input--}}
+{{--                                    class:container="h-full bg-input-background mt-2"--}}
+{{--                                    class:label="w-full border h-full rounded px-3 py-4 hover:bg-foreground/5 transition-colors"--}}
+{{--                                    id="ai_model_{{ $model->key }}"--}}
+{{--                                    data-filter="{{ $model }}"--}}
+{{--                                    :checked="in_array($model->id, $selectedModels)"--}}
+{{--                                    type="checkbox"--}}
+{{--                                    name="aiChatModelItems[]"--}}
+{{--                                    value="{{ $model->id }}"--}}
+{{--                                    label="{{ $model->selected_title }}"--}}
+{{--                                    custom--}}
+{{--                            />--}}
+{{--                        @endforeach--}}
+{{--                    </div>--}}
 
 
             </x-card>

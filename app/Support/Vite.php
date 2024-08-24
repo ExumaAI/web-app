@@ -17,12 +17,14 @@ class Vite extends BaseVite
         return ($this->assetPathResolver ?? asset(...))($path, $secure);
     }
 
-	private function getDomain(){
-		if(file_exists(storage_path('installed'))){
-			$domain = config('app.url');
-		}else{
-			$domain = request()->getSchemeAndHttpHost();
-		}
-		return $domain;
-	}
+    private function getDomain()
+    {
+        if (file_exists(storage_path('installed'))) {
+            $domain = config('app.url');
+        } else {
+            $domain = request()->getSchemeAndHttpHost();
+        }
+
+        return $domain;
+    }
 }

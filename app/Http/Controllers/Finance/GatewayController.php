@@ -10,6 +10,7 @@ use App\Services\GatewaySelector;
 use App\Services\PaymentGateways\CoingateService;
 use App\Services\PaymentGateways\CryptomusService;
 use App\Services\PaymentGateways\IyzicoService;
+use App\Services\PaymentGateways\MidtransService;
 use App\Services\PaymentGateways\PaddleService;
 use App\Services\PaymentGateways\PayPalService;
 use App\Services\PaymentGateways\PaystackService;
@@ -17,21 +18,19 @@ use App\Services\PaymentGateways\RazorpayService;
 use App\Services\PaymentGateways\RevenueCatService;
 use App\Services\PaymentGateways\StripeService;
 use App\Services\PaymentGateways\YokassaService;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
-use RachidLaasri\LaravelInstaller\Repositories\ApplicationStatusRepository;
 use RachidLaasri\LaravelInstaller\Repositories\ApplicationStatusRepositoryInterface;
-use function Termwind\render;
 
 // Controls ALL Payment Gateway actions
 class GatewayController extends Controller
 {
     public function __construct(
         public ApplicationStatusRepositoryInterface $applicationStatusRepository
-    ) {
-    }
+    ) {}
 
     // Helper functions
     public function gatewayCodesArray(): array
@@ -51,6 +50,10 @@ class GatewayController extends Controller
 
         if (class_exists('App\Services\PaymentGateways\CryptomusService')) {
             $paymentGateways[] = 'cryptomus';
+        }
+
+        if (class_exists('App\Services\PaymentGateways\MidtransService')) {
+            $paymentGateways[] = 'midtrans';
         }
 
         return $paymentGateways;
@@ -74,6 +77,9 @@ class GatewayController extends Controller
         if (class_exists('App\Services\PaymentGateways\CryptomusService')) {
             $gateways[] = CryptomusService::gatewayDefinitionArray();
         }
+        if (class_exists('App\Services\PaymentGateways\MidtransService')) {
+            $gateways[] = MidtransService::gatewayDefinitionArray();
+        }
 
         return $gateways;
     }
@@ -81,32 +87,32 @@ class GatewayController extends Controller
     public function bankTransferArray(): array
     {
         return [
-            'code' => 'banktransfer',
-            'title' => 'Bank Transfer',
-            'link' => '',
-            'active' => 0,                      //if user activated this gateway - dynamically filled in main page
-            'available' => 1,                   //if gateway is available to use
-            'img' => '/assets/img/payments/banktransfer.png',
-            'whiteLogo' => 0,                   //if gateway logo is white
-            'mode' => 0,                        // Option in settings - Automatically set according to the "Development" mode. "Development" ? sandbox : live (PAYPAL - 1)
-            'sandbox_client_id' => 0,           // Option in settings 0-Hidden 1-Visible
+            'code'                  => 'banktransfer',
+            'title'                 => 'Bank Transfer',
+            'link'                  => '',
+            'active'                => 0,                      //if user activated this gateway - dynamically filled in main page
+            'available'             => 1,                   //if gateway is available to use
+            'img'                   => '/assets/img/payments/banktransfer.png',
+            'whiteLogo'             => 0,                   //if gateway logo is white
+            'mode'                  => 0,                        // Option in settings - Automatically set according to the "Development" mode. "Development" ? sandbox : live (PAYPAL - 1)
+            'sandbox_client_id'     => 0,           // Option in settings 0-Hidden 1-Visible
             'sandbox_client_secret' => 0,       // Option in settings
-            'sandbox_app_id' => 0,              // Option in settings
-            'live_client_id' => 0,              // Option in settings
-            'live_client_secret' => 0,          // Option in settings
-            'live_app_id' => 0,                 // Option in settings
-            'currency' => 1,                    // Option in settings
-            'currency_locale' => 0,             // Option in settings
-            'base_url' => 0,                    // Option in settings
-            'sandbox_url' => 0,                 // Option in settings
-            'locale' => 0,                      // Option in settings
-            'validate_ssl' => 0,                // Option in settings
-            'logger' => 0,                      // Option in settings
-            'notify_url' => 0,                  // Gateway notification url at our side
-            'webhook_secret' => 0,              // Option in settings
-            'tax' => 1,              // Option in settings
-            'bank_account_details' => 1,
-            'bank_account_other' => 1,
+            'sandbox_app_id'        => 0,              // Option in settings
+            'live_client_id'        => 0,              // Option in settings
+            'live_client_secret'    => 0,          // Option in settings
+            'live_app_id'           => 0,                 // Option in settings
+            'currency'              => 1,                    // Option in settings
+            'currency_locale'       => 0,             // Option in settings
+            'base_url'              => 0,                    // Option in settings
+            'sandbox_url'           => 0,                 // Option in settings
+            'locale'                => 0,                      // Option in settings
+            'validate_ssl'          => 0,                // Option in settings
+            'logger'                => 0,                      // Option in settings
+            'notify_url'            => 0,                  // Gateway notification url at our side
+            'webhook_secret'        => 0,              // Option in settings
+            'tax'                   => 1,              // Option in settings
+            'bank_account_details'  => 1,
+            'bank_account_other'    => 1,
         ];
     }
 
@@ -120,7 +126,7 @@ class GatewayController extends Controller
         $gatewaysData = Gateways::all();
         foreach ($gatewaysData as $gw) {
             array_push($gatewayActiveData, [
-                'code' => $gw->code,
+                'code'      => $gw->code,
                 'is_active' => $gw->is_active,
             ]);
         }
@@ -131,17 +137,18 @@ class GatewayController extends Controller
             foreach ($gatewaysData as $gwdata) {
                 if ($gwdata['code'] == $code) {
                     $is_active = $gwdata['is_active'];
+
                     break;
                 }
             }
             array_push($requiredGatewayData, [
-                'code' => $code,
-                'title' => $gateway['title'],
-                'link' => $gateway['link'],
+                'code'      => $code,
+                'title'     => $gateway['title'],
+                'link'      => $gateway['link'],
                 'available' => $gateway['available'],
-                'img' => $gateway['img'],
+                'img'       => $gateway['img'],
                 'whiteLogo' => $gateway['whiteLogo'],
-                'active' => $is_active ?? 0,
+                'active'    => $is_active ?? 0,
             ]);
         }
 
@@ -156,9 +163,9 @@ class GatewayController extends Controller
             $cindex = $currency->id;
             $country = self::appendNBSPtoString($currency->country, 41);
             $code = self::appendNBSPtoString($currency->code, 5);
-            $text = $country.$code.$currency->symbol;
+            $text = $country . $code . $currency->symbol;
             $selected = (int) $index == (int) $cindex ? 'selected' : '';
-            $returnText = $returnText.'<option value="'.$cindex.'" '.$selected.' style=\'font-family: "Courier New", Courier, monospace;\' >'.$text.'</option>';
+            $returnText = $returnText . '<option value="' . $cindex . '" ' . $selected . ' style=\'font-family: "Courier New", Courier, monospace;\' >' . $text . '</option>';
         }
 
         return $returnText;
@@ -173,7 +180,7 @@ class GatewayController extends Controller
         } else {
             $newString = $stringForAppend;
             for ($i = 1; $i <= $remainingCharcount; $i++) {
-                $newString = $newString.'&nbsp;';
+                $newString = $newString . '&nbsp;';
             }
 
             return $newString;
@@ -188,9 +195,9 @@ class GatewayController extends Controller
         return view(
             'panel.admin.finance.gateways.index', [
                 'gateways' => $gateways,
-                'view' => view($this->applicationStatusRepository->financePage(), [
+                'view'     => view($this->applicationStatusRepository->financePage(), [
                     'gateways' => $gateways,
-                ])->render()
+                ])->render(),
             ]
         );
     }
@@ -207,7 +214,7 @@ class GatewayController extends Controller
 
         if ($settings != null) {
         } else {
-            $settings = new Gateways();
+            $settings = new Gateways;
             $settings->code = $code;
             $settings->is_active = 0;
             $settings->currency = '124'; //Default currency for Stripe - USD
@@ -219,6 +226,7 @@ class GatewayController extends Controller
         foreach ($gateways as $gateway) {
             if ($gateway['code'] == $code) {
                 $options = $gateway;
+
                 break;
             }
         }
@@ -226,7 +234,6 @@ class GatewayController extends Controller
         $taxes = GatewayTax::query()
             ->where('gateway_id', $settings->id)
             ->get();
-
 
         return view('panel.admin.finance.gateways.settings', compact('settings', 'currencies', 'options', 'taxes'));
     }
@@ -281,15 +288,15 @@ class GatewayController extends Controller
             if ($gw_settings->is_active == 1) {
                 try {
                     $temp = GatewaySelector::selectGateway($request->code)::saveAllProducts(); // Update all product ids' and create new price ids'
-                } catch (\Exception $ex) {
+                } catch (Exception $ex) {
                     DB::rollBack();
-                    Log::error("GatewayController::gatewaySettingsSave()\n".$ex->getMessage());
+                    Log::error("GatewayController::gatewaySettingsSave()\n" . $ex->getMessage());
 
                     return back()->with(['message' => $ex->getMessage(), 'type' => 'error']);
                 }
             }
         } else {
-            $settings = new Gateways();
+            $settings = new Gateways;
             $settings->code = $request->code;
             $settings->is_active = 0;
             $settings->currency = '124'; //Default currency for Stripe - USD
@@ -312,7 +319,7 @@ class GatewayController extends Controller
         if ($request->code == 'cryptomus') {
             GatewayTax::query()
                 ->updateOrCreate([
-                    'gateway_id' => $gw_settings->id,
+                    'gateway_id'   => $gw_settings->id,
                     'country_code' => $request->get('country_code'),
                 ], [
                     'tax' => $request->get('tax'),
@@ -336,7 +343,7 @@ class GatewayController extends Controller
         $gatewayTax->delete();
 
         return back()->with([
-            'type' => 'success',
+            'type'    => 'success',
             'message' => __('Tax deleted successfully.'),
         ]);
     }
@@ -348,6 +355,7 @@ class GatewayController extends Controller
         foreach ($gateways as $gateway) {
             if ($gateway['code'] == $code) {
                 $options = $gateway;
+
                 break;
             }
         }

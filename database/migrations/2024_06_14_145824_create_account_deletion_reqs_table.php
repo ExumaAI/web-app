@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('account_deletion_reqs', function (Blueprint $table) {
             $table->id();
-			$table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->timestamps(); 
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->timestamps();
         });
     }
 

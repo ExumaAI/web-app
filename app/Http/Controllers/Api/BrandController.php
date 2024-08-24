@@ -11,10 +11,9 @@ use Illuminate\Support\Str;
 
 class BrandController extends Controller
 {
-
     /**
      * Display brand companies
-     * 
+     *
      * @OA\Get(
      *      path="/api/brandvoice",
      *      operationId="index",
@@ -22,6 +21,7 @@ class BrandController extends Controller
      *      summary="List of companies",
      *      description="Returns list of companies",
      *      security={{ "passport": {} }},
+     *
      *      @OA\Parameter(
      *          name="id",
      *          in="path",
@@ -30,33 +30,38 @@ class BrandController extends Controller
      *
      *          @OA\Schema(type="string")
      *      ),
+     *
      *      @OA\Response(
      *          response=200,
      *          description="Successful operation",
+     *
      *          @OA\JsonContent(
      *              type="object",
      *          ),
      *      ),
+     *
      *      @OA\Response(
      *          response=401,
      *          description="Unauthenticated",
      *      ),
      * )
      */
-    public function index($id=null)
+    public function index($id = null)
     {
         if ($id != null) {
             $list = Company::where('id', $id)->where('user_id', auth()->user()->id)->firstOrFail();
             $products = Product::where('user_id', auth()->user()->id)->where('company_id', $id)->get();
             $list->products = $products;
+
             return response()->json($list);
         }
-        
+
         $list = Company::where('user_id', auth()->user()->id)->orderBy('name', 'asc')->get();
         foreach ($list as $company) {
             $products = Product::where('user_id', auth()->user()->id)->where('company_id', $company->id)->get();
             $company->products = $products;
         }
+
         return response()->json($list);
 
         // return view('panel.user.companies.list', compact('list'));
@@ -64,7 +69,7 @@ class BrandController extends Controller
 
     /**
      * Delete brand company
-     * 
+     *
      * @OA\Delete(
      *      path="/api/brandvoice",
      *      operationId="delete",
@@ -72,6 +77,7 @@ class BrandController extends Controller
      *      summary="Delete a company",
      *      description="Delete a company by id",
      *      security={{ "passport": {} }},
+     *
      *      @OA\Parameter(
      *          name="id",
      *          in="path",
@@ -80,13 +86,16 @@ class BrandController extends Controller
      *
      *          @OA\Schema(type="string")
      *      ),
+     *
      *      @OA\Response(
      *          response=200,
      *          description="Successful operation",
+     *
      *          @OA\JsonContent(
      *              type="object",
      *          ),
      *      ),
+     *
      *      @OA\Response(
      *          response=401,
      *          description="Unauthenticated",
@@ -119,7 +128,7 @@ class BrandController extends Controller
 
     /**
      * Update or create brand companies
-     * 
+     *
      * @OA\Post(
      *      path="/api/brandvoice",
      *      operationId="store",
@@ -127,13 +136,16 @@ class BrandController extends Controller
      *      summary="Update / Create a company",
      *      description="Update / Create a company",
      *      security={{ "passport": {} }},
+     *
      *      @OA\Response(
      *          response=200,
      *          description="Successful operation",
+     *
      *          @OA\JsonContent(
      *              type="object",
      *          ),
      *      ),
+     *
      *      @OA\Response(
      *          response=401,
      *          description="Unauthenticated",
@@ -148,13 +160,13 @@ class BrandController extends Controller
         if ($request->item_id != 'undefined') {
             $item = Company::where('id', $request->item_id)->firstOrFail();
         } else {
-            $item = new Company();
+            $item = new Company;
         }
 
         if ($request->hasFile('c_logo')) {
             $path = 'upload/images/companies/';
             $image = $request->file('c_logo');
-            $image_name = Str::random(4).'-'.Str::slug($request->c_name).'-logo.'.$image->getClientOriginalExtension();
+            $image_name = Str::random(4) . '-' . Str::slug($request->c_name) . '-logo.' . $image->getClientOriginalExtension();
 
             $imageTypes = ['jpg', 'jpeg', 'png', 'svg', 'webp'];
             if (! in_array(Str::lower($image->getClientOriginalExtension()), $imageTypes)) {
@@ -167,7 +179,7 @@ class BrandController extends Controller
 
             $image->move($path, $image_name);
 
-            $item->logo = $path.$image_name;
+            $item->logo = $path . $image_name;
         }
 
         $item->name = $request->c_name;
@@ -190,10 +202,10 @@ class BrandController extends Controller
             if ($request->item_id != 'undefined') {
                 $product = Product::where('user_id', auth()->user()->id)->where('company_id', $item->id)->where('name', $inputName)->first();
                 if ($product == null) {
-                    $product = new Product();
+                    $product = new Product;
                 }
             } else {
-                $product = new Product();
+                $product = new Product;
             }
             $product->name = $inputName;
             $product->key_features = $inputFeatures[$key];

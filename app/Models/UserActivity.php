@@ -9,5 +9,5 @@ class UserActivity extends Model
 {
     use HasFactory;
 
-    protected $table = "users_activity";
+    protected $table = 'users_activity';
 }

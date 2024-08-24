@@ -18,14 +18,14 @@ trait InstallTheme
         if ($extensionSlug == 'default') {
             setting([
                 'front_theme' => 'default',
-                'dash_theme' => 'default',
+                'dash_theme'  => 'default',
             ])->save();
 
             Artisan::call('optimize:clear');
 
             return [
                 'success' => true,
-                'status' => true,
+                'status'  => true,
                 'message' => trans('Theme installed successfully'),
             ];
         }
@@ -45,7 +45,7 @@ trait InstallTheme
 
         if ($response->failed()) {
             return [
-                'status' => false,
+                'status'  => false,
                 'message' => trans('Failed to download the theme file'),
             ];
         }
@@ -74,7 +74,7 @@ trait InstallTheme
 
                 if (empty($this->indexJsonArray)) {
                     return [
-                        'status' => false,
+                        'status'  => false,
                         'message' => trans('index.json not found'),
                     ];
                 }
@@ -83,7 +83,7 @@ trait InstallTheme
 
                 if (! $theme) {
                     return [
-                        'status' => false,
+                        'status'  => false,
                         'message' => trans('index.json not found'),
                     ];
                 }
@@ -109,7 +109,7 @@ trait InstallTheme
                 Extension::query()->where('slug', $extensionSlug)
                     ->update([
                         'installed' => 1,
-                        'version' => $version,
+                        'version'   => $version,
                     ]);
 
                 $item = $this->extensionRepository->find($extensionSlug);
@@ -126,13 +126,13 @@ trait InstallTheme
 
                 return [
                     'success' => true,
-                    'status' => true,
+                    'status'  => true,
                     'message' => trans('Theme installed successfully'),
                 ];
 
             } catch (Exception $e) {
                 return [
-                    'status' => false,
+                    'status'  => false,
                     'message' => $e->getMessage(),
                 ];
             }
@@ -162,7 +162,7 @@ trait InstallTheme
     {
         $licenseKey = $licenseKey ?? Helper::settingTwo('liquid_license_domain_key');
 
-        $response = Http::get('https://portal.liquid-themes.com/api/license/'.DIRECTORY_SEPARATOR.$licenseKey);
+        $response = Http::get('https://portal.liquid-themes.com/api/license/' . DIRECTORY_SEPARATOR . $licenseKey);
 
         if ($response->failed()) {
             return false;

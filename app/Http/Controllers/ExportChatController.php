@@ -7,19 +7,20 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use PDF;
 use PhpOffice\PhpWord\PhpWord;
-use PhpOffice\PhpWord\IOFactory;
 use PhpOffice\PhpWord\Shared\Html;
 
 class ExportChatController extends Controller
 {
     public function generatePdf(Request $request)
     {
-        
+
         $messages = UserOpenaiChatMessage::where('user_openai_chat_id', $request->id)->get();
-		# for test
-		return view('panel.admin.openai.chat.document.pdf', ['messages' => $messages]);
+
+        // for test
+        return view('panel.admin.openai.chat.document.pdf', ['messages' => $messages]);
 
         $pdf = PDF::loadView('panel.admin.openai.chat.document.pdf', ['messages' => $messages]);
+
         return $pdf->download('document.pdf');
     }
 
@@ -27,7 +28,7 @@ class ExportChatController extends Controller
     {
         $messages = UserOpenaiChatMessage::where('user_openai_chat_id', $request->id)->get();
 
-        $phpWord = new PhpWord();
+        $phpWord = new PhpWord;
 
         $bladeView = view('panel.admin.openai.chat.document.pdf', compact('messages'))->render();
 
@@ -48,13 +49,13 @@ class ExportChatController extends Controller
         $messages = UserOpenaiChatMessage::where('user_openai_chat_id', $request->id)->get();
 
         $fileContents = '';
-        foreach($messages as $message) {
-            if($message->input != null) {
+        foreach ($messages as $message) {
+            if ($message->input != null) {
                 $fileContents .= 'You: ';
                 $fileContents .= $message->input;
                 $fileContents .= "\n";
             }
-            if($message->output != null) {
+            if ($message->output != null) {
                 $fileContents .= 'Chatbot: ';
                 $fileContents .= $message->output;
                 $fileContents .= "\n";

@@ -7,6 +7,7 @@ use App\Models\GatewayProducts;
 use App\Models\PaymentPlans;
 use App\Models\Setting;
 use App\Models\User;
+use Exception;
 use Illuminate\Support\Facades\Log;
 use Laravel\Cashier\Subscription as Subscriptions;
 
@@ -61,8 +62,8 @@ class TwoCheckoutWebhookListener
                 $subscription->save();
             }
 
-        } catch (\Exception $ex) {
-            Log::error("TwoCheckoutWebhookListener::handle()\n".$ex->getMessage());
+        } catch (Exception $ex) {
+            Log::error("TwoCheckoutWebhookListener::handle()\n" . $ex->getMessage());
         }
     }
 }

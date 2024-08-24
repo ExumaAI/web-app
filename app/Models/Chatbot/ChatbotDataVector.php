@@ -6,15 +6,14 @@ use Illuminate\Database\Eloquent\Model;
 
 class ChatbotDataVector extends Model
 {
-    protected  $fillable = [
+    protected $fillable = [
         'chatbot_id',
         'chatbot_data_id',
         'content',
-        'embedding'
+        'embedding',
     ];
 
-
     protected $casts = [
-        'embedding' => 'array'
+        'embedding' => 'array',
     ];
 }

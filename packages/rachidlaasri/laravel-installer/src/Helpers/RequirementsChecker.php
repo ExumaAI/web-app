@@ -14,7 +14,6 @@ class RequirementsChecker
     /**
      * Check for the server requirements.
      *
-     * @param array $requirements
      * @return array
      */
     public function check(array $requirements)
@@ -34,8 +33,9 @@ class RequirementsChecker
                             $results['errors'] = true;
                         }
                     }
+
                     break;
-                // check apache requirements
+                    // check apache requirements
                 case 'apache':
                     foreach ($requirements[$type] as $requirement) {
                         // if function doesn't exist we can't check apache modules
@@ -49,6 +49,7 @@ class RequirementsChecker
                             }
                         }
                     }
+
                     break;
             }
         }
@@ -61,7 +62,7 @@ class RequirementsChecker
      *
      * @return array
      */
-    public function checkPHPversion(string $minPhpVersion = null)
+    public function checkPHPversion(?string $minPhpVersion = null)
     {
         $minVersionPhp = $minPhpVersion;
         $currentPhpVersion = $this->getPhpVersionInfo();
@@ -76,9 +77,9 @@ class RequirementsChecker
         }
 
         $phpStatus = [
-            'full' => $currentPhpVersion['full'],
-            'current' => $currentPhpVersion['version'],
-            'minimum' => $minVersionPhp,
+            'full'      => $currentPhpVersion['full'],
+            'current'   => $currentPhpVersion['version'],
+            'minimum'   => $minVersionPhp,
             'supported' => $supported,
         ];
 
@@ -97,7 +98,7 @@ class RequirementsChecker
         $currentVersion = $filtered[0];
 
         return [
-            'full' => $currentVersionFull,
+            'full'    => $currentVersionFull,
             'version' => $currentVersion,
         ];
     }

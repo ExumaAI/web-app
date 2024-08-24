@@ -12,14 +12,14 @@ class Modal extends Component
      * Create a new component instance.
      */
     public function __construct(
-		public string $type = 'default',
-		public string $anchor = 'start',
-		public string $title = '',
-		public string $trigger = '',
-		public string $modal = '',
-		public string $disableModalMessage = '',
-		public bool $disableModal = false,
-	){}
+        public string $type = 'default',
+        public string $anchor = 'start',
+        public string $title = '',
+        public string $trigger = '',
+        public string $modal = '',
+        public string $disableModalMessage = '',
+        public bool $disableModal = false,
+    ) {}
 
     /**
      * Get the view / contents that represent the component.

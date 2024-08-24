@@ -23,10 +23,10 @@ class ElevenlabVoiceController extends Controller
     public function create()
     {
         return view('panel.admin.voice.edit', [
-            'item' => new ElevenlabVoice(),
-            'title' => __('Add Voice'),
+            'item'   => new ElevenlabVoice,
+            'title'  => __('Add Voice'),
             'action' => route('dashboard.user.voice.store'),
-            'method' => 'POST'
+            'method' => 'POST',
         ]);
     }
 
@@ -34,15 +34,15 @@ class ElevenlabVoiceController extends Controller
     {
         if (Helper::appIsDemo()) {
             return response()->json([
-                'status' => 'error',
-                'message' => trans('This feature is disabled in demo mode.')
+                'status'  => 'error',
+                'message' => trans('This feature is disabled in demo mode.'),
             ]);
         }
 
         $data = $request->validate([
-            'name' => 'required',
+            'name'   => 'required',
             'status' => 'required',
-            'file' => 'required|file|mimes:mp3,wav,ogg,flac,webm,mp4'
+            'file'   => 'required|file|mimes:mp3,wav,ogg,flac,webm,mp4',
         ]);
 
         if ($request->hasFile('file')) {
@@ -56,18 +56,18 @@ class ElevenlabVoiceController extends Controller
         ElevenlabVoiceCreateJob::dispatch($elevenlabVoice->getAttribute('id'));
 
         return to_route('dashboard.user.voice.index')->with([
-            'type' => 'success',
-            'message' => __('Voice added successfully.')
+            'type'    => 'success',
+            'message' => __('Voice added successfully.'),
         ]);
     }
 
     public function edit(ElevenlabVoice $voice)
     {
         return view('panel.admin.voice.edit', [
-            'item' => $voice,
-            'title' => __('Edit Voice'),
+            'item'   => $voice,
+            'title'  => __('Edit Voice'),
             'action' => route('dashboard.user.voice.update', $voice),
-            'method' => 'PUT'
+            'method' => 'PUT',
         ]);
     }
 
@@ -75,21 +75,21 @@ class ElevenlabVoiceController extends Controller
     {
         if (Helper::appIsDemo()) {
             return response()->json([
-                'status' => 'error',
-                'message' => trans('This feature is disabled in demo mode.')
+                'status'  => 'error',
+                'message' => trans('This feature is disabled in demo mode.'),
             ]);
         }
 
         $data = $request->validate([
-            'name' => 'required',
+            'name'   => 'required',
             'status' => 'required',
         ]);
 
         $voice->update($data);
 
         return to_route('dashboard.user.voice.index')->with([
-            'type' => 'success',
-            'message' => __('Voice updated successfully.')
+            'type'    => 'success',
+            'message' => __('Voice updated successfully.'),
         ]);
     }
 
@@ -97,16 +97,16 @@ class ElevenlabVoiceController extends Controller
     {
         if (Helper::appIsDemo()) {
             return response()->json([
-                'status' => 'error',
-                'message' => trans('This feature is disabled in demo mode.')
+                'status'  => 'error',
+                'message' => trans('This feature is disabled in demo mode.'),
             ]);
         }
 
         $voice->delete();
 
         return back()->with([
-            'type' => 'success', // success, error, warning, info,
-            'message' => trans('Voice deleted successfully.')
+            'type'    => 'success', // success, error, warning, info,
+            'message' => trans('Voice deleted successfully.'),
         ]);
     }
 }

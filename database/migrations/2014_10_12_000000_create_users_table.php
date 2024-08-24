@@ -43,8 +43,6 @@ return new class extends Migration
             $table->string('twitter_id')->nullable();
             $table->string('twitter_token')->nullable();
 
-
-
             $table->timestamps();
         });
     }

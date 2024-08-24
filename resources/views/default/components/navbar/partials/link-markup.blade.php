@@ -14,16 +14,14 @@
     if (!empty($href) && $href !== '#') {
         if (is_string($href) && Route::has($href)) {
             $href = !empty($slug) ? route($href, $slug) : route($href);
-        }else {
+        } else {
             $target = '_blank';
         }
-
 
         if ($localizeHref) {
             $href = LaravelLocalization::localizeUrl($href);
         }
     }
-
 
     // if (empty(trim($activeCondition)) && !empty($href)) {
     //     $activeCondition = $href === url()->current();
@@ -36,13 +34,17 @@
 
 <a
     {{ $attributes->withoutTwMergeClasses()->twMerge($base_class, $attributes->get('class')) }}
-    href="{{ $href }}" target="{{ $target }}"
+    href="{{ $href }}"
+    target="{{ $target }}"
     @if ($dropdownTrigger) @click.prevent="toggleDropdownOpen()" @endif
     @if ($app_is_not_demo && ($activeCondition && !empty(trim($activeCondition)))) x-init="$el.parentElement.offsetTop > window.innerHeight && $el.closest('.lqd-navbar-inner').scrollTo({ top: (($el.parentElement.offsetHeight + $el.parentElement.offsetTop) / 2) })" @endif
     @if ($triggerType === 'modal') @click.prevent="toggleModal()" @endif
 >
     @if ($letterIcon && !empty($label))
-        <span {{ $attributes->twMergeFor('letter-icon', $letter_icon_base_class) }}>
+        <span
+            {{ $attributes->twMergeFor('letter-icon', $letter_icon_base_class) }}
+            @if (!empty($letterIconStyles)) style="{{ $letterIconStyles }}" @endif
+        >
             {{ mb_substr($label, 0, 1) }}
         </span>
     @endif

@@ -758,8 +758,7 @@ const tinymceOptions = {
 			tinymce.activeEditor.execCommand( 'Redo' );
 		} );
 		$( 'body' ).on( 'click', '#workbook_copy', () => {
-			const codeOutput = document.querySelector( '#code-output' );
-			if ( codeOutput && window.codeRaw ) {
+			if ( window.codeRaw ) {
 				navigator.clipboard.writeText( window.codeRaw );
 				toastr.success( 'Code copied to clipboard' );
 				return;

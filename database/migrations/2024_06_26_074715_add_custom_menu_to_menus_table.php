@@ -15,7 +15,7 @@ return new class extends Migration
 
     public function down(): void
     {
-        if(Schema::hasColumn('menus', 'custom_menu')) {
+        if (Schema::hasColumn('menus', 'custom_menu')) {
             Schema::table('menus', function (Blueprint $table) {
                 $table->dropColumn('custom_menu');
             });

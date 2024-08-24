@@ -36,7 +36,7 @@
                     />
                 </a>
             </figure>
-        @elseif($workbook->generator->type === 'voiceover')
+        @elseif($workbook->generator->type === 'voiceover' || $workbook->generator->type === 'isolator')
             <div class="flex grow justify-end gap-2">
                 <div
                     class="data-audio flex grow items-center"

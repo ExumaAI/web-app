@@ -12,13 +12,12 @@ class RemainingCredit extends Component
      * Create a new component instance.
      */
     public function __construct(
-		public string $style = 'default',
-		public string $legendSize = 'md',
-		public string $progressHeight = 'md',
-		public string $labelWords = 'Words',
-		public string $labelImages = 'Images'
-	)
-    {
+        public string $style = 'default',
+        public string $legendSize = 'md',
+        public string $progressHeight = 'md',
+        public string $labelWords = 'Words',
+        public string $labelImages = 'Images'
+    ) {
         //
     }
 

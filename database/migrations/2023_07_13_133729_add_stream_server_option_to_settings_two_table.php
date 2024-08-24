@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('settings_two', function (Blueprint $table) {
-            $table->string('openai_default_stream_server')->default("frontend");
+            $table->string('openai_default_stream_server')->default('frontend');
         });
     }
 

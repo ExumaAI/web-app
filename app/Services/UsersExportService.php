@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Models\User;
 use Illuminate\Support\Facades\Response;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -15,12 +14,13 @@ class UsersExportService
         $html = view('panel.admin.users.components.users-table', compact('users'))->render();
         $pdf = app('dompdf.wrapper');
         $pdf->loadHTML($html);
+
         return $pdf->download('users.pdf');
     }
 
     public function exportAsExcel($users)
     {
-        $spreadsheet = new Spreadsheet();
+        $spreadsheet = new Spreadsheet;
         $sheet = $spreadsheet->getActiveSheet();
 
         $sheet->setCellValue('A1', 'NAME');
@@ -58,7 +58,7 @@ class UsersExportService
         $fileName = 'users.csv';
 
         $headers = [
-            'Content-Type' => 'text/csv',
+            'Content-Type'        => 'text/csv',
             'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
         ];
 

@@ -22,7 +22,6 @@
 >
 
 <head>
-    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
 
     <meta charset="UTF-8" />
     <meta

@@ -289,6 +289,10 @@ input::file-selector-button {
 	}
 }
 
+.form-input-stepper {
+	@apply lqd-input-stepper appearance-none text-center px-2;
+}
+
 .lqd-input-stepper::-webkit-outer-spin-button,
 .lqd-input-stepper::-webkit-inner-spin-button {
   -webkit-appearance: none;

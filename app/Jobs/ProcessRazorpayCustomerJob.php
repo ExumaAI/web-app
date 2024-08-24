@@ -3,7 +3,6 @@
 namespace App\Jobs;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
@@ -11,10 +10,15 @@ use Illuminate\Queue\SerializesModels;
 
 class ProcessRazorpayCustomerJob implements ShouldQueue
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    use Dispatchable;
+    use InteractsWithQueue;
+    use Queueable;
+    use SerializesModels;
 
-	protected $razorpay;
+    protected $razorpay;
+
     protected $user;
+
     protected $userData;
 
     /**
@@ -32,7 +36,7 @@ class ProcessRazorpayCustomerJob implements ShouldQueue
      */
     public function handle(): void
     {
-		$razorpayCustomer = $this->razorpay->customer->create($this->userData);
+        $razorpayCustomer = $this->razorpay->customer->create($this->userData);
         $this->user->razorpay_id = $razorpayCustomer->id;
         $this->user->save();
     }

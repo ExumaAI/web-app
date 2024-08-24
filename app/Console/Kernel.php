@@ -4,13 +4,7 @@ namespace App\Console;
 
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
-use App\Models\PaymentPlans;
-use App\Models\YokassaSubscriptions;
-use Carbon\Carbon;
-use App\Console\CustomScheduler;
-use App\Console\Commands\CheckSubscriptionEnd;
 use Spatie\Health\Commands\RunHealthChecksCommand;
-use App\Services\GatewaySelector;
 
 class Kernel extends ConsoleKernel
 {
@@ -22,18 +16,19 @@ class Kernel extends ConsoleKernel
         $customSchedulerPath = app_path('Console/CustomScheduler.php');
 
         if (file_exists($customSchedulerPath)) {
-            require_once($customSchedulerPath);
+            require_once $customSchedulerPath;
             CustomScheduler::scheduleTasks($schedule);
         }
 
-        $schedule->command("app:check-coingate-command")->everyFiveMinutes();
+        $schedule->command('app:check-coingate-command')->everyFiveMinutes();
 
-        $schedule->command("app:check-razorpay-command")->everyFiveMinutes();
+        $schedule->command('app:check-razorpay-command')->everyFiveMinutes();
 
-        $schedule->command("subscription:check-end")->everyFiveMinutes();
+        $schedule->command('subscription:check-end')->everyFiveMinutes();
 
         $schedule->command('app:check-yookassa-command')->daily();
     }
+
     // $schedule->command(RunHealthChecksCommand::class)->everyFiveMinutes();
     /**
      * Register the commands for the application.

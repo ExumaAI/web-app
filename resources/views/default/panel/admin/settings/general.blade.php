@@ -232,22 +232,22 @@
 
             <div class="col-md-12">
                 <div class="mb-3">
-                    <label class="form-label" >{{ __('Login With OTP') }}
+                    <label class="form-label">{{ __('Login With OTP') }}
                         <x-info-tooltip text="{{ __('Make sure your SMTP settings are configured before activating this.') }}" />
                     </label>
                     <select
-                            class="form-select"
-                            id="login_with_otp"
-                            name="login_with_otp"
+                        class="form-select"
+                        id="login_with_otp"
+                        name="login_with_otp"
                     >
                         <option
-                                value="1"
-                                {{ $setting->login_with_otp ? 'selected' : '' }}
+                            value="1"
+                            {{ $setting->login_with_otp ? 'selected' : '' }}
                         >
                             {{ __('Active') }}</option>
                         <option
-                                value="0"
-                                {{ !$setting->login_with_otp ? 'selected' : '' }}
+                            value="0"
+                            {{ !$setting->login_with_otp ? 'selected' : '' }}
                         >
                             {{ __('Passive') }}</option>
                     </select>
@@ -582,16 +582,17 @@
         />
 
         <div class="row mb-4">
-            <x-alert class="rounde mb-4">
-                <a
-                    href="https://scribehow.com/shared/Obtaining_reCAPTCHA_site_and_secret_keys_for_magicaicom__CMjndIDqTt26fz9xdhAQww"
-                    target="_blank"
-                >
-                    {{ __('Check the documentation.') }}
-                    <x-tabler-arrow-up-right class="size-4 inline align-text-bottom" />
-                </a>
-            </x-alert>
             <div class="mb-3">
+                <x-alert class="rounde mb-4">
+                    <a
+                        href="https://scribehow.com/shared/Obtaining_reCAPTCHA_site_and_secret_keys_for_magicaicom__CMjndIDqTt26fz9xdhAQww"
+                        target="_blank"
+                    >
+                        {{ __('Check the documentation.') }}
+                        <x-tabler-arrow-up-right class="size-4 inline align-text-bottom" />
+                    </a>
+                </x-alert>
+
                 <x-forms.input
                     class:container="mb-2"
                     id="recaptcha_login"
@@ -608,6 +609,12 @@
                     switcher
                     label="{{ __('Register Recaptcha') }}"
                 />
+
+                <x-alert class="!mt-2">
+                    <p>
+                        {{ __('Do not activate without ensuring that the key values are entered correctly.') }}
+                    </p>
+                </x-alert>
 
                 <div class="mt-4">
                     <label class="form-label">{{ __('Google Recaptcha Site Key') }}</label>
@@ -1137,6 +1144,14 @@
                     type="checkbox"
                     :checked="setting('user_ai_image_prompt_library') == 1 || setting('user_ai_image_prompt_library') == null"
                     label="{{ __('AI Image Prompt Library') }}"
+                    switcher
+                />
+                <x-forms.input
+                    class:container="mb-2"
+                    id="ai_voice_isolator"
+                    type="checkbox"
+                    :checked="setting('ai_voice_isolator', '1') == '1'"
+                    label="{{ __('AI Voice Isolator') }}"
                     switcher
                 />
                 @includeIf('default.panel.admin.settings.particles.photo-studio-general-setting')

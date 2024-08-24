@@ -21,7 +21,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('settings_two', function (Blueprint $table) { 
+        Schema::table('settings_two', function (Blueprint $table) {
             $table->dropColumn('theme');
         });
     }

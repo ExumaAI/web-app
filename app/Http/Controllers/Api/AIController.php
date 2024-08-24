@@ -18,6 +18,7 @@ use Illuminate\Support\Str;
 use Mcamara\LaravelLocalization\Facades\LaravelLocalization;
 use OpenAI;
 use OpenAI\Laravel\Facades\OpenAI as FacadesOpenAI;
+use Throwable;
 
 class AIController extends Controller
 {
@@ -27,11 +28,11 @@ class AIController extends Controller
 
     protected $settings_two;
 
-    const STABLEDIFFUSION = 'stablediffusion';
+    public const STABLEDIFFUSION = 'stablediffusion';
 
-    const STORAGE_S3 = 's3';
+    public const STORAGE_S3 = 's3';
 
-    const STORAGE_LOCAL = 'public';
+    public const STORAGE_LOCAL = 'public';
 
     public function __construct()
     {
@@ -49,7 +50,7 @@ class AIController extends Controller
         set_time_limit(120);
     }
 
-     /**
+    /**
      * @OA\Post(
      *      path="/api/aiwriter/generate",
      *      operationId="buildOutputApi",
@@ -57,12 +58,16 @@ class AIController extends Controller
      *      security={{ "passport": {} }},
      *      summary="Build AI-generated content please see the function there is custom inputs foreach template",
      *      description="Build AI-generated content based on user input.",
+     *
      *      @OA\RequestBody(
      *          required=true,
+     *
      *          @OA\MediaType(
      *              mediaType="multipart/form-data",
+     *
      *              @OA\Schema(
      *                  type="object",
+     *
      *                  @OA\Property(
      *                      property="post_type",
      *                      type="string",
@@ -108,11 +113,14 @@ class AIController extends Controller
      *              ),
      *          ),
      *      ),
+     *
      *      @OA\Response(
      *          response=200,
      *          description="Successful operation",
+     *
      *          @OA\JsonContent(
      *              type="object",
+     *
      *              @OA\Property(property="message_id", type="integer", description="ID of the generated content message"),
      *              @OA\Property(property="workbook", type="object", description="Details about the generated content workbook"),
      *              @OA\Property(property="creativity", type="number", description="Creativity factor (between 0 and 1)"),
@@ -122,14 +130,18 @@ class AIController extends Controller
      *              @OA\Property(property="generated_content", type="string", description="Generated content"),
      *          ),
      *      ),
+     *
      *      @OA\Response(
      *          response=400,
      *          description="Bad request",
+     *
      *          @OA\JsonContent(
      *              type="object",
+     *
      *              @OA\Property(property="errors", type="string", description="Error message"),
      *          ),
      *      ),
+     *
      *      @OA\Response(
      *          response=401,
      *          description="Unauthenticated",
@@ -137,8 +149,10 @@ class AIController extends Controller
      *      @OA\Response(
      *          response=500,
      *          description="Server error",
+     *
      *          @OA\JsonContent(
      *              type="object",
+     *
      *              @OA\Property(property="error", type="string", description="Internal Server Error"),
      *          ),
      *      ),
@@ -161,6 +175,7 @@ class AIController extends Controller
         $creativity = $request->creativity;
 
         $language = $request->language;
+
         try {
             $language = explode('-', $language);
             if (count($language) > 1 && LaravelLocalization::getSupportedLocales()[$language[0]]['name']) {
@@ -170,7 +185,7 @@ class AIController extends Controller
             } else {
                 $language = $request->language;
             }
-        } catch (\Throwable $th) {
+        } catch (Throwable $th) {
             $language = $request->language;
             Log::error($language);
         }
@@ -444,7 +459,7 @@ class AIController extends Controller
             $custom_template = OpenAIGenerator::find($request->openai_id);
             $prompt = $custom_template->prompt;
             foreach (json_decode($custom_template->questions) as $question) {
-                $question_name = '**'.$question->name.'**';
+                $question_name = '**' . $question->name . '**';
                 $prompt = str_replace($question_name, $request[$question->name], $prompt);
             }
 
@@ -480,9 +495,9 @@ class AIController extends Controller
 
             return response()->json($data, 419);
         }
-        $entry = new UserOpenai();
+        $entry = new UserOpenai;
         $entry->title = __('New Workbook');
-        $entry->slug = str()->random(7).str($user->fullName())->slug().'-workbook';
+        $entry->slug = str()->random(7) . str($user->fullName())->slug() . '-workbook';
         $entry->user_id = Auth::id();
         $entry->openai_id = $post->id;
         $entry->input = $prompt;
@@ -504,13 +519,13 @@ class AIController extends Controller
     {
         if ($this->settings->openai_default_model == 'text-davinci-003') {
             $response = FacadesOpenAI::completions()->create([
-                'model' => $this->settings->openai_default_model,
-                'prompt' => $prompt,
+                'model'      => $this->settings->openai_default_model,
+                'prompt'     => $prompt,
                 'max_tokens' => (int) $this->settings->openai_max_output_length,
             ]);
         } else {
             $response = FacadesOpenAI::chat()->create([
-                'model' => $this->settings->openai_default_model,
+                'model'    => $this->settings->openai_default_model,
                 'messages' => [
                     ['role' => 'user', 'content' => $prompt],
                 ],
@@ -518,9 +533,9 @@ class AIController extends Controller
         }
         $total_used_tokens = $response->usage->totalTokens;
 
-        $entry = new UserOpenai();
+        $entry = new UserOpenai;
         $entry->title = __('New Workbook');
-        $entry->slug = Str::random(7).Str::slug($user->fullName()).'-workbook';
+        $entry->slug = Str::random(7) . Str::slug($user->fullName()) . '-workbook';
         $entry->user_id = Auth::id();
         $entry->openai_id = $post->id;
         $entry->input = $prompt;
@@ -579,13 +594,13 @@ class AIController extends Controller
             $lighting = $param['image_lighting'];
 
             if ($style != null) {
-                $prompt .= ' '.$style.' style.';
+                $prompt .= ' ' . $style . ' style.';
             }
             if ($lighting != null) {
-                $prompt .= ' '.$lighting.' lighting.';
+                $prompt .= ' ' . $lighting . ' lighting.';
             }
             if ($mood != null) {
-                $prompt .= ' '.$mood.' mood.';
+                $prompt .= ' ' . $mood . ' mood.';
             }
         } else {
             $stable_type = $param['type'];
@@ -607,17 +622,17 @@ class AIController extends Controller
                     return response()->json(['status' => 'error', 'message' => 'You must provide a prompt']);
                 }
                 $response = FacadesOpenAI::images()->create([
-                    'prompt' => $prompt,
-                    'size' => $size,
+                    'prompt'          => $prompt,
+                    'size'            => $size,
                     'response_format' => 'b64_json',
                 ]);
                 $image_url = $response['data'][0]['b64_json'];
                 $contents = base64_decode($image_url);
-                $nameOfImage = Str::random(12).'-DALL-E-'.Str::slug($prompt).'.png';
+                $nameOfImage = Str::random(12) . '-DALL-E-' . Str::slug($prompt) . '.png';
 
                 //save file on local storage or aws s3
                 Storage::disk('public')->put($nameOfImage, $contents);
-                $path = 'uploads/'.$nameOfImage;
+                $path = 'uploads/' . $nameOfImage;
             } else {
                 //send prompt to stablediffusion
                 $settings = SettingTwo::first();
@@ -633,9 +648,9 @@ class AIController extends Controller
                 $height = intval(explode('x', $image_resolution)[1]);
                 $client = new Client([
                     'base_uri' => 'https://api.stability.ai/v1/generation/',
-                    'headers' => [
-                        'content-type' => ($stable_type == 'upscale' || $stable_type == 'image-to-image') ? 'multipart/form-data' : 'application/json',
-                        'Authorization' => 'Bearer '.$stablediffusionKey,
+                    'headers'  => [
+                        'content-type'  => ($stable_type == 'upscale' || $stable_type == 'image-to-image') ? 'multipart/form-data' : 'application/json',
+                        'Authorization' => 'Bearer ' . $stablediffusionKey,
                     ],
                 ]);
 
@@ -645,10 +660,10 @@ class AIController extends Controller
                 $content_type = 'json';
 
                 $payload = [
-                    'cfg_scale' => 7,
+                    'cfg_scale'            => 7,
                     'clip_guidance_preset' => $clip_guidance_preset ?? 'NONE',
-                    'samples' => 1,
-                    'steps' => 50,
+                    'samples'              => 1,
+                    'steps'                => 50,
                 ];
 
                 if ($sampler) {
@@ -667,11 +682,12 @@ class AIController extends Controller
                         $arr = [];
                         foreach ($prompt as $p) {
                             $arr[] = [
-                                'text' => $p.($mood == null ? '' : (' '.$mood.' mood.')),
+                                'text'   => $p . ($mood == null ? '' : (' ' . $mood . ' mood.')),
                                 'weight' => 1,
                             ];
                         }
                         $prompt = $arr;
+
                         break;
                     case 'upscale':
                         $stable_url = 'image-to-image/upscale';
@@ -680,22 +696,24 @@ class AIController extends Controller
                         $payload['image'] = $init_image->get();
                         $prompt = [
                             [
-                                'text' => $prompt.'-'.Str::random(16),
+                                'text'   => $prompt . '-' . Str::random(16),
                                 'weight' => 1,
                             ],
                         ];
                         $content_type = 'multipart';
+
                         break;
                     case 'image-to-image':
                         $stable_url = $stable_type;
                         $payload['init_image'] = $init_image->get();
                         $prompt = [
                             [
-                                'text' => $prompt.($mood == null ? '' : (' '.$mood.' mood.')),
+                                'text'   => $prompt . ($mood == null ? '' : (' ' . $mood . ' mood.')),
                                 'weight' => 1,
                             ],
                         ];
                         $content_type = 'multipart';
+
                         break;
                     default:
                         $stable_url = $stable_type;
@@ -703,10 +721,11 @@ class AIController extends Controller
                         $payload['height'] = $height;
                         $prompt = [
                             [
-                                'text' => $prompt.($mood == null ? '' : (' '.$mood.' mood.')),
+                                'text'   => $prompt . ($mood == null ? '' : (' ' . $mood . ' mood.')),
                                 'weight' => 1,
                             ],
                         ];
+
                         break;
                 }
 
@@ -728,7 +747,7 @@ class AIController extends Controller
                         }
 
                         foreach ($value as $multiKey => $multiValue) {
-                            $multiName = $key.'['.$multiKey.']'.(is_array($multiValue) ? '['.key($multiValue).']' : '').'';
+                            $multiName = $key . '[' . $multiKey . ']' . (is_array($multiValue) ? '[' . key($multiValue) . ']' : '') . '';
                             $multipart[] = ['name' => $multiName, 'contents' => (is_array($multiValue) ? reset($multiValue) : $multiValue)];
                         }
                     }
@@ -763,7 +782,7 @@ class AIController extends Controller
                 }
                 $body = $response->getBody();
                 if ($response->getStatusCode() == 200) {
-                    $nameOfImage = Str::random(12).'-'.Str::slug($prompt[0]['text']).'.png';
+                    $nameOfImage = Str::random(12) . '-' . Str::slug($prompt[0]['text']) . '.png';
 
                     $contents = base64_decode(json_decode($body)->artifacts[0]->base64);
                 } else {
@@ -778,7 +797,7 @@ class AIController extends Controller
                 }
 
                 Storage::disk('public')->put($nameOfImage, $contents);
-                $path = 'uploads/'.$nameOfImage;
+                $path = 'uploads/' . $nameOfImage;
             }
 
             if ($image_storage == self::STORAGE_S3) {
@@ -787,14 +806,14 @@ class AIController extends Controller
                     $aws_path = Storage::disk('s3')->put('', $uploadedFile);
                     unlink($path);
                     $path = Storage::disk('s3')->url($aws_path);
-                } catch (\Exception $e) {
-                    return response()->json(['status' => 'error', 'message' => 'AWS Error - '.$e->getMessage()]);
+                } catch (Exception $e) {
+                    return response()->json(['status' => 'error', 'message' => 'AWS Error - ' . $e->getMessage()]);
                 }
             }
 
-            $entry = new UserOpenai();
+            $entry = new UserOpenai;
             $entry->title = 'New Image';
-            $entry->slug = Str::random(7).Str::slug($user->fullName()).'-workbsook';
+            $entry->slug = Str::random(7) . Str::slug($user->fullName()) . '-workbsook';
             $entry->user_id = Auth::id();
             $entry->openai_id = $post->id;
             $entry->input = $prompt;
@@ -805,7 +824,7 @@ class AIController extends Controller
             }
             // $entry->input = $prompt[0]['text'];
             $entry->response = $image_generator == 'stablediffusion' ? 'SD' : 'DE';
-            $entry->output = $image_storage == self::STORAGE_S3 ? $path : '/'.$path;
+            $entry->output = $image_storage == self::STORAGE_S3 ? $path : '/' . $path;
             $entry->hash = Str::random(256);
             $entry->credits = 1;
             $entry->words = 0;
@@ -852,7 +871,7 @@ class AIController extends Controller
 
         $path = 'upload/audio/';
 
-        $file_name = Str::random(4).'-'.Str::slug($user->fullName()).'-audio.'.$file->getClientOriginalExtension();
+        $file_name = Str::random(4) . '-' . Str::slug($user->fullName()) . '-audio.' . $file->getClientOriginalExtension();
 
         //Audio Extension Control
         $imageTypes = ['mp3', 'mp4', 'mpeg', 'mpga', 'm4a', 'wav', 'webm'];
@@ -867,19 +886,19 @@ class AIController extends Controller
         $file->move($path, $file_name);
 
         $response = FacadesOpenAI::audio()->transcribe([
-            'file' => fopen($path.$file_name, 'r'),
-            'model' => 'whisper-1',
+            'file'            => fopen($path . $file_name, 'r'),
+            'model'           => 'whisper-1',
             'response_format' => 'verbose_json',
         ]);
 
         $text = $response->text;
 
-        $entry = new UserOpenai();
+        $entry = new UserOpenai;
         $entry->title = __('New Workbook');
-        $entry->slug = Str::random(7).Str::slug($user->fullName()).'-speech-to-text-workbook';
+        $entry->slug = Str::random(7) . Str::slug($user->fullName()) . '-speech-to-text-workbook';
         $entry->user_id = Auth::id();
         $entry->openai_id = $post->id;
-        $entry->input = $path.$file_name;
+        $entry->input = $path . $file_name;
         $entry->response = json_encode($response->toArray());
         $entry->output = $text;
         $entry->hash = Str::random(256);

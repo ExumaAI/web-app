@@ -11,9 +11,8 @@ use App\Http\Controllers\Chatbot\ChatbotTokenController;
 use App\Support\Vite;
 use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Routing\Router;
-use Illuminate\Support\ServiceProvider;
-use Livewire\Livewire;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\ServiceProvider;
 
 class ChatbotServiceProvider extends ServiceProvider
 {
@@ -39,35 +38,35 @@ class ChatbotServiceProvider extends ServiceProvider
     private function setMiddlewareGroup(Kernel $kernel): void
     {
         $this->router()
-             ->middlewareGroup('chatbot_api', [
-                 \App\Http\Middleware\ChatbotPreflightMiddleware::class,
-                 \App\Http\Middleware\CorsMiddleware::class,
-                 \Illuminate\Routing\Middleware\ThrottleRequests::class . ':api',
-                 \Illuminate\Routing\Middleware\SubstituteBindings::class,
-             ]);
+            ->middlewareGroup('chatbot_api', [
+                \App\Http\Middleware\ChatbotPreflightMiddleware::class,
+                \App\Http\Middleware\CorsMiddleware::class,
+                \Illuminate\Routing\Middleware\ThrottleRequests::class . ':api',
+                \Illuminate\Routing\Middleware\SubstituteBindings::class,
+            ]);
     }
 
     private function registerRoutes(): void
     {
         $this->router()
-             ->prefix('chatbot-assets')
-             ->controller(ChatbotAssetsController::class)
-             ->group(function () {
-                 $this->app['router']->get('/{entryPoint}', 'asset')->where('entryPoint', '.*');
-             });
+            ->prefix('chatbot-assets')
+            ->controller(ChatbotAssetsController::class)
+            ->group(function () {
+                $this->app['router']->get('/{entryPoint}', 'asset')->where('entryPoint', '.*');
+            });
 
         $this->router()
-             ->middleware('chatbot_api')
-             ->prefix('chatbot-api')
-             ->group(function () {
-                 Route::any('/token', ChatbotTokenController::class);
-                 Route::match(['get', 'post', 'options'], '/chat-send', [AIChatController::class, 'chatOutput']);
-                 Route::match(['get', 'post', 'options'], '/chatbot-send', [AIChatController::class, 'chatbotOutput']);
-                 Route::match(['options', 'post'], '/open-chatbot-area', [
-                     AIChatController::class, 'openChatBotArea',
-                 ])->name('open-chatbot-area');
-                 Route::any('embed', ChatbotEmbedController::class)->name('embed');
-                 Route::post('/start-new-chatbot', [AIChatController::class, 'startNewChatBot']);
-             })->name('chatbot-api.');
+            ->middleware('chatbot_api')
+            ->prefix('chatbot-api')
+            ->group(function () {
+                Route::any('/token', ChatbotTokenController::class);
+                Route::match(['get', 'post', 'options'], '/chat-send', [AIChatController::class, 'chatOutput']);
+                Route::match(['get', 'post', 'options'], '/chatbot-send', [AIChatController::class, 'chatbotOutput']);
+                Route::match(['options', 'post'], '/open-chatbot-area', [
+                    AIChatController::class, 'openChatBotArea',
+                ])->name('open-chatbot-area');
+                Route::any('embed', ChatbotEmbedController::class)->name('embed');
+                Route::post('/start-new-chatbot', [AIChatController::class, 'startNewChatBot']);
+            })->name('chatbot-api.');
     }
 }

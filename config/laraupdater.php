@@ -4,15 +4,15 @@
 * https://github.com/pietrocinaglia
 */
 
-	return [
+return [
 
-		'tmp_folder_name' => 'tmp',
+    'tmp_folder_name' => 'tmp',
 
-		'script_filename' => 'upgrade.php',
+    'script_filename' => 'upgrade.php',
 
-		'update_baseurl' => 'https://api.liquid-themes.com/magicai/update-temporary',
+    'update_baseurl' => 'https://api.liquid-themes.com/magicai/update-temporary',
 
-		'middleware' => ['web', 'auth'],
+    'middleware' => ['web', 'auth'],
 
-		'allow_users_id' => [1]
-	];
+    'allow_users_id' => [1],
+];

@@ -4,19 +4,15 @@ namespace App\Http\Controllers\Api;
 
 use App\Actions\CreateActivity;
 use App\Http\Controllers\Controller;
-use App\Http\Controllers\PaymentController;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use App\Models\Currency;
-use App\Models\PaymentPlans;
 use App\Models\Setting;
 use App\Models\User;
 use App\Models\UserAffiliate;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
-
-class AffiliateApiController extends Controller {
-
-
+class AffiliateApiController extends Controller
+{
     /**
      * Get affiliate info
      *
@@ -27,19 +23,22 @@ class AffiliateApiController extends Controller {
      *      summary="Get affiliate totals of current user",
      *      description="Get affiliate earnings and withdrawal totals of current user.",
      *      security={{ "passport": {} }},
+     *
      *      @OA\Response(
      *          response=200,
      *          description="Successful operation",
+     *
      *          @OA\JsonContent(
      *              type="object",
      *          ),
      *      ),
+     *
      *      @OA\Response(
      *          response=401,
      *          description="Unauthenticated",
      *      ),
      * )
-    */
+     */
     public function affiliates(Request $request)
     {
         $user = Auth::user();
@@ -55,7 +54,9 @@ class AffiliateApiController extends Controller {
         }
 
         $earnings = $totalEarnings - $totalWithdrawal;
-        if ($earnings < 0) $earnings = 0;
+        if ($earnings < 0) {
+            $earnings = 0;
+        }
 
         // Get currency
         $currencyId = Setting::first()->default_currency ?? 124;
@@ -64,14 +65,13 @@ class AffiliateApiController extends Controller {
         $affilate_code = $user->affiliate_code;
 
         return response()->json([
-            "earnings" => $earnings,
-            "total_earnings" => $totalEarnings,
-            "total_withdrawal" => $totalWithdrawal,
-            "affiliate_code" => $affilate_code,
-            "currency" => $currency,
+            'earnings'         => $earnings,
+            'total_earnings'   => $totalEarnings,
+            'total_withdrawal' => $totalWithdrawal,
+            'affiliate_code'   => $affilate_code,
+            'currency'         => $currency,
         ], 200);
     }
-
 
     /**
      * Get withdrawals info
@@ -83,28 +83,32 @@ class AffiliateApiController extends Controller {
      *      summary="Get withdrawals of current user",
      *      description="Get affiliate withdrawals list of current user.",
      *      security={{ "passport": {} }},
+     *
      *      @OA\Response(
      *          response=200,
      *          description="Successful operation",
+     *
      *          @OA\JsonContent(
      *              type="object",
      *          ),
      *      ),
+     *
      *      @OA\Response(
      *          response=401,
      *          description="Unauthenticated",
      *      ),
      * )
-    */
-    public function withdrawals(Request $request) {
+     */
+    public function withdrawals(Request $request)
+    {
         $user = Auth::user();
         $data = UserAffiliate::where('user_id', $user->id)
             ->orderByRaw("CASE WHEN status = 'Waiting' THEN 0 ELSE 1 END")
             ->orderBy('created_at', 'desc')
             ->get();
+
         return response()->json($data);
     }
-
 
     /**
      * Request withdrawal
@@ -116,13 +120,17 @@ class AffiliateApiController extends Controller {
      *      summary="Request withdrawal for current user",
      *      description="Request withdrawal for current user",
      *      security={{ "passport": {} }},
+     *
      *      @OA\RequestBody(
      *         required=true,
      *         description="Request withdrawal data",
+     *
      *         @OA\MediaType(
      *             mediaType="multipart/form-data",
+     *
      *             @OA\Schema(
      *                 type="object",
+     *
      *                 @OA\Property(
      *                     property="affiliate_bank_account",
      *                     description="Bank Account info",
@@ -136,13 +144,16 @@ class AffiliateApiController extends Controller {
      *             ),
      *         ),
      *     ),
+     *
      *      @OA\Response(
      *          response=200,
      *          description="Successful operation",
+     *
      *          @OA\JsonContent(
      *              type="object",
      *          ),
      *      ),
+     *
      *      @OA\Response(
      *          response=401,
      *          description="Unauthenticated",
@@ -152,11 +163,16 @@ class AffiliateApiController extends Controller {
      *          description="Precondition Failed",
      *      ),
      * )
-    */
-    public function requestWithdrawal(Request $request) {
+     */
+    public function requestWithdrawal(Request $request)
+    {
 
-        if($request->affiliate_bank_account == null) return response()->json(['error' => __('Bank Account missing.')], 412);
-        if($request->amount == null) return response()->json(['error' => __('Amount missing.')], 412);
+        if ($request->affiliate_bank_account == null) {
+            return response()->json(['error' => __('Bank Account missing.')], 412);
+        }
+        if ($request->amount == null) {
+            return response()->json(['error' => __('Amount missing.')], 412);
+        }
 
         $user = Auth::user();
         $list = $user->affiliates;
@@ -173,18 +189,17 @@ class AffiliateApiController extends Controller {
         if ($totalEarnings - $totalWithdrawal >= $request->amount) {
             $user->affiliate_bank_account = $request->affiliate_bank_account;
             $user->save();
-            $withdrawalReq = new UserAffiliate();
+            $withdrawalReq = new UserAffiliate;
             $withdrawalReq->user_id = Auth::id();
             $withdrawalReq->amount = $request->amount;
             $withdrawalReq->save();
 
             CreateActivity::for($user, 'Sent', 'Affiliate Withdraw Request');
+
             return response()->json(['message' => 'Affiliate Withdrawal Requested'], 200);
         } else {
             return response()->json(['error' => __('Not enough earnings')], 412);
         }
 
     }
-
-
 }

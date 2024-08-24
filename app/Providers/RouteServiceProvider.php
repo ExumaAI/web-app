@@ -33,7 +33,7 @@ class RouteServiceProvider extends ServiceProvider
                 ->group(base_path('routes/api.php'));
 
             Route::middleware([
-                'web', 'checkInstallation', ViewSharedMiddleware::class
+                'web', 'checkInstallation', ViewSharedMiddleware::class,
             ])->group(base_path('routes/web.php'));
         });
     }

@@ -12,7 +12,7 @@ class GatewayProducts extends Model
     protected $guarded = [];
 
     protected $casts = [
-        'payload' => 'array'
+        'payload' => 'array',
     ];
 
     public function revenuecat_products(): HasMany

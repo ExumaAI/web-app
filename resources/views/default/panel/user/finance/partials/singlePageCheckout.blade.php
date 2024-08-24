@@ -1,7 +1,7 @@
 @inject('gatewayControls', 'App\Http\Controllers\Finance\GatewayController')
 @php
     $activeGateways = \App\Models\Gateways::where('is_active', 1)->get();
-    $type = strpos(Route::currentRouteName(), 'prepaid') !== false ? 'startPrepaidPaymentProcess' : 'startSubscriptionProcess';
+    $type = strpos(Route::currentRouteName(), 'startPrepaidPaymentProcess') !== false ? 'startPrepaidPaymentProcess' : 'startSubscriptionProcess';
 @endphp
 @if ($activeGateways->count() > 1)
     <div class="my-2 w-full">

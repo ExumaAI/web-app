@@ -19,7 +19,7 @@ return new class extends Migration
 
             $table->foreign('coupon_id')->references('id')->on('coupons')->onDelete('cascade');
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
-       
+
         });
     }
 

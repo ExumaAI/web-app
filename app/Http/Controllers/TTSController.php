@@ -8,7 +8,9 @@ use App\Models\RateLimit;
 use App\Models\Setting;
 use App\Models\SettingTwo;
 use App\Models\UserOpenai;
+use App\Services\Ai\TTS\AzureService;
 use Carbon\Carbon;
+use Exception;
 use FFMpeg\FFMpeg;
 use FFMpeg\Format\Audio\Mp3;
 use Google\Cloud\TextToSpeech\V1\AudioConfig;
@@ -20,15 +22,20 @@ use Google\Cloud\TextToSpeech\V1\VoiceSelectionParams;
 use GuzzleHttp\Client;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use App\Services\Ai\TTS\AzureService;
 
 class TTSController extends Controller
 {
     public function generateSpeech(Request $request)
     {
+        if (Helper::appIsDemo()) {
+            $data = [
+                'errors' => [__('This feature is disabled in Demo version.')],
+            ];
+
+            return response()->json($data, 429);
+        }
         $settings_two = SettingTwo::first();
         if ($settings_two->daily_voice_limit_enabled) {
             if (Helper::appIsDemo()) {
@@ -82,17 +89,17 @@ class TTSController extends Controller
         //$ssml = '<speak>';
 
         $resAudio = '';
-		// check if one of the speech is azure
-		if (in_array('azure', array_column($speeches, 'platform'))) {
-			$azureService = new AzureService();
-		}else{
-			$azureService = null;
-		}
-		$user = Auth::user();
+        // check if one of the speech is azure
+        if (in_array('azure', array_column($speeches, 'platform'))) {
+            $azureService = new AzureService;
+        } else {
+            $azureService = null;
+        }
+        $user = Auth::user();
         foreach ($speeches as $speech) {
-			$model = '';
+            $model = '';
             if ($speech['platform'] == 'google') {
-				$model = 'google';
+                $model = 'google';
                 //If gcs credentials are empty
                 if (empty($settings->gcs_file) || empty($settings->gcs_name)) {
                     $data = [
@@ -105,12 +112,12 @@ class TTSController extends Controller
                 try {
                     $client = new TextToSpeechClient([
                         'credentials' => storage_path($settings->gcs_file),
-                        'project_id' => $settings->gcs_name,
+                        'project_id'  => $settings->gcs_name,
                     ]);
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     // Connection error occurred
                     $data = [
-                        'errors' => ['Failed to connect to Google TTS service: '.$e->getMessage()],
+                        'errors' => ['Failed to connect to Google TTS service: ' . $e->getMessage()],
                     ];
 
                     return response()->json($data, 419);
@@ -137,12 +144,12 @@ class TTSController extends Controller
                 $langsAndVoices['voices'][] = $speech['voice'];
 
                 // Set the SSML as the synthesis input
-                $synthesisInputSsml = (new SynthesisInput())
+                $synthesisInputSsml = (new SynthesisInput)
                     ->setSsml($ssml);
 
                 // Build the voice request, select the language code ("en-US") and the ssml voice gender
 
-                $voice = (new VoiceSelectionParams())
+                $voice = (new VoiceSelectionParams)
                     ->setLanguageCode('en-US')
                     ->setSsmlGender(SsmlVoiceGender::FEMALE);
 
@@ -150,16 +157,16 @@ class TTSController extends Controller
                 // $effectsProfileId = 'telephony-class-application';
 
                 // select the type of audio file you want returned
-                $audioConfig = (new AudioConfig())
+                $audioConfig = (new AudioConfig)
                     ->setAudioEncoding(AudioEncoding::MP3);
                 //->setEffectsProfileId(array($effectsProfileId));
 
                 // Perform text-to-speech request on the SSML input with selected voice parameters and audio file type
                 $response = $client->synthesizeSpeech($synthesisInputSsml, $voice, $audioConfig);
                 $audioContent = $response->getAudioContent();
-                $resAudio = $resAudio.$audioContent;
+                $resAudio = $resAudio . $audioContent;
             } elseif ($speech['platform'] == 'openai') {
-				$model = $speech['pace'];
+                $model = $speech['pace'];
                 $settings = Setting::first();
                 if ($settings?->user_api_option) {
                     $apiKeys = explode(',', auth()->user()?->api_keys);
@@ -174,21 +181,21 @@ class TTSController extends Controller
 
                 $content = $speech['content'];
 
-                $client_ = new Client();
+                $client_ = new Client;
 
                 $langsAndVoices['language'][] = $speech['lang'];
                 $langsAndVoices['voices'][] = $speech['voice'];
 
                 $response = $client_->request('POST', 'https://api.openai.com/v1/audio/speech', [
                     'headers' => [
-                        'Authorization' => 'Bearer '.$apiKey,
-                        'Content-Type' => 'application/json',
+                        'Authorization' => 'Bearer ' . $apiKey,
+                        'Content-Type'  => 'application/json',
                     ],
                     'json' => [
                         'language' => $speech['language'],
-                        'model' => $speech['pace'],
-                        'input' => $speech['content'],
-                        'voice' => $speech['voice'],
+                        'model'    => $speech['pace'],
+                        'input'    => $speech['content'],
+                        'voice'    => $speech['voice'],
                     ],
                 ]);
 
@@ -216,28 +223,28 @@ class TTSController extends Controller
                 // unlink($tempInputFile);
                 // unlink($tempOutputFile);
 
-                $resAudio = $resAudio.$response->getBody();
+                $resAudio = $resAudio . $response->getBody();
             } elseif ($speech['platform'] == 'elevenlabs') {
-				$model = 'elevenlabs';
+                $model = 'elevenlabs';
                 $settings_two = SettingTwo::first();
                 $apiKey = $settings_two->elevenlabs_api_key;
 
                 $content = $speech['content'];
 
-                $client = new Client();
+                $client = new Client;
 
-                $response = $client->request('POST', 'https://api.elevenlabs.io/v1/text-to-speech/'.$speech['voice'], [
+                $response = $client->request('POST', 'https://api.elevenlabs.io/v1/text-to-speech/' . $speech['voice'], [
                     'headers' => [
                         'Content-Type' => 'application/json',
-                        'xi-api-key' => $apiKey,
+                        'xi-api-key'   => $apiKey,
                     ],
                     'json' => [
-                        'text' => $content,
-                        'model_id' => 'eleven_multilingual_v2',
+                        'text'           => $content,
+                        'model_id'       => 'eleven_multilingual_v2',
                         'voice_settings' => [
-                            'similarity_boost' => 0.75,
-                            'stability' => 0.95,
-                            'style' => $speech['pace'] / 100,
+                            'similarity_boost'  => 0.75,
+                            'stability'         => 0.95,
+                            'style'             => $speech['pace'] / 100,
                             'use_speaker_boost' => true,
                         ],
                     ],
@@ -246,36 +253,35 @@ class TTSController extends Controller
                 $langsAndVoices['language'][] = $speech['lang'];
                 $langsAndVoices['voices'][] = $speech['name'];
 
-                $resAudio = $resAudio.$response->getBody();
+                $resAudio = $resAudio . $response->getBody();
             } elseif ($speech['platform'] == 'azure') {
-				$model = 'azure';
-				$voice_id = $speech['voice'];
-				$text = $speech['content'];
-				$lang = $speech['lang'];
-				$langsAndVoices['language'][] = $lang;
+                $model = 'azure';
+                $voice_id = $speech['voice'];
+                $text = $speech['content'];
+                $lang = $speech['lang'];
+                $langsAndVoices['language'][] = $lang;
                 $langsAndVoices['voices'][] = $speech['name'];
 
-				$resAudio = $azureService?->synthesizeSpeech($voice_id, $text, $lang);
-			}
+                $resAudio = $azureService?->synthesizeSpeech($voice_id, $text, $lang);
+            }
             $wordCount += countWords($speech['content']);
-			userCreditDecreaseForWord($user, $wordCount, $model);
+            userCreditDecreaseForWord($user, $wordCount, $model);
         }
-
 
         $ai = OpenAIGenerator::whereSlug('ai_voiceover')->first();
 
-        $audioName = $user->id.'-'.Str::random(20).'.mp3';
+        $audioName = $user->id . '-' . Str::random(20) . '.mp3';
         Storage::disk('public')->put($audioName, $resAudio);
 
         if (isset($request->preview)) {
-            return response()->json([ 'audioPath' => '/uploads/' . $audioName , 'output' => '<div class="data-audio" data-audio="/uploads/'.$audioName.'"><div class="audio-preview"></div></div>']);
+            return response()->json(['audioPath' => '/uploads/' . $audioName, 'output' => '<div class="data-audio" data-audio="/uploads/' . $audioName . '"><div class="audio-preview"></div></div>']);
         }
 
         //Save in workbook
-        $entry = new UserOpenai();
+        $entry = new UserOpenai;
         $entry->team_id = $user->team_id;
         $entry->title = $request->workbook_title;
-        $entry->slug = Str::random(20).Str::slug($user->fullName()).'-workbook';
+        $entry->slug = Str::random(20) . Str::slug($user->fullName()) . '-workbook';
         $entry->user_id = $user->id;
         $entry->openai_id = $ai->id;
         $entry->input = $request->speeches;
@@ -288,8 +294,9 @@ class TTSController extends Controller
         $user->save();
         $userOpenai = UserOpenai::where('user_id', Auth::id())->where('openai_id', $ai->id)->orderBy('created_at', 'desc')->paginate(10);
         $userOpenai->withPath(route('dashboard.user.openai.generator', 'ai_voiceover'));
-		$openai = OpenAIGenerator::where('id', $ai->id)->first();
+        $openai = OpenAIGenerator::where('id', $ai->id)->first();
         $html2 = view('panel.user.openai.components.generator_sidebar_table', compact('userOpenai', 'openai'))->render();
+
         return response()->json(compact('html2'));
     }
 }

@@ -10,6 +10,7 @@ use App\Models\UserOrder;
 use App\Models\WebhookHistory;
 use App\Services\GatewaySelector;
 use Carbon\Carbon;
+use Exception;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Facades\Log;
@@ -57,7 +58,7 @@ class IyzicoWebhookListener implements ShouldQueue
     public function handle(IyzicoWebhookEvent $event): void
     {
 
-        $newData = new WebhookHistory();
+        $newData = new WebhookHistory;
 
         try {
             //Log::info(json_encode($event->payload));
@@ -157,7 +158,7 @@ class IyzicoWebhookListener implements ShouldQueue
                         $currentSubscription->stripe_status = 'active';
                         $currentSubscription->save();
 
-                        $payment = new UserOrder();
+                        $payment = new UserOrder;
                         $payment->order_id = $incomingJson->orderReferenceCode;
                         $payment->plan_id = $plan->id;
                         $payment->user_id = $currentSubscription->user_id;
@@ -182,8 +183,8 @@ class IyzicoWebhookListener implements ShouldQueue
 
             }
 
-        } catch (\Exception $ex) {
-            Log::error("IyzicoWebhookListener::handle()\n".$ex->getMessage()."\n".$event->payload);
+        } catch (Exception $ex) {
+            Log::error("IyzicoWebhookListener::handle()\n" . $ex->getMessage() . "\n" . $event->payload);
             $newData->status = 'error';
             $newData->save();
         }
@@ -196,11 +197,11 @@ class IyzicoWebhookListener implements ShouldQueue
     {
         // $space = "*************************************************************************************************************";
         $space = '*****';
-        $msg = '\n'.$space.'\n'.$space;
-        $msg = $msg.json_encode($event->payload);
-        $msg = $msg.'\n'.$space.'\n';
-        $msg = $msg.'\n'.$exception.'\n';
-        $msg = $msg.'\n'.$space.'\n'.$space;
+        $msg = '\n' . $space . '\n' . $space;
+        $msg = $msg . json_encode($event->payload);
+        $msg = $msg . '\n' . $space . '\n';
+        $msg = $msg . '\n' . $exception . '\n';
+        $msg = $msg . '\n' . $space . '\n' . $space;
 
         Log::error($msg);
     }

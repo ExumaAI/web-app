@@ -269,6 +269,150 @@
     <div class="float-right m-4">
         {{ $userOpenai->withPath(route('dashboard.user.openai.generator', 'ai_voiceover'))->links('pagination::bootstrap-5-alt') }}
     </div>
+@elseif ($openai->type == 'isolator')
+    <x-table>
+        <x-slot:head>
+            <tr>
+                <th>
+                    {{ __('File') }}
+                </th>
+                <th>
+                    {{ __('Info') }}
+                </th>
+                <th>
+                    {{ __('Play') }}
+                </th>
+                <th class="text-end">
+                    {{ __('Action') }}
+                </th>
+            </tr>
+        </x-slot:head>
+        <x-slot:body>
+            @forelse ($userOpenai as $entry)
+                @if (empty(json_decode($entry->response)))
+                    @continue
+                @endif
+                <tr class="text-2xs">
+                    <td class="flex items-center gap-3">
+                        <x-button
+                            class="size-9 relative z-10"
+                            size="none"
+                            variant="secondary"
+                        >
+                            <x-tabler-speakerphone class="size-4" />
+                        </x-button>
+                        {{ $entry->title }}
+                    </td>
+                    <td>
+                        <span>{{ $entry->created_at->format('M d, Y') }},
+                            <span class="opacity-60">
+                                @php
+                                    $size = filesize(public_path('uploads/' . $entry->output));
+                                    $size = $size / 1024;
+                                    if ($size < 1024) {
+                                        echo round($size, 2) . ' KB';
+                                    } else {
+                                        echo round($size / 1024, 2) . ' MB';
+                                    }
+                                @endphp
+                            </span>
+                        </span>
+                    </td>
+                    <td
+                        class="data-audio mt-3 flex items-center"
+                        data-audio="/uploads/{{ $entry->output }}"
+                    >
+                        <button type="button">
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="9"
+                                height="9"
+                                viewBox="0 0 24 24"
+                                stroke-width="1.5"
+                                stroke="currentColor"
+                                fill="none"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                            >
+                                <path
+                                    stroke="none"
+                                    d="M0 0h24v24H0z"
+                                    fill="none"
+                                ></path>
+                                <path
+                                    d="M6 4v16a1 1 0 0 0 1.524 .852l13 -8a1 1 0 0 0 0 -1.704l-13 -8a1 1 0 0 0 -1.524 .852z"
+                                    stroke-width="0"
+                                    fill="currentColor"
+                                ></path>
+                            </svg>
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="10"
+                                height="10"
+                                viewBox="0 0 24 24"
+                                stroke-width="1.5"
+                                stroke="currentColor"
+                                fill="none"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                            >
+                                <path
+                                    stroke="none"
+                                    d="M0 0h24v24H0z"
+                                    fill="none"
+                                ></path>
+                                <path
+                                    d="M9 4h-2a2 2 0 0 0 -2 2v12a2 2 0 0 0 2 2h2a2 2 0 0 0 2 -2v-12a2 2 0 0 0 -2 -2z"
+                                    stroke-width="0"
+                                    fill="currentColor"
+                                ></path>
+                                <path
+                                    d="M17 4h-2a2 2 0 0 0 -2 2v12a2 2 0 0 0 2 2h2a2 2 0 0 0 2 -2v-12a2 2 0 0 0 -2 -2z"
+                                    stroke-width="0"
+                                    fill="currentColor"
+                                ></path>
+                            </svg>
+                        </button>
+                        <div class="audio-preview grow"></div>
+                        <span>0:00</span>
+                    </td>
+                    <td class="whitespace-nowrap text-end">
+                        <x-button
+                            class="size-9 relative z-10"
+                            size="none"
+                            variant="ghost-shadow"
+                            hover-variant="primary"
+                            href="/uploads/{{ $entry->output }}"
+                            target="_blank"
+                            title="{{ __('View and edit') }}"
+                        >
+                            <x-tabler-download class="size-4" />
+                        </x-button>
+                        <x-button
+                            class="size-9 relative z-10"
+                            size="none"
+                            variant="danger"
+                            href="{{ LaravelLocalization::localizeUrl(route('dashboard.user.openai.documents.image.delete', $entry->slug)) }}"
+                            onclick="return confirm('Are you sure?')"
+                            title="{{ __('Delete') }}"
+                        >
+                            <x-tabler-x class="size-4" />
+                        </x-button>
+                    </td>
+                </tr>
+            @empty
+                <tr>
+                    <td colspan="6">{{ __('No entries created yet.') }}</td>
+                </tr>
+            @endforelse
+
+        </x-slot:body>
+
+    </x-table>
+
+    <div class="float-right m-4">
+        {{ $userOpenai->withPath(route('dashboard.user.openai.generator', 'ai_voiceover'))->links('pagination::bootstrap-5-alt') }}
+    </div>
 @else
     <x-table>
         <x-slot:head>

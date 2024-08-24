@@ -6,9 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::table('settings', function (Blueprint $table) {
@@ -21,18 +18,17 @@ return new class extends Migration
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::table('settings', function (Blueprint $table) {
-            $table->dropColumn('openai_default_model');
-            $table->dropColumn('openai_default_language');
-            $table->dropColumn('openai_default_tone_of_voice');
-            $table->dropColumn('openai_default_creativity');
-            $table->dropColumn('openai_max_input_length');
-            $table->dropColumn('openai_max_output_length');
+            $table->dropColumn([
+                'openai_default_model',
+                'openai_default_language',
+                'openai_default_tone_of_voice',
+                'openai_default_creativity',
+                'openai_max_input_length',
+                'openai_max_output_length',
+            ]);
         });
     }
 };

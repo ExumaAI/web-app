@@ -13,6 +13,7 @@ use App\Models\User;
 use App\Models\UserOrder;
 use App\Models\YokassaSubscriptions;
 use Carbon\Carbon;
+use Exception;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -24,10 +25,10 @@ use YooKassa\Client;
 /**
  * Base functions foreach payment gateway
  *
- * @param subscribe ($plan)                                     || Displays Payment Page of the gateway.
+ * @param subscribe ($plan)                                     || Displays Payment Page of the gateway
  * @param subscribeCheckout (Request $request, $referral= null) || -
- * @param prepaid ($plan)                                       || Displays Payment Page of Yokassa gateway for prepaid plans.
- * @param prepaidCheckout (Request $request, $referral= null)   || Handles payment action of Yokassa.
+ * @param prepaid ($plan)                                       || Displays Payment Page of Yokassa gateway for prepaid plans
+ * @param prepaidCheckout (Request $request, $referral= null)   || Handles payment action of Yokassa
  * @param handleSubscribePay ($activeSub_id)                    || handle payment with saved payment
  * @param getSubscriptionDaysLeft                               ||
  * @param subscribeCancel                                       || Cancels current subscription plan
@@ -65,8 +66,9 @@ class YokassaService
             $shop_id = $gateway->live_client_id;
             $key = $gateway->live_client_secret;
         }
+
         try {
-            $client = new Client();
+            $client = new Client;
             $client->setAuth($shop_id, $key);
 
             $coupon = checkCouponInRequest(); //if there a coupon in request it will return the coupin instanse
@@ -85,14 +87,14 @@ class YokassaService
             $payment = $client->createPayment(
                 [
                     'amount' => [
-                        'value' => $newDiscountedPrice,
+                        'value'    => $newDiscountedPrice,
                         'currency' => $currency,
                     ],
                     'confirmation' => [
                         'type' => 'embedded',
                     ],
-                    'capture' => true,
-                    'description' => 'Order No. 1',
+                    'capture'             => true,
+                    'description'         => 'Order No. 1',
                     'save_payment_method' => true,
                 ],
                 uniqid('', true)
@@ -100,9 +102,9 @@ class YokassaService
             $confirmation_token = $payment->confirmation->confirmation_token;
             $payment_id = $payment->id;
 
-            return view('panel.user.finance.subscription.'.self::$GATEWAY_CODE, compact('plan', 'newDiscountedPrice', 'taxValue', 'taxRate', 'gateway', 'payment_id', 'confirmation_token'));
-        } catch (\Exception $ex) {
-            Log::error(self::$GATEWAY_CODE.'-> subscribe(): '.$ex->getMessage());
+            return view('panel.user.finance.subscription.' . self::$GATEWAY_CODE, compact('plan', 'newDiscountedPrice', 'taxValue', 'taxRate', 'gateway', 'payment_id', 'confirmation_token'));
+        } catch (Exception $ex) {
+            Log::error(self::$GATEWAY_CODE . '-> subscribe(): ' . $ex->getMessage());
 
             return back()->with(['message' => $ex->getMessage(), 'type' => 'error']);
         }
@@ -125,10 +127,11 @@ class YokassaService
         }
         $user = Auth::user();
         $settings = Setting::first();
+
         try {
             DB::beginTransaction();
             $plan = PaymentPlans::where('id', $planID)->first();
-            $client = new Client();
+            $client = new Client;
             $client->setAuth($shop_id, $key);
             $payment = $client->getPaymentInfo($paymentId);
             $total = $plan->price;
@@ -149,7 +152,7 @@ class YokassaService
                 $paymentMethod = $payment->payment_method->type;
                 $payment_method_id = $payment->payment_method->id;
                 // new subscription
-                $subscription = new YokassaSubscriptions();
+                $subscription = new YokassaSubscriptions;
                 $subscription->plan_id = $plan->id;
                 $subscription->user_id = $user->id;
                 $subscription->name = $plan->id;
@@ -170,7 +173,7 @@ class YokassaService
                 $subscription->save();
 
                 // new order
-                $payment = new UserOrder();
+                $payment = new UserOrder;
                 $payment->order_id = $subscription->payment_method_id;
                 $payment->plan_id = $plan->id;
                 $payment->user_id = $user->id;
@@ -187,20 +190,20 @@ class YokassaService
                 $plan->total_images == -1 ? ($user->remaining_images = -1) : ($user->remaining_images += $plan->total_images);
                 $user->save();
 
-                CreateActivity::for($user, __('Subscribed'), $plan->name.' '.__('Plan'));
+                CreateActivity::for($user, __('Subscribed'), $plan->name . ' ' . __('Plan'));
                 DB::commit();
             } else {
                 DB::rollBack();
 
-                return redirect()->route('dashboard.'.auth()->user()->type.'.index')->with(['message' => __('You are failed your purchase. If you paid for this, please cantact us'), 'type' => 'failed']);
+                return redirect()->route('dashboard.' . auth()->user()->type . '.index')->with(['message' => __('You are failed your purchase. If you paid for this, please cantact us'), 'type' => 'failed']);
             }
 
             return redirect()->route('dashboard.user.payment.succesful')->with(['message' => __('Thank you for your purchase. Enjoy your remaining words and images.'), 'type' => 'success']);
-        } catch (\Exception $ex) {
+        } catch (Exception $ex) {
             DB::rollBack();
-            Log::error(self::$GATEWAY_CODE.'-> subscribe(): '.$ex->getMessage());
+            Log::error(self::$GATEWAY_CODE . '-> subscribe(): ' . $ex->getMessage());
 
-            return redirect()->route('dashboard.'.auth()->user()->type.'.index')->with(['message' => __('You are failed your purchase. If you paid for this, please cantact us'), 'type' => 'failed']);
+            return redirect()->route('dashboard.' . auth()->user()->type . '.index')->with(['message' => __('You are failed your purchase. If you paid for this, please cantact us'), 'type' => 'failed']);
         }
     }
 
@@ -233,22 +236,22 @@ class YokassaService
 
             return 'success';
         } else {
-            $client = new Client();
+            $client = new Client;
             $client->setAuth($shop_id, $key);
             $payment = $client->createPayment(
                 [
                     'amount' => [
-                        'value' => $total,
+                        'value'    => $total,
                         'currency' => $currency,
                     ],
-                    'capture' => true,
+                    'capture'           => true,
                     'payment_method_id' => $payment_method_id,
-                    'description' => 'Auto payment',
+                    'description'       => 'Auto payment',
                 ],
                 uniqid('', true)
             );
             if ($payment->paid == true) {
-                $payment = new UserOrder();
+                $payment = new UserOrder;
                 $payment->order_id = Str::random(12);
                 $payment->plan_id = $plan->id;
                 $payment->user_id = $user->id;
@@ -266,7 +269,7 @@ class YokassaService
                 $plan->total_images == -1 ? ($user->remaining_images = -1) : ($user->remaining_images += $plan->total_images);
 
                 $user->save();
-				\App\Models\Usage::getSingle()->updateSalesCount($total);
+                \App\Models\Usage::getSingle()->updateSalesCount($total);
 
                 $activeSub->next_pay_at = Carbon::now()->addMonth();
                 $activeSub->save();
@@ -285,6 +288,7 @@ class YokassaService
     public static function prepaid($plan)
     {
         $gateway = Gateways::where('code', self::$GATEWAY_CODE)->where('is_active', 1)->first() ?? abort(404);
+
         try {
             $newDiscountedPrice = $plan->price;
             $currency = Currency::where('id', $gateway->currency)->first()->code;
@@ -308,18 +312,18 @@ class YokassaService
                 $newDiscountedPrice += $taxValue;
             }
 
-            $client = new Client();
+            $client = new Client;
             $client->setAuth($shop_id, $key);
             $payment = $client->createPayment(
                 [
                     'amount' => [
-                        'value' => $newDiscountedPrice,
+                        'value'    => $newDiscountedPrice,
                         'currency' => $currency,
                     ],
                     'confirmation' => [
                         'type' => 'embedded',
                     ],
-                    'capture' => true,
+                    'capture'     => true,
                     'description' => 'Order No. 1',
                 ],
                 uniqid('', true)
@@ -327,9 +331,9 @@ class YokassaService
             $confirmation_token = $payment->confirmation->confirmation_token;
             $payment_id = $payment->id;
 
-            return view('panel.user.finance.prepaid.'.self::$GATEWAY_CODE, compact('plan', 'newDiscountedPrice', 'payment_id', 'confirmation_token', 'taxValue', 'taxRate', 'gateway', 'currency'));
-        } catch (\Exception $ex) {
-            Log::error(self::$GATEWAY_CODE.'-> prepaid(): '.$ex->getMessage());
+            return view('panel.user.finance.prepaid.' . self::$GATEWAY_CODE, compact('plan', 'newDiscountedPrice', 'payment_id', 'confirmation_token', 'taxValue', 'taxRate', 'gateway', 'currency'));
+        } catch (Exception $ex) {
+            Log::error(self::$GATEWAY_CODE . '-> prepaid(): ' . $ex->getMessage());
 
             return back()->with(['message' => $ex->getMessage(), 'type' => 'error']);
         }
@@ -350,9 +354,10 @@ class YokassaService
             $key = $gateway->live_client_secret;
         }
         $user = Auth::user();
+
         try {
             DB::beginTransaction();
-            $client = new Client();
+            $client = new Client;
             $client->setAuth($shop_id, $key);
             $payment = $client->getPaymentInfo($paymentId);
             if ($payment->paid == true) {
@@ -373,8 +378,8 @@ class YokassaService
                 $total += $taxValue;
 
                 // new order
-                $payment = new UserOrder();
-                $payment->order_id = 'YPO-'.strtoupper(Str::random(13));
+                $payment = new UserOrder;
+                $payment->order_id = 'YPO-' . strtoupper(Str::random(13));
                 $payment->plan_id = $plan->id;
                 $payment->type = 'prepaid';
                 $payment->user_id = $user->id;
@@ -391,18 +396,19 @@ class YokassaService
                 $plan->total_images == -1 ? ($user->remaining_images = -1) : ($user->remaining_images += $plan->total_images);
                 $user->save();
 
-                CreateActivity::for($user, __('Purchased'), $plan->name.' '.__('Token Pack'));
+                CreateActivity::for($user, __('Purchased'), $plan->name . ' ' . __('Token Pack'));
                 DB::commit();
-				\App\Models\Usage::getSingle()->updateSalesCount($total);
+                \App\Models\Usage::getSingle()->updateSalesCount($total);
+
                 return redirect()->route('dashboard.user.payment.succesful')->with(['message' => __('Thank you for your purchase. Enjoy your remaining words and images.'), 'type' => 'success']);
             }
 
-            return redirect()->route('dashboard.'.auth()->user()->type.'.index')->with(['message' => __('You are failed your purchase. If you paid for this, please cantact us'), 'type' => 'failed']);
-        } catch (\Exception $ex) {
+            return redirect()->route('dashboard.' . auth()->user()->type . '.index')->with(['message' => __('You are failed your purchase. If you paid for this, please cantact us'), 'type' => 'failed']);
+        } catch (Exception $ex) {
             DB::rollBack();
-            Log::error(self::$GATEWAY_CODE.'-> prepaidCheckout(): '.$ex->getMessage());
+            Log::error(self::$GATEWAY_CODE . '-> prepaidCheckout(): ' . $ex->getMessage());
 
-            return redirect()->route('dashboard.'.auth()->user()->type.'.index')->with(['message' => __('You are failed your purchase. If you paid for this, please cantact us'), 'type' => 'failed']);
+            return redirect()->route('dashboard.' . auth()->user()->type . '.index')->with(['message' => __('You are failed your purchase. If you paid for this, please cantact us'), 'type' => 'failed']);
         }
 
     }
@@ -428,7 +434,7 @@ class YokassaService
             $plan = PaymentPlans::findOrFail($activeSub->plan_id);
             $activeSub->update([
                 'subscription_status' => 'cancelled',
-                'next_pay_at' => Carbon::now(),
+                'next_pay_at'         => Carbon::now(),
             ]);
             $recent_words = $user->remaining_words - $plan->total_words;
             $recent_images = $user->remaining_images - $plan->total_images;
@@ -545,8 +551,8 @@ class YokassaService
             } else {
                 return false;
             }
-        } catch (\Exception $th) {
-            Log::error('(Webhooks) Yokassa::verifyIncomingJson(): '.$th->getMessage());
+        } catch (Exception $th) {
+            Log::error('(Webhooks) Yokassa::verifyIncomingJson(): ' . $th->getMessage());
         }
 
         return false;
@@ -579,32 +585,32 @@ class YokassaService
     public static function gatewayDefinitionArray(): array
     {
         return [
-            'code' => 'yokassa',
-            'title' => 'Yokassa',
-            'link' => 'https://yokassa.ru/',
-            'active' => 0,
-            'available' => 1,
-            'img' => '/assets/img/payments/yokassa.svg',
-            'whiteLogo' => 0,
-            'mode' => 1,
-            'sandbox_client_id' => 1,
+            'code'                  => 'yokassa',
+            'title'                 => 'Yokassa',
+            'link'                  => 'https://yokassa.ru/',
+            'active'                => 0,
+            'available'             => 1,
+            'img'                   => '/assets/img/payments/yokassa.svg',
+            'whiteLogo'             => 0,
+            'mode'                  => 1,
+            'sandbox_client_id'     => 1,
             'sandbox_client_secret' => 1,
-            'sandbox_app_id' => 0,
-            'live_client_id' => 1,
-            'live_client_secret' => 1,
-            'live_app_id' => 0,
-            'currency' => 1,
-            'currency_locale' => 0,
-            'notify_url' => 0,
-            'base_url' => 0,
-            'sandbox_url' => 0,
-            'locale' => 0,
-            'validate_ssl' => 0,
-            'webhook_secret' => 0,
-            'logger' => 0,
-            'tax' => 1,              // Option in settings
-            'bank_account_details' => 0,
-            'bank_account_other' => 0,
+            'sandbox_app_id'        => 0,
+            'live_client_id'        => 1,
+            'live_client_secret'    => 1,
+            'live_app_id'           => 0,
+            'currency'              => 1,
+            'currency_locale'       => 0,
+            'notify_url'            => 0,
+            'base_url'              => 0,
+            'sandbox_url'           => 0,
+            'locale'                => 0,
+            'validate_ssl'          => 0,
+            'webhook_secret'        => 0,
+            'logger'                => 0,
+            'tax'                   => 1,              // Option in settings
+            'bank_account_details'  => 0,
+            'bank_account_other'    => 0,
         ];
     }
 }

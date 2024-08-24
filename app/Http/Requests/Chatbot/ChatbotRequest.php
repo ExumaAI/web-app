@@ -11,13 +11,13 @@ class ChatbotRequest extends FormRequest
     {
         return [
             'title' => 'required|string',
-//            'role' => 'required|string',
-//            'first_message' => 'required|string',
-//            'instructions' => 'required|string',
-//            'logo' => 'sometimes|nullable|image|mimes:jpeg,png,jpg,gif,svg|max:4096',
-//            'width' => 'required|string',
-//            'height' => 'required|string',
-//            'color' => 'required|string',
+            //            'role' => 'required|string',
+            //            'first_message' => 'required|string',
+            //            'instructions' => 'required|string',
+            //            'logo' => 'sometimes|nullable|image|mimes:jpeg,png,jpg,gif,svg|max:4096',
+            //            'width' => 'required|string',
+            //            'height' => 'required|string',
+            //            'color' => 'required|string',
             'model' => 'required|string',
         ];
     }

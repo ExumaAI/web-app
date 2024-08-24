@@ -152,7 +152,7 @@
                                 />
                             </div>
 
-                            @if ($app_is_demo and Auth::user()->type == 'admin')
+                            @if ($app_is_demo and Auth::user()->isAdmin())
                                 <a
                                     class="btn btn-primary w-full"
                                     onclick="return toastr.info('Admin settings disabled on Demo version.')"

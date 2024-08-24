@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-			$table->string('razorpay_id')->nullable()->index();
+            $table->string('razorpay_id')->nullable()->index();
         });
     }
 
@@ -22,7 +22,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table) {
-			$table->dropColumn([
+            $table->dropColumn([
                 'razorpay_id',
             ]);
         });

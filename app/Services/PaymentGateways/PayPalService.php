@@ -16,6 +16,7 @@ use App\Models\PaymentPlans;
 use App\Models\Setting;
 use App\Models\UserOrder;
 use Carbon\Carbon;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -27,11 +28,11 @@ use Srmklive\PayPal\Services\PayPal as PayPalClient;
 /**
  * Base functions foreach payment gateway
  *
- * @param saveAllProducts                                       || Used to generate new product id and price id of all saved membership plans in paypal gateway.
- * @param saveProduct ($plan)                                   || Saves Membership plan product in the gateway.
- * @param subscribe ($plan)                                     || Displays Payment Page of the gateway.
+ * @param saveAllProducts                                       || Used to generate new product id and price id of all saved membership plans in paypal gateway
+ * @param saveProduct ($plan)                                   || Saves Membership plan product in the gateway
+ * @param subscribe ($plan)                                     || Displays Payment Page of the gateway
  * @param subscribeCheckout (Request $request, $referral= null) || -
- * @param prepaid ($plan)                                       || Displays Payment Page of the gateway for prepaid plans.
+ * @param prepaid ($plan)                                       || Displays Payment Page of the gateway for prepaid plans
  * @param prepaidCheckout (Request $request, $referral= null)   || -
  * @param getSubscriptionStatus ($incomingUserId = null)        ||
  * @param getSubscriptionDaysLeft                               ||
@@ -50,6 +51,7 @@ class PayPalService
     public static function saveAllProducts()
     {
         $provider = self::getPaypalProvider();
+
         try {
             $plans = PaymentPlans::where('active', 1)->get();
             foreach ($plans as $plan) {
@@ -57,8 +59,8 @@ class PayPalService
             }
             // create webhooks after saving the products
             $tmp = self::createWebhook();
-        } catch (\Exception $ex) {
-            Log::error(self::$GATEWAY_CODE.'-> saveAllProducts(): '.$ex->getMessage());
+        } catch (Exception $ex) {
+            Log::error(self::$GATEWAY_CODE . '-> saveAllProducts(): ' . $ex->getMessage());
 
             return back()->with(['message' => $ex->getMessage(), 'type' => 'error']);
         }
@@ -84,18 +86,18 @@ class PayPalService
                     $oldProductId = $product->product_id; // Product has been created before
                 } // ELSE Product has not been created before but record exists. Create new product and update record.
             } else {
-                $product = new GatewayProducts();
+                $product = new GatewayProducts;
                 $product->plan_id = $plan->id;
                 $product->gateway_code = self::$GATEWAY_CODE;
                 $product->gateway_title = self::$GATEWAY_NAME;
             }
             $data = [
-                'name' => $plan->name,
+                'name'        => $plan->name,
                 'description' => $plan->name,
-                'type' => 'SERVICE',
-                'category' => 'SOFTWARE',
+                'type'        => 'SERVICE',
+                'category'    => 'SOFTWARE',
             ];
-            $request_id = 'create-product-'.time();
+            $request_id = 'create-product-' . time();
             $newProduct = $provider->createProduct($data, $request_id);
             $product->plan_name = $plan->name;
             $product->product_id = $newProduct['id'];
@@ -111,11 +113,11 @@ class PayPalService
                 }
                 $planData = self::createBillingPlanData($product->product_id, $plan->name, $trials, $currency, $interval, $plan->price, $gateway->tax);
                 // This line is not in docs. but required in execution. Needed ~5 hours to fix.
-                $request_id = 'create-plan-'.time();
+                $request_id = 'create-plan-' . time();
                 $billingPlan = $provider->createPlan($planData, $request_id);
                 // check price_id ( Billing plans id ), if there one make it old
                 if ($product->price_id != null) {
-                    $history = new OldGatewayProducts();
+                    $history = new OldGatewayProducts;
                     $history->plan_id = $plan->id;
                     $history->plan_name = $plan->name;
                     $history->gateway_code = self::$GATEWAY_CODE;
@@ -133,9 +135,9 @@ class PayPalService
             }
             $product->save();
             DB::commit();
-        } catch (\Exception $ex) {
+        } catch (Exception $ex) {
             DB::rollBack();
-            Log::error(self::$GATEWAY_CODE.'-> saveProduct(): '.$ex->getMessage());
+            Log::error(self::$GATEWAY_CODE . '-> saveProduct(): ' . $ex->getMessage());
 
             return back()->with(['message' => $ex->getMessage(), 'type' => 'error']);
         }
@@ -145,6 +147,7 @@ class PayPalService
     {
         $gateway = Gateways::where('code', self::$GATEWAY_CODE)->where('is_active', 1)->first() ?? abort(404);
         $provider = self::getPaypalProvider($gateway);
+
         try {
             $currency = Currency::where('id', $gateway->currency)->first()->code;
             $product = GatewayProducts::where(['plan_id' => $plan->id, 'gateway_code' => self::$GATEWAY_CODE])->first();
@@ -182,7 +185,7 @@ class PayPalService
                     }
                     $planData = self::createBillingPlanData($product->product_id, $plan->name, $trials, $currency, $interval, $plan->price, $gateway->tax, $newDiscountedPrice);
                     // This line is not in docs. but required in execution. Needed ~5 hours to fix.
-                    $request_id = 'create-plan-'.time();
+                    $request_id = 'create-plan-' . time();
                     $billingPlan = $provider->createPlan($planData, $request_id);
                     $billingPlanId = $billingPlan['id'];
                 } else {
@@ -193,9 +196,9 @@ class PayPalService
                 $billingPlanId = null;
             }
 
-            return view('panel.user.finance.subscription.'.self::$GATEWAY_CODE, compact('plan', 'newDiscountedPrice', 'taxValue', 'taxRate', 'billingPlanId', 'productId', 'gateway'));
-        } catch (\Exception $ex) {
-            Log::error(self::$GATEWAY_CODE.'-> subscribe(): '.$ex->getMessage());
+            return view('panel.user.finance.subscription.' . self::$GATEWAY_CODE, compact('plan', 'newDiscountedPrice', 'taxValue', 'taxRate', 'billingPlanId', 'productId', 'gateway'));
+        } catch (Exception $ex) {
+            Log::error(self::$GATEWAY_CODE . '-> subscribe(): ' . $ex->getMessage());
 
             return back()->with(['message' => $ex->getMessage(), 'type' => 'error']);
         }
@@ -213,13 +216,14 @@ class PayPalService
         $gateway = Gateways::where('code', self::$GATEWAY_CODE)->where('is_active', 1)->first() ?? abort(404);
         $provider = self::getPaypalProvider($gateway);
         $user = Auth::user();
+
         try {
             DB::beginTransaction();
             $plan = PaymentPlans::where('id', $planID)->first();
             $product = GatewayProducts::where(['plan_id' => $plan->id, 'product_id' => $productId, 'gateway_code' => self::$GATEWAY_CODE])->first();
             // check if $product->price_id != to $billingPlanId, if not thats means its custom plan then save it in custom plans table.
             if ($product->price_id != $billingPlanId) {
-                $newcustom = new CustomBilingPlans();
+                $newcustom = new CustomBilingPlans;
                 $newcustom->gateway = self::$GATEWAY_CODE;
                 $newcustom->plan_id = $planID;
                 $newcustom->main_plan_price_id = $product->price_id;
@@ -242,10 +246,10 @@ class PayPalService
             $total += $taxValue;
 
             // new subscription
-            $subscription = new Subscriptions();
+            $subscription = new Subscriptions;
 
             if ($billingPlanId == 'lifetime' && $paypalSubscriptionID == 'lifetime') {
-                $subscription->stripe_id = 'PLS-'.strtoupper(Str::random(13));
+                $subscription->stripe_id = 'PLS-' . strtoupper(Str::random(13));
                 $subscription->stripe_price = $product->price_id;
                 $subscription->ends_at = $plan->frequency == 'lifetime_monthly' ? \Carbon\Carbon::now()->addMonths(1) : \Carbon\Carbon::now()->addYears(1);
                 $subscription->auto_renewal = 1;
@@ -279,7 +283,7 @@ class PayPalService
             // $subscriptionItem->save();
 
             // new order
-            $payment = new UserOrder();
+            $payment = new UserOrder;
             $payment->order_id = $subscription->stripe_id;
             $payment->plan_id = $plan->id;
             $payment->user_id = $user->id;
@@ -296,9 +300,9 @@ class PayPalService
             $plan->total_images == -1 ? ($user->remaining_images = -1) : ($user->remaining_images += $plan->total_images);
             $user->save();
 
-            CreateActivity::for($user, __('Subscribed'), $plan->name.' '.__('Plan'));
+            CreateActivity::for($user, __('Subscribed'), $plan->name . ' ' . __('Plan'));
 
-			\App\Models\Usage::getSingle()->updateSalesCount($total);
+            \App\Models\Usage::getSingle()->updateSalesCount($total);
 
             DB::commit();
 
@@ -307,9 +311,9 @@ class PayPalService
             }
 
             return ['result' => 'OK'];
-        } catch (\Exception $ex) {
+        } catch (Exception $ex) {
             DB::rollBack();
-            Log::error(self::$GATEWAY_CODE.'-> subscribe(): '.$ex->getMessage());
+            Log::error(self::$GATEWAY_CODE . '-> subscribe(): ' . $ex->getMessage());
 
             return ['result' => $ex->getMessage()];
         }
@@ -319,6 +323,7 @@ class PayPalService
     {
         $gateway = Gateways::where('code', self::$GATEWAY_CODE)->where('is_active', 1)->first() ?? abort(404);
         $provider = self::getPaypalProvider($gateway);
+
         try {
             $newDiscountedPrice = $plan->price;
             $currency = Currency::where('id', $gateway->currency)->first()->code;
@@ -341,9 +346,9 @@ class PayPalService
                 return back()->with(['message' => $exception, 'type' => 'error']);
             }
 
-            return view('panel.user.finance.prepaid.'.self::$GATEWAY_CODE, compact('plan', 'newDiscountedPrice', 'productId', 'taxValue', 'taxRate', 'gateway', 'currency'));
-        } catch (\Exception $ex) {
-            Log::error(self::$GATEWAY_CODE.'-> prepaid(): '.$ex->getMessage());
+            return view('panel.user.finance.prepaid.' . self::$GATEWAY_CODE, compact('plan', 'newDiscountedPrice', 'productId', 'taxValue', 'taxRate', 'gateway', 'currency'));
+        } catch (Exception $ex) {
+            Log::error(self::$GATEWAY_CODE . '-> prepaid(): ' . $ex->getMessage());
 
             return back()->with(['message' => $ex->getMessage(), 'type' => 'error']);
         }
@@ -359,6 +364,7 @@ class PayPalService
         $gateway = Gateways::where('code', self::$GATEWAY_CODE)->where('is_active', 1)->first() ?? abort(404);
         $provider = self::getPaypalProvider($gateway);
         $user = Auth::user();
+
         try {
             DB::beginTransaction();
             $plan = PaymentPlans::where('id', $planID)->first();
@@ -379,7 +385,7 @@ class PayPalService
             $total += $taxValue;
 
             // new order
-            $payment = new UserOrder();
+            $payment = new UserOrder;
             $payment->order_id = $orderID;
             $payment->plan_id = $plan->id;
             $payment->type = 'prepaid';
@@ -397,14 +403,14 @@ class PayPalService
             $plan->total_images == -1 ? ($user->remaining_images = -1) : ($user->remaining_images += $plan->total_images);
             $user->save();
 
-            CreateActivity::for($user, __('Purchased'), $plan->name.' '.__('Plan'));
-			\App\Models\Usage::getSingle()->updateSalesCount($total);
+            CreateActivity::for($user, __('Purchased'), $plan->name . ' ' . __('Plan'));
+            \App\Models\Usage::getSingle()->updateSalesCount($total);
             DB::commit();
 
             return ['result' => 'OK'];
-        } catch (\Exception $ex) {
+        } catch (Exception $ex) {
             DB::rollBack();
-            Log::error(self::$GATEWAY_CODE.'-> subscribe(): '.$ex->getMessage());
+            Log::error(self::$GATEWAY_CODE . '-> subscribe(): ' . $ex->getMessage());
 
             return ['result' => $ex->getMessage()];
         }
@@ -458,9 +464,9 @@ class PayPalService
             } else {
                 $subscription = $provider->showSubscriptionDetails($activeSub->stripe_id);
                 if (isset($subscription['error'])) {
-                    Log::error("PayPalService::getSubscriptionRenewDate() :\n".json_encode($subscription));
+                    Log::error("PayPalService::getSubscriptionRenewDate() :\n" . json_encode($subscription));
 
-                    return back()->with(['message' => 'PayPal Gateway : '.$subscription['error']['message'], 'type' => 'error']);
+                    return back()->with(['message' => 'PayPal Gateway : ' . $subscription['error']['message'], 'type' => 'error']);
                 }
                 if ($subscription['billing_info']['next_billing_time']) {
                     return \Carbon\Carbon::parse($subscription['billing_info']['next_billing_time'])->format('F jS, Y');
@@ -488,9 +494,9 @@ class PayPalService
             } else {
                 $subscription = $provider->showSubscriptionDetails($activeSub->stripe_id);
                 if (isset($subscription['error'])) {
-                    Log::error("PayPalService::getSubscriptionStatus() :\n".json_encode($subscription));
+                    Log::error("PayPalService::getSubscriptionStatus() :\n" . json_encode($subscription));
 
-                    return back()->with(['message' => 'PayPal Gateway : '.$subscription['error']['message'], 'type' => 'error']);
+                    return back()->with(['message' => 'PayPal Gateway : ' . $subscription['error']['message'], 'type' => 'error']);
                 }
                 if (isset($subscription['billing_info']['cycle_executions'][0]['tenure_type'])) {
                     if ($subscription['billing_info']['cycle_executions'][0]['tenure_type'] == 'TRIAL') {
@@ -580,7 +586,7 @@ class PayPalService
                         }
                     }
                 } else {
-                    Log::error("PayPalService::getSubscriptionDaysLeft() :\n".json_encode($subscription));
+                    Log::error("PayPalService::getSubscriptionDaysLeft() :\n" . json_encode($subscription));
                 }
             }
         }
@@ -601,9 +607,9 @@ class PayPalService
             } else {
                 $subscription = $provider->showSubscriptionDetails($activeSub->stripe_id);
                 if (isset($subscription['error'])) {
-                    Log::error("PayPalService::getSubscriptionStatus() :\n".json_encode($subscription));
+                    Log::error("PayPalService::getSubscriptionStatus() :\n" . json_encode($subscription));
 
-                    return back()->with(['message' => 'PayPal Gateway : '.$subscription['error']['message'], 'type' => 'error']);
+                    return back()->with(['message' => 'PayPal Gateway : ' . $subscription['error']['message'], 'type' => 'error']);
                 }
                 if ($subscription['status'] == 'ACTIVE') {
                     return true;
@@ -624,6 +630,7 @@ class PayPalService
     {
         $gateway = Gateways::where('code', self::$GATEWAY_CODE)->where('is_active', 1)->first() ?? abort(404);
         $provider = self::getPaypalProvider($gateway);
+
         try {
             $couponID = $request->input('couponID', null);
             $planID = $request->input('plan_id', null);
@@ -645,12 +652,12 @@ class PayPalService
                 $newDiscountedPrice += $taxValue;
             }
             $data = [
-                'intent' => 'CAPTURE',
+                'intent'         => 'CAPTURE',
                 'purchase_units' => [
                     [
                         'amount' => [
                             'currency_code' => $currency,
-                            'value' => strval($newDiscountedPrice),
+                            'value'         => strval($newDiscountedPrice),
                         ],
                     ],
                 ],
@@ -658,8 +665,8 @@ class PayPalService
             $order = $provider->createOrder($data);
 
             return response()->json(['id' => $order['id']]);
-        } catch (\Exception $ex) {
-            Log::error(self::$GATEWAY_CODE.'-> createPayPalOrder(): '.$ex->getMessage());
+        } catch (Exception $ex) {
+            Log::error(self::$GATEWAY_CODE . '-> createPayPalOrder(): ' . $ex->getMessage());
 
             return response()->json([
                 'message' => $ex->getMessage(),
@@ -683,12 +690,12 @@ class PayPalService
         $provider = self::getPaypalProvider();
 
         $data = [
-            'intent' => 'CAPTURE',
+            'intent'         => 'CAPTURE',
             'purchase_units' => [
                 [
                     'amount' => [
                         'currency_code' => $request->currency,
-                        'value' => strval($newPrice),
+                        'value'         => strval($newPrice),
                     ],
                 ],
             ],
@@ -698,7 +705,7 @@ class PayPalService
 
         $orderId = $order['id'];
 
-        $payment = new UserOrder();
+        $payment = new UserOrder;
         $payment->order_id = $orderId;
         $payment->plan_id = $plan->id;
         $payment->type = 'prepaid';
@@ -719,6 +726,7 @@ class PayPalService
     {
         $gateway = Gateways::where('code', self::$GATEWAY_CODE)->where('is_active', 1)->first() ?? abort(404);
         $provider = self::getPaypalProvider($gateway);
+
         try {
             $user = Auth::user();
             $webhooks = $provider->listWebHooks();
@@ -729,7 +737,7 @@ class PayPalService
                 }
             }
             // Create new webhook
-            $url = url('/').'/webhooks/paypal';
+            $url = url('/') . '/webhooks/paypal';
             $events = [
                 'PAYMENT.SALE.COMPLETED',          // A payment is made on a subscription.
                 'BILLING.SUBSCRIPTION.CANCELLED',   // A subscription is cancelled.
@@ -739,8 +747,8 @@ class PayPalService
             $response = $provider->createWebHook($url, $events);
             $gateway->webhook_id = $response['id'];
             $gateway->save();
-        } catch (\Exception $ex) {
-            Log::error(self::$GATEWAY_CODE.'-> createWebhook(): '.$ex->getMessage());
+        } catch (Exception $ex) {
+            Log::error(self::$GATEWAY_CODE . '-> createWebhook(): ' . $ex->getMessage());
 
             return back()->with(['message' => $ex->getMessage(), 'type' => 'error']);
         }
@@ -801,13 +809,13 @@ class PayPalService
             }
 
             $data = [
-                'auth_algo' => $auth_algo,
-                'cert_url' => $cert_url,
-                'transmission_id' => $transmission_id,
-                'transmission_sig' => $transmission_sig,
+                'auth_algo'         => $auth_algo,
+                'cert_url'          => $cert_url,
+                'transmission_id'   => $transmission_id,
+                'transmission_sig'  => $transmission_sig,
                 'transmission_time' => $transmission_time,
-                'webhook_id' => $webhook_id,
-                'webhook_event' => $webhook_event,
+                'webhook_id'        => $webhook_id,
+                'webhook_event'     => $webhook_event,
             ];
 
             $provider = self::getPaypalProvider();
@@ -818,8 +826,8 @@ class PayPalService
                 return true;
             }
 
-        } catch (\Exception $th) {
-            Log::error('(Webhooks) PayPalService::verifyIncomingJson(): '.$th->getMessage());
+        } catch (Exception $th) {
+            Log::error('(Webhooks) PayPalService::verifyIncomingJson(): ' . $th->getMessage());
         }
 
         return false;
@@ -844,16 +852,16 @@ class PayPalService
 
     public static function simulateWebhookEvent()
     {
-        $url = url('/').'/webhooks/paypal';
+        $url = url('/') . '/webhooks/paypal';
         $testJson = [
-            'event_type' => 'PAYMENT.SALE.COMPLETED',
-            'url' => $url,
+            'event_type'       => 'PAYMENT.SALE.COMPLETED',
+            'url'              => $url,
             'resource_version' => '1.0',
         ];
         $provider = self::getPaypalProvider();
         $filters = [
             'start_date' => Carbon::now()->subDays(7)->toIso8601String(),
-            'end_date' => Carbon::now()->addDays(2)->toIso8601String(),
+            'end_date'   => Carbon::now()->addDays(2)->toIso8601String(),
         ];
 
         return $provider->listTransactions($filters);
@@ -868,33 +876,33 @@ class PayPalService
         $config = null;
         if ($gateway->mode == 'sandbox') {
             $config = [
-                'mode' => 'sandbox',
+                'mode'    => 'sandbox',
                 'sandbox' => [
-                    'client_id' => $gateway->sandbox_client_id,
+                    'client_id'     => $gateway->sandbox_client_id,
                     'client_secret' => $gateway->sandbox_client_secret,
-                    'app_id' => $gateway->live_app_id,
+                    'app_id'        => $gateway->live_app_id,
                 ],
 
                 'payment_action' => 'Sale',
-                'currency' => $currency,
-                'notify_url' => $settings->site_url.'/paypal/notify',
-                'locale' => $gateway->currency_locale,
-                'validate_ssl' => false,
+                'currency'       => $currency,
+                'notify_url'     => $settings->site_url . '/paypal/notify',
+                'locale'         => $gateway->currency_locale,
+                'validate_ssl'   => false,
             ];
         } else {
             $config = [
                 'mode' => 'live',
                 'live' => [
-                    'client_id' => $gateway->live_client_id,
+                    'client_id'     => $gateway->live_client_id,
                     'client_secret' => $gateway->live_client_secret,
-                    'app_id' => $gateway->live_app_id,
+                    'app_id'        => $gateway->live_app_id,
                 ],
 
                 'payment_action' => 'Sale',
-                'currency' => $currency,
-                'notify_url' => $settings->site_url.'/paypal/notify',
-                'locale' => $gateway->currency_locale,
-                'validate_ssl' => true,
+                'currency'       => $currency,
+                'notify_url'     => $settings->site_url . '/paypal/notify',
+                'locale'         => $gateway->currency_locale,
+                'validate_ssl'   => true,
             ];
         }
         $provider = new PayPalClient($config);
@@ -936,7 +944,7 @@ class PayPalService
         // Since price id (billing plan) is changed, we must update user data, i.e cancel current subscriptions.
         $history = OldGatewayProducts::where([
             'gateway_code' => self::$GATEWAY_CODE,
-            'status' => 'check',
+            'status'       => 'check',
         ])->get();
         if ($history) {
             $provider = self::getPaypalProvider();
@@ -948,13 +956,13 @@ class PayPalService
                 if ($oldBillingPlan == '') {
                     // deactivated billing plan from gateway
                 } else {
-                    Log::error(self::$GATEWAY_CODE."-> updateUserData(): \n".json_encode($oldBillingPlan));
+                    Log::error(self::$GATEWAY_CODE . "-> updateUserData(): \n" . json_encode($oldBillingPlan));
                 }
                 // search subscriptions for record
                 $subs = Subscriptions::where([
-                    'paid_with' => self::$GATEWAY_CODE,
+                    'paid_with'     => self::$GATEWAY_CODE,
                     'stripe_status' => 'active',
-                    'stripe_price' => $lookingFor,
+                    'stripe_price'  => $lookingFor,
                 ])->get();
                 if ($subs != null) {
                     foreach ($subs as $sub) {
@@ -980,37 +988,37 @@ class PayPalService
         if ($trials == 0) {
             if ($discountedPrice != null) {
                 $planData = [
-                    'product_id' => $productId,
-                    'name' => $productName,
-                    'description' => 'Billing Plan of '.$productName,
-                    'status' => 'ACTIVE',
+                    'product_id'     => $productId,
+                    'name'           => $productName,
+                    'description'    => 'Billing Plan of ' . $productName,
+                    'status'         => 'ACTIVE',
                     'billing_cycles' => [
                         [
                             'frequency' => [
-                                'interval_unit' => $interval,
+                                'interval_unit'  => $interval,
                                 'interval_count' => 1,
                             ],
-                            'tenure_type' => 'TRIAL',
-                            'sequence' => 1,
-                            'total_cycles' => 1,
+                            'tenure_type'    => 'TRIAL',
+                            'sequence'       => 1,
+                            'total_cycles'   => 1,
                             'pricing_scheme' => [
                                 'fixed_price' => [
-                                    'value' => strval($discountedPrice),
+                                    'value'         => strval($discountedPrice),
                                     'currency_code' => $currency,
                                 ],
                             ],
                         ],
                         [
                             'frequency' => [
-                                'interval_unit' => $interval,
+                                'interval_unit'  => $interval,
                                 'interval_count' => 1,
                             ],
-                            'tenure_type' => 'REGULAR',
-                            'sequence' => $discountedPrice == null ? 1 : 2,
-                            'total_cycles' => 0,
+                            'tenure_type'    => 'REGULAR',
+                            'sequence'       => $discountedPrice == null ? 1 : 2,
+                            'total_cycles'   => 0,
                             'pricing_scheme' => [
                                 'fixed_price' => [
-                                    'value' => strval($price),
+                                    'value'         => strval($price),
                                     'currency_code' => $currency,
                                 ],
                             ],
@@ -1018,32 +1026,32 @@ class PayPalService
                     ],
                     'payment_preferences' => [
                         'auto_bill_outstanding' => true,
-                        'setup_fee' => [
-                            'value' => '0',
+                        'setup_fee'             => [
+                            'value'         => '0',
                             'currency_code' => $currency,
                         ],
-                        'setup_fee_failure_action' => 'CANCEL',
+                        'setup_fee_failure_action'  => 'CANCEL',
                         'payment_failure_threshold' => 3,
                     ],
                 ];
             } else {
                 $planData = [
-                    'product_id' => $productId,
-                    'name' => $productName,
-                    'description' => 'Billing Plan of '.$productName,
-                    'status' => 'ACTIVE',
+                    'product_id'     => $productId,
+                    'name'           => $productName,
+                    'description'    => 'Billing Plan of ' . $productName,
+                    'status'         => 'ACTIVE',
                     'billing_cycles' => [
                         [
                             'frequency' => [
-                                'interval_unit' => $interval,
+                                'interval_unit'  => $interval,
                                 'interval_count' => 1,
                             ],
-                            'tenure_type' => 'REGULAR',
-                            'sequence' => $discountedPrice == null ? 1 : 2,
-                            'total_cycles' => 0,
+                            'tenure_type'    => 'REGULAR',
+                            'sequence'       => $discountedPrice == null ? 1 : 2,
+                            'total_cycles'   => 0,
                             'pricing_scheme' => [
                                 'fixed_price' => [
-                                    'value' => strval($price),
+                                    'value'         => strval($price),
                                     'currency_code' => $currency,
                                 ],
                             ],
@@ -1051,11 +1059,11 @@ class PayPalService
                     ],
                     'payment_preferences' => [
                         'auto_bill_outstanding' => true,
-                        'setup_fee' => [
-                            'value' => '0',
+                        'setup_fee'             => [
+                            'value'         => '0',
                             'currency_code' => $currency,
                         ],
-                        'setup_fee_failure_action' => 'CANCEL',
+                        'setup_fee_failure_action'  => 'CANCEL',
                         'payment_failure_threshold' => 3,
                     ],
                 ];
@@ -1063,52 +1071,52 @@ class PayPalService
         } else {
             if ($discountedPrice != null) {
                 $planData = [
-                    'product_id' => $productId,
-                    'name' => $productName,
-                    'description' => 'Billing Plan of '.$productName,
-                    'status' => 'ACTIVE',
+                    'product_id'     => $productId,
+                    'name'           => $productName,
+                    'description'    => 'Billing Plan of ' . $productName,
+                    'status'         => 'ACTIVE',
                     'billing_cycles' => [
                         [
                             'frequency' => [
-                                'interval_unit' => 'DAY',
+                                'interval_unit'  => 'DAY',
                                 'interval_count' => 1,
                             ],
-                            'tenure_type' => 'TRIAL',
-                            'sequence' => 1,
-                            'total_cycles' => $trials,
+                            'tenure_type'    => 'TRIAL',
+                            'sequence'       => 1,
+                            'total_cycles'   => $trials,
                             'pricing_scheme' => [
                                 'fixed_price' => [
-                                    'value' => 0,
+                                    'value'         => 0,
                                     'currency_code' => $currency,
                                 ],
                             ],
                         ],
                         [
                             'frequency' => [
-                                'interval_unit' => $interval,
+                                'interval_unit'  => $interval,
                                 'interval_count' => 1,
                             ],
-                            'tenure_type' => 'TRIAL',
-                            'sequence' => 2,
-                            'total_cycles' => 1,
+                            'tenure_type'    => 'TRIAL',
+                            'sequence'       => 2,
+                            'total_cycles'   => 1,
                             'pricing_scheme' => [
                                 'fixed_price' => [
-                                    'value' => strval($discountedPrice),
+                                    'value'         => strval($discountedPrice),
                                     'currency_code' => $currency,
                                 ],
                             ],
                         ],
                         [
                             'frequency' => [
-                                'interval_unit' => $interval,
+                                'interval_unit'  => $interval,
                                 'interval_count' => 1,
                             ],
-                            'tenure_type' => 'REGULAR',
-                            'sequence' => $discountedPrice == null ? 2 : 3,
-                            'total_cycles' => 0,
+                            'tenure_type'    => 'REGULAR',
+                            'sequence'       => $discountedPrice == null ? 2 : 3,
+                            'total_cycles'   => 0,
                             'pricing_scheme' => [
                                 'fixed_price' => [
-                                    'value' => strval($price),
+                                    'value'         => strval($price),
                                     'currency_code' => $currency,
                                 ],
                             ],
@@ -1116,47 +1124,47 @@ class PayPalService
                     ],
                     'payment_preferences' => [
                         'auto_bill_outstanding' => true,
-                        'setup_fee' => [
-                            'value' => '0',
+                        'setup_fee'             => [
+                            'value'         => '0',
                             'currency_code' => $currency,
                         ],
-                        'setup_fee_failure_action' => 'CANCEL',
+                        'setup_fee_failure_action'  => 'CANCEL',
                         'payment_failure_threshold' => 3,
                     ],
                 ];
             } else {
                 $planData = [
-                    'product_id' => $productId,
-                    'name' => $productName,
-                    'description' => 'Billing Plan of '.$productName,
-                    'status' => 'ACTIVE',
+                    'product_id'     => $productId,
+                    'name'           => $productName,
+                    'description'    => 'Billing Plan of ' . $productName,
+                    'status'         => 'ACTIVE',
                     'billing_cycles' => [
                         [
                             'frequency' => [
-                                'interval_unit' => 'DAY',
+                                'interval_unit'  => 'DAY',
                                 'interval_count' => 1,
                             ],
-                            'tenure_type' => 'TRIAL',
-                            'sequence' => 1,
-                            'total_cycles' => $trials,
+                            'tenure_type'    => 'TRIAL',
+                            'sequence'       => 1,
+                            'total_cycles'   => $trials,
                             'pricing_scheme' => [
                                 'fixed_price' => [
-                                    'value' => 0,
+                                    'value'         => 0,
                                     'currency_code' => $currency,
                                 ],
                             ],
                         ],
                         [
                             'frequency' => [
-                                'interval_unit' => $interval,
+                                'interval_unit'  => $interval,
                                 'interval_count' => 1,
                             ],
-                            'tenure_type' => 'REGULAR',
-                            'sequence' => $discountedPrice == null ? 2 : 3,
-                            'total_cycles' => 0,
+                            'tenure_type'    => 'REGULAR',
+                            'sequence'       => $discountedPrice == null ? 2 : 3,
+                            'total_cycles'   => 0,
                             'pricing_scheme' => [
                                 'fixed_price' => [
-                                    'value' => strval($price),
+                                    'value'         => strval($price),
                                     'currency_code' => $currency,
                                 ],
                             ],
@@ -1164,11 +1172,11 @@ class PayPalService
                     ],
                     'payment_preferences' => [
                         'auto_bill_outstanding' => true,
-                        'setup_fee' => [
-                            'value' => '0',
+                        'setup_fee'             => [
+                            'value'         => '0',
                             'currency_code' => $currency,
                         ],
-                        'setup_fee_failure_action' => 'CANCEL',
+                        'setup_fee_failure_action'  => 'CANCEL',
                         'payment_failure_threshold' => 3,
                     ],
                 ];
@@ -1177,41 +1185,42 @@ class PayPalService
         if ($tax > 0) {
             $planData['taxes'] = [
                 'percentage' => $tax,
-                'inclusive' => false,
+                'inclusive'  => false,
             ];
         }
 
         return $planData;
     }
+
     public static function gatewayDefinitionArray(): array
     {
         return [
-            'code' => 'paypal',
-            'title' => 'PayPal',
-            'link' => 'https://www.paypal.com/',
-            'active' => 0,
-            'available' => 1,
-            'img' => '/assets/img/payments/paypal.svg',
-            'whiteLogo' => 0,
-            'mode' => 1,
-            'sandbox_client_id' => 1,
+            'code'                  => 'paypal',
+            'title'                 => 'PayPal',
+            'link'                  => 'https://www.paypal.com/',
+            'active'                => 0,
+            'available'             => 1,
+            'img'                   => '/assets/img/payments/paypal.svg',
+            'whiteLogo'             => 0,
+            'mode'                  => 1,
+            'sandbox_client_id'     => 1,
             'sandbox_client_secret' => 1,
-            'sandbox_app_id' => 0,
-            'live_client_id' => 1,
-            'live_client_secret' => 1,
-            'live_app_id' => 1,
-            'currency' => 1,
-            'currency_locale' => 1,
-            'notify_url' => 0,
-            'base_url' => 0,
-            'sandbox_url' => 0,
-            'locale' => 0,
-            'validate_ssl' => 0,
-            'webhook_secret' => 0,
-            'logger' => 0,
-            'tax' => 1,              // Option in settings
-            'bank_account_details' => 0,
-            'bank_account_other' => 0,
+            'sandbox_app_id'        => 0,
+            'live_client_id'        => 1,
+            'live_client_secret'    => 1,
+            'live_app_id'           => 1,
+            'currency'              => 1,
+            'currency_locale'       => 1,
+            'notify_url'            => 0,
+            'base_url'              => 0,
+            'sandbox_url'           => 0,
+            'locale'                => 0,
+            'validate_ssl'          => 0,
+            'webhook_secret'        => 0,
+            'logger'                => 0,
+            'tax'                   => 1,              // Option in settings
+            'bank_account_details'  => 0,
+            'bank_account_other'    => 0,
         ];
     }
 }

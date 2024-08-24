@@ -3,10 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use App\Models\User;
 use App\Models\OpenaiGeneratorChatCategory;
-use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
 class ChatTemplatesController extends Controller
@@ -21,31 +19,36 @@ class ChatTemplatesController extends Controller
      *      summary="Get a list of chat templates or single one if id passed",
      *      description="Get a list of chat templates ordered by name in ascending order. If an ID is provided, it will retrieve a single chat template.",
      *      security={{ "passport": {} }},
+     *
      *      @OA\Response(
      *          response=200,
      *          description="Successful operation",
+     *
      *          @OA\JsonContent(
      *              type="object",
      *          ),
      *      ),
+     *
      *      @OA\Response(
      *          response=401,
      *          description="Unauthenticated",
      *      ),
      * )
-    */
+     */
     public function index($id = null)
     {
-        if ($id == "undefined" || $id == null) {
+        if ($id == 'undefined' || $id == null) {
             $list = OpenaiGeneratorChatCategory::orderBy('name', 'asc')->get();
-        }else{
+        } else {
             $list = OpenaiGeneratorChatCategory::find($id);
-            if (!$list) {
+            if (! $list) {
                 return response()->json(['error' => __('Template Not Found')], 404);
             }
         }
+
         return response()->json($list, 200);
     }
+
     /**
      * @OA\Post(
      *     path="/api/aichat/chat-templates",
@@ -54,13 +57,17 @@ class ChatTemplatesController extends Controller
      *     tags={"Chat Templates"},
      *     security={{ "passport": {} }},
      *     description="Update the specified chat template in storage. If `template_id` is 'undefined' or `null`, a new template will be created.",
+     *
      *     @OA\RequestBody(
      *         required=true,
      *         description="Chat template data",
+     *
      *         @OA\MediaType(
      *             mediaType="multipart/form-data",
+     *
      *             @OA\Schema(
      *                 type="object",
+     *
      *                  @OA\Property(
      *                     property="_method",
      *                     description="ID of the chat template",
@@ -121,32 +128,37 @@ class ChatTemplatesController extends Controller
      *             ),
      *         ),
      *     ),
+     *
      *     @OA\Response(
      *         response=200,
      *         description="Successful operation",
+     *
      *         @OA\JsonContent(
      *             type="object",
+     *
      *             @OA\Property(property="message", type="string", example="Template edited successfully"),
      *         ),
      *     ),
+     *
      *     @OA\Response(
      *         response=419,
      *         description="Validation error or unsupported file extension",
+     *
      *         @OA\JsonContent(
      *             type="object",
+     *
      *             @OA\Property(property="errors", type="array", @OA\Items(type="string")),
      *         ),
      *     ),
      * )
-    */
+     */
     public function update(Request $request)
     {
 
-        if ($request->template_id == "undefined" || $request->template_id == null) {
-            $template = new OpenaiGeneratorChatCategory();
+        if ($request->template_id == 'undefined' || $request->template_id == null) {
+            $template = new OpenaiGeneratorChatCategory;
             $res = __('Template added successfully');
-        }
-        else{
+        } else {
             $template = OpenaiGeneratorChatCategory::where('id', $request->template_id)->firstOrFail();
             $res = __('Template updates successfully');
         }
@@ -158,10 +170,11 @@ class ChatTemplatesController extends Controller
 
             //Resim uzantı kontrolü
             $imageTypes = ['jpg', 'jpeg', 'png', 'svg', 'webp'];
-            if (!in_array(Str::lower($image->getClientOriginalExtension()), $imageTypes)) {
-                $data = array(
+            if (! in_array(Str::lower($image->getClientOriginalExtension()), $imageTypes)) {
+                $data = [
                     'errors' => ['The file extension must be jpg, jpeg, png, webp or svg.'],
-                );
+                ];
+
                 return response()->json($data, 419);
             }
 
@@ -171,7 +184,7 @@ class ChatTemplatesController extends Controller
         }
 
         $template->name = $request->name;
-        $template->slug = Str::slug($request->name).'-'.Str::random(5);
+        $template->slug = Str::slug($request->name) . '-' . Str::random(5);
         $template->short_name = $request->short_name;
         $template->description = $request->description;
         $template->role = $request->role;
@@ -179,7 +192,7 @@ class ChatTemplatesController extends Controller
         $template->helps_with = $request->helps_with;
         $template->color = $request->color;
         $template->chat_completions = $request->chat_completions;
-        $template->prompt_prefix = "As a ".$request->role.", ";
+        $template->prompt_prefix = 'As a ' . $request->role . ', ';
         $template->save();
 
         return response()->json(['message' => $res], 200);
@@ -195,13 +208,16 @@ class ChatTemplatesController extends Controller
      *     tags={"Chat Templates"},
      *     security={{ "passport": {} }},
      *     description="Remove the specified chat template from storage.",
+     *
      *     @OA\Parameter(
      *         name="id",
      *         in="path",
      *         description="ID of the chat template",
      *         required=true,
+     *
      *         @OA\Schema(type="string")
      *     ),
+     *
      *     @OA\Response(
      *         response=204,
      *         description="Chat template deleted successfully",
@@ -209,28 +225,35 @@ class ChatTemplatesController extends Controller
      *     @OA\Response(
      *         response=404,
      *         description="Chat template not found",
+     *
      *         @OA\JsonContent(
      *             type="object",
+     *
      *             @OA\Property(property="message", type="string", example="Chat template not found"),
      *         ),
      *     ),
+     *
      *     @OA\Response(
      *         response=500,
      *         description="Server error",
+     *
      *         @OA\JsonContent(
      *             type="object",
+     *
      *             @OA\Property(property="message", type="string", example="Internal Server Error"),
      *         ),
      *     ),
      * )
-    */
+     */
     public function destroy($id = null)
     {
-        if($id == null) return response()->json(['error' => __('ID required')], 412);
+        if ($id == null) {
+            return response()->json(['error' => __('ID required')], 412);
+        }
 
         $template = OpenaiGeneratorChatCategory::where('id', $id)->firstOrFail();
         $template->delete();
+
         return response()->json(['message' => 'Deleted Successfully'], 200);
     }
-
 }

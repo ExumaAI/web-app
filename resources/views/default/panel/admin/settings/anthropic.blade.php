@@ -81,6 +81,7 @@
                         class="form-select"
                         id="anthropic_default_model"
                         name="anthropic_default_model"
+                        onchange="toggleBedrockModel(this.value)"
                     >
                         <option
                             value="claude-3-5-sonnet-20240620"
@@ -119,6 +120,44 @@
                             {{ setting('anthropic_default_model', 'claude-2.0') == 'claude-2.0' ? 'selected' : null }}
                         >
                             {{ __('Claude 2') }}
+                        </option>
+                        <option
+                                value="{{\App\Enums\BedrockEngine::BEDROCK->value}}"
+                                {{ setting('anthropic_default_model', \App\Enums\BedrockEngine::BEDROCK->value) == \App\Enums\BedrockEngine::BEDROCK->value ? 'selected' : null }}
+                        >
+                            {{ __(\App\Enums\BedrockEngine::BEDROCK->label()) }}
+                        </option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="col-md-12" id="anthropic_bedrock" style="display: none;">
+                <div class="mb-3">
+                    <label class="form-label">{{ __('Default AWS Bedrock Model') }}
+                        <x-info-tooltip text="{{ __('To use Bedrock, you must first configure your AWS settings.') }}" />
+                    </label>
+                    <select
+                            class="form-select"
+                            id="anthropic_bedrock_model"
+                            name="anthropic_bedrock_model"
+                    >
+                        <option
+                                value="{{\App\Enums\BedrockEngine::CLAUDE_1->value}}"
+                                {{ setting('anthropic_bedrock_model', \App\Enums\BedrockEngine::CLAUDE_1->value) == \App\Enums\BedrockEngine::CLAUDE_1->value ? 'selected' : null }}
+                        >
+                            {{ __(\App\Enums\BedrockEngine::CLAUDE_1->label()) }}
+                        </option>
+                        <option
+                                value="{{\App\Enums\BedrockEngine::CLAUDE_2->value}}"
+                                {{ setting('anthropic_bedrock_model', \App\Enums\BedrockEngine::CLAUDE_2->value) == \App\Enums\BedrockEngine::CLAUDE_2->value ? 'selected' : null }}
+                        >
+                            {{ __(\App\Enums\BedrockEngine::CLAUDE_2->label()) }}
+                        </option>
+                        <option
+                                value="{{\App\Enums\BedrockEngine::CLAUDE_21->value}}"
+                                {{ setting('anthropic_bedrock_model', \App\Enums\BedrockEngine::CLAUDE_21->value) == \App\Enums\BedrockEngine::CLAUDE_21->value ? 'selected' : null }}
+                        >
+                            {{ __(\App\Enums\BedrockEngine::CLAUDE_21->label()) }}
                         </option>
                     </select>
                 </div>
@@ -183,6 +222,20 @@
 @endsection
 
 @push('script')
+    <script>
+        function toggleBedrockModel(value) {
+            const bedrockSelect = document.getElementById('anthropic_bedrock');
+            if (value === "aws_bedrock") {
+                bedrockSelect.style.display = 'block';
+            } else {
+                bedrockSelect.style.display = 'none';
+            }
+        }
+        document.addEventListener("DOMContentLoaded", function() {
+            const defaultModelSelect = document.getElementById('anthropic_default_model');
+            toggleBedrockModel(defaultModelSelect.value);
+        });
+    </script>
     <script>
         function checkMaxOutputLength() {
             var maxOutputLength = document.getElementById("anthropic_max_output_length").value;

@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::table('users', function (Blueprint $table) {
             $table->string('state')->nullable()->after('address');
-			$table->string('city')->nullable()->after('address');
+            $table->string('city')->nullable()->after('address');
         });
     }
 
@@ -24,7 +24,7 @@ return new class extends Migration
     {
         Schema::table('users', function (Blueprint $table) {
             $table->dropColumn('state');
-			$table->dropColumn('city');
+            $table->dropColumn('city');
         });
     }
 };

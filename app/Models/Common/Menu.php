@@ -28,7 +28,7 @@ class Menu extends Model
 
     protected $casts = [
         'is_active' => 'boolean',
-        'params' => 'array',
+        'params'    => 'array',
     ];
 
     public function parent(): BelongsTo

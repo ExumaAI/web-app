@@ -12,10 +12,10 @@ class Dropdown extends Component
      * Create a new component instance.
      */
     public function __construct(
-		public string $anchor = 'start',
-		public string $offsetY = '',
-		public string $triggerType = 'hover',
-	){}
+        public string $anchor = 'start',
+        public string $offsetY = '',
+        public string $triggerType = 'hover',
+    ) {}
 
     /**
      * Get the view / contents that represent the component.

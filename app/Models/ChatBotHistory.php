@@ -8,5 +8,6 @@ use Illuminate\Database\Eloquent\Model;
 class ChatBotHistory extends Model
 {
     use HasFactory;
-    protected $table = 'chatbot_history'; 
+
+    protected $table = 'chatbot_history';
 }

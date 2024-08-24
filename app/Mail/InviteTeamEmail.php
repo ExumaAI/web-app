@@ -4,7 +4,6 @@ namespace App\Mail;
 
 use App\Models\Setting;
 use App\Models\User;
-use App\Models\EmailTemplates;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
@@ -14,7 +13,8 @@ use Illuminate\Queue\SerializesModels;
 
 class InviteTeamEmail extends Mailable implements ShouldQueue
 {
-    use Queueable, SerializesModels;
+    use Queueable;
+    use SerializesModels;
 
     /**
      * Create a new message instance.
@@ -30,6 +30,7 @@ class InviteTeamEmail extends Mailable implements ShouldQueue
     public function envelope(): Envelope
     {
         $template = $this->template;
+
         return new Envelope(
             subject: $template->subject,
         );

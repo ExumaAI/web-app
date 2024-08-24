@@ -10,8 +10,8 @@ class DeFiSettingRequest extends FormRequest
     {
         return [
             'portfolio.wallet_name' => 'required',
-            'portfolio.wallet_id' => 'required'
-//            'contract.analyses_wallet' => 'required',
+            'portfolio.wallet_id'   => 'required',
+            //            'contract.analyses_wallet' => 'required',
         ];
     }
 }

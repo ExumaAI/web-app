@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Enums\Roles;
 use App\Models\Chatbot\Chatbot;
 use App\Models\Integration\UserIntegration;
 use App\Models\Team\Team;
@@ -17,10 +17,9 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
 use Laravel\Cashier\Billable;
-use Laravel\Cashier\Subscription;
-// use Laravel\Sanctum\HasApiTokens;
 use Laravel\Cashier\Subscription as Subscriptions;
 use Laravel\Passport\HasApiTokens;
+use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
@@ -33,6 +32,7 @@ class User extends Authenticatable
         'name',
         'surname',
         'email',
+        'type',
         'password',
         'affiliate_id',
         'affiliate_code',
@@ -57,6 +57,7 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
         'defi_setting' => 'json',
+        'type' => Roles::class,
     ];
 
     public function isConfirmed(): bool
@@ -66,17 +67,21 @@ class User extends Authenticatable
 
     public function isAdmin(): bool
     {
-        return $this->type === 'admin';
+        return $this->type === Roles::ADMIN;
     }
 
     protected static function boot()
     {
         parent::boot();
 
-        static::created(function ($user) {
-            // Setting::query()->increment('user_count');
+        static::created(function () {
 			Usage::getSingle()->updateUserCount(1);
         });
+
+        static::deleting(function ($user) {
+            $user->orders()->delete();
+        });
+
 		static::deleted(function ($user) {
 			$user->orders()->delete();
 		});
@@ -131,7 +136,7 @@ class User extends Authenticatable
 
     public function getRemainingWordsAttribute($value)
     {
-        if ($this->type == 'admin') {
+        if ($this->isAdmin()) {
             return $value;
         }
 
@@ -156,7 +161,7 @@ class User extends Authenticatable
 
     public function getRemainingImagesAttribute($value)
     {
-        if ($this->type == 'admin') {
+        if ($this->isAdmin()) {
             return $value;
         }
 
@@ -181,7 +186,7 @@ class User extends Authenticatable
 
     public function fullName(): string
     {
-        return $this->name.' '.$this->surname;
+        return $this->name . ' ' . $this->surname;
     }
 
     public function email()
@@ -228,9 +233,9 @@ class User extends Authenticatable
                 if ($difference < 365) {
                     return $plan;
                 }
-            }else{
-				return $plan;
-			}
+            } else {
+                return $plan;
+            }
         } else {
             $activeSub = getCurrentActiveSubscriptionYokkasa($userId);
             if ($activeSub != null) {
@@ -247,9 +252,9 @@ class User extends Authenticatable
                     if ($difference < 365) {
                         return $plan;
                     }
-                }else{
-					return $plan;
-				}
+                } else {
+                    return $plan;
+                }
             } else {
                 return null;
             }
@@ -294,14 +299,14 @@ class User extends Authenticatable
     public function getAvatar()
     {
         if ($this->avatar == null) {
-            return '<span class="avatar">'.Str::upper(substr($this->name, 0, 1)).Str::upper(substr($this->surname, 0, 1)).'</span>';
+            return '<span class="avatar">' . Str::upper(substr($this->name, 0, 1)) . Str::upper(substr($this->surname, 0, 1)) . '</span>';
         } else {
             $avatar = $this->avatar;
             if (strpos($avatar, 'http') === false || strpos($avatar, 'https') === false) {
-                $avatar = '/'.$avatar;
+                $avatar = '/' . $avatar;
             }
 
-            return ' <span class="avatar" style="background-image: url('.custom_theme_url($avatar).')"></span>';
+            return ' <span class="avatar" style="background-image: url(' . custom_theme_url($avatar) . ')"></span>';
         }
     }
 

@@ -20,8 +20,5 @@ class ChatbotTrainingRequest extends FormRequest
         return $array;
     }
 
-    protected function prepareForValidation(): void
-    {
-
-    }
+    protected function prepareForValidation(): void {}
 }

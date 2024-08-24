@@ -37,7 +37,7 @@ class Google2FAController extends Controller
 
         return view('panel.user.settings.google2fa', [
             'qrCode' => $qrCode,
-            'secret' => $secret
+            'secret' => $secret,
         ]);
     }
 
@@ -45,20 +45,20 @@ class Google2FAController extends Controller
     {
         if (Helper::appIsDemo()) {
             return to_route('dashboard.user.index')->with([
-                'status' => 'error',
+                'status'  => 'error',
                 'message' => trans('This feature is disabled in demo mode.'),
             ]);
         }
 
         $request->validate([
             'one_time_password' => 'required|digits:6',
-            'google2fa_secret' => 'required'
+            'google2fa_secret'  => 'required',
         ]);
 
         $verificationCode = $request->get('one_time_password');
-        $secret = $request->session()->get('google2fa_secret') ??  $request->get('google2fa_secret');
+        $secret = $request->session()->get('google2fa_secret') ?? $request->get('google2fa_secret');
 
-        if (!$secret || !Google2FA::verifyGoogle2FA($secret, $verificationCode)) {
+        if (! $secret || ! Google2FA::verifyGoogle2FA($secret, $verificationCode)) {
             // store secret in the session only for the next request
             $request->session()->reflash();
 
@@ -80,7 +80,6 @@ class Google2FAController extends Controller
     /**
      * Deactivate 2FA.
      *
-     * @param \Illuminate\Http\Request $request
      * @return \Illuminate\Http\Response
      */
     public function deactivate2FA(Request $request)
@@ -107,7 +106,7 @@ class Google2FAController extends Controller
     {
         $request->validate([
             'one_time_password' => 'required|digits:6',
-            'user_id' => 'required'
+            'user_id'           => 'required',
         ]);
 
         $userId = session('user_id');
@@ -116,7 +115,7 @@ class Google2FAController extends Controller
 
         $otp = $request->get('one_time_password');
 
-        if (!$user || !Google2FA::verifyGoogle2FA($user->google2fa_secret, $otp)) {
+        if (! $user || ! Google2FA::verifyGoogle2FA($user->google2fa_secret, $otp)) {
             // store secret in the session only for the next request
             $request->session()->reflash();
             // re-flash request inputs

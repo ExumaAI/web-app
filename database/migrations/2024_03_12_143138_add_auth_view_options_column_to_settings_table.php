@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('settings', function (Blueprint $table) {
-           $table->text('auth_view_options')->nullable();
+            $table->text('auth_view_options')->nullable();
         });
     }
 
@@ -22,7 +22,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('settings', function (Blueprint $table) {
-             $table->dropColumn('auth_view_options');
+            $table->dropColumn('auth_view_options');
         });
     }
 };

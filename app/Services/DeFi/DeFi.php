@@ -17,8 +17,8 @@ class DeFi
     public static function routes(): \Illuminate\Routing\Router
     {
         return Route::group([
-            'as' => 'de-fi.',
-            'prefix' => 'de-fi'
+            'as'     => 'de-fi.',
+            'prefix' => 'de-fi',
         ], function () {
             Route::get('', DeFiSolutionController::class)->name('index');
             Route::get('market-data', DeFiMarketDataController::class)->name('market-data');

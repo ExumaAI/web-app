@@ -6,16 +6,17 @@
     <form
         class="flex flex-col gap-10"
         id="custom_template_form"
-        onsubmit="return templateChatSave({{ $template != null ? $template->id : null }});"
+        action="{{route("dashboard.admin.openai.chat.save")}}"
+        method="POST"
         enctype="multipart/form-data"
     >
-
+        @csrf
         <div class="flex flex-col gap-5">
             <x-form-step
                 step="1"
                 label="{{ __('Template') }}"
             />
-
+            <input hidden="" name="template_id" value="{{$template ? $template->id : null}}">
             <x-forms.input
                 id="name"
                 name="name"
@@ -171,6 +172,19 @@
                     <option value="0">Select Chatbot</option>
                     @foreach($chatbots as $chatbot)
                         <option {{ $template?->chatbot_id == $chatbot->id ? 'selected': '' }} value="{{ $chatbot->id }}" > {{ $chatbot->title }} </option>
+                    @endforeach
+                </select>
+            </div>
+
+            <div class="mb-[20px]">
+                <label class="form-label" for="assistant">
+                    {{__('AI Assistants')}}
+                    <x-info-tooltip text="{{__('Choose your Openai Assistant. If you need to train a new chatbot, visit the Chatbot Training')}}" />
+                </label>
+                <select name="assistant" id="assistant" class="form-control">
+                    <option value="">Select Assistant</option>
+                    @foreach($assistants as $assistant)
+                        <option {{ $template?->assistant == $assistant["id"] ? 'selected': '' }} value="{{ $assistant["id"] }}" > {{ $assistant["name"] }} </option>
                     @endforeach
                 </select>
             </div>

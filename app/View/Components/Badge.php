@@ -12,8 +12,8 @@ class Badge extends Component
      * Create a new component instance.
      */
     public function __construct(
-		public string $variant = 'default',
-	) {}
+        public string $variant = 'default',
+    ) {}
 
     /**
      * Get the view / contents that represent the component.

@@ -26,11 +26,13 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('settings_two', function (Blueprint $table) {
-            $table->dropColumn('chatbot_status');
-            $table->dropColumn('chatbot_template');
-            $table->dropColumn('chatbot_position');
-            $table->dropColumn('chatbot_login_require');
-            $table->dropColumn('chatbot_rate_limit');
+            $table->dropColumn([
+                'chatbot_status',
+                'chatbot_template',
+                'chatbot_position',
+                'chatbot_login_require',
+                'chatbot_rate_limit',
+            ]);
         });
     }
 };

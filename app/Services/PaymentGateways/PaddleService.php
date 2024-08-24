@@ -47,11 +47,9 @@ class PaddleService implements BaseGatewayService
 {
     public static $gateway;
 
-    protected static string $GATEWAY_CODE = "paddle";
+    protected static string $GATEWAY_CODE = 'paddle';
 
-    protected static string $GATEWAY_NAME = "Paddle";
-
-
+    protected static string $GATEWAY_NAME = 'Paddle';
 
     public static function saveAllProducts()
     {
@@ -68,10 +66,10 @@ class PaddleService implements BaseGatewayService
                 self::saveProduct($plan);
             }
 
-
         } catch (Exception $ex) {
 
-            Log::error(self::$GATEWAY_CODE . "-> saveAllProducts(): " . $ex->getMessage());
+            Log::error(self::$GATEWAY_CODE . '-> saveAllProducts(): ' . $ex->getMessage());
+
             return back()->with(['message' => $ex->getMessage(), 'type' => 'error']);
         }
     }
@@ -92,7 +90,6 @@ class PaddleService implements BaseGatewayService
                 customData: new CustomData(['plan_id' => $plan['id']]),
             ));
 
-
             $product = self::objectToArrayHaveId($product);
 
             $stripe_product_id = data_get($product, 'id');
@@ -102,9 +99,8 @@ class PaddleService implements BaseGatewayService
             return back()->with(['message' => $e->getMessage(), 'type' => 'error']);
         }
 
-
         try {
-            $trialPeriod = new Undefined();
+            $trialPeriod = new Undefined;
 
             if ($plan->trial_days and $plan->type != 'prepaid') {
                 $trialPeriod = new TimePeriod(Interval::Day(), $plan->trial_days);
@@ -113,7 +109,7 @@ class PaddleService implements BaseGatewayService
             $billingCycle = null;
 
             if ($plan->type != 'prepaid') {
-                $billingCycle = $plan->frequency == "monthly" ? Interval::Month() : Interval::Year();
+                $billingCycle = $plan->frequency == 'monthly' ? Interval::Month() : Interval::Year();
 
                 $billingCycle = new TimePeriod($billingCycle, 1);
             }
@@ -127,7 +123,7 @@ class PaddleService implements BaseGatewayService
                 billingCycle: $billingCycle,
                 quantity: new PriceQuantity(1, 1),
                 customData: new CustomData([
-                    'product' => json_encode($product)
+                    'product' => json_encode($product),
                 ]),
             ));
 
@@ -135,15 +131,15 @@ class PaddleService implements BaseGatewayService
 
             $gateProduct = GatewayProducts::query()
                 ->firstOrCreate([
-                    'plan_id' => $plan->id,
-                    'gateway_code' => self::$GATEWAY_CODE,
+                    'plan_id'       => $plan->id,
+                    'gateway_code'  => self::$GATEWAY_CODE,
                     'gateway_title' => self::$GATEWAY_NAME,
                 ]);
 
             $gateProduct->update([
                 'product_id' => $product['id'],
-                'price_id' => $price['id'],
-                'payload' => json_encode($price),
+                'price_id'   => $price['id'],
+                'payload'    => json_encode($price),
             ]);
 
         } catch (PriceApiError|ApiError|MalformedResponse $e) {
@@ -178,30 +174,29 @@ class PaddleService implements BaseGatewayService
             $token = $gateway->getAttribute('sandbox_client_id');
         }
 
-
         $paddle = self::client();
 
         $orderId = Str::random(10);
 
         UserOrder::query()
             ->create([
-                'order_id' => $orderId,
-                'plan_id' => $plan->id,
-                'user_id' => $user->id,
-                'payment_type' => self::$GATEWAY_CODE,
-                'price' => $plan->price,
+                'order_id'           => $orderId,
+                'plan_id'            => $plan->id,
+                'user_id'            => $user->id,
+                'payment_type'       => self::$GATEWAY_CODE,
+                'price'              => $plan->price,
                 'affiliate_earnings' => 0,
-                'status' => 'WAITING',
-                'country' => $user->country ?? 'Unknown',
-                'tax_rate' => 0,
-                'tax_value' => 0,
-                'type'  => $plan->type == 'prepaid' ? 'token-pack': 'subscription',
-                'payload' => [],
+                'status'             => 'WAITING',
+                'country'            => $user->country ?? 'Unknown',
+                'tax_rate'           => 0,
+                'tax_value'          => 0,
+                'type'               => $plan->type == 'prepaid' ? 'token-pack' : 'subscription',
+                'payload'            => [],
             ]);
 
         try {
             if (($customerId = $user->getAttribute('stripe_id')) && ($addressId = $user->getAttribute('address_id'))) {
-                return view("panel.user.finance.subscription.". self::$GATEWAY_CODE, compact('plan','customerId', 'orderId', 'token', 'gateProduct', 'gateway'));
+                return view('panel.user.finance.subscription.' . self::$GATEWAY_CODE, compact('plan', 'customerId', 'orderId', 'token', 'gateProduct', 'gateway'));
             }
 
             $findCustomer = $paddle
@@ -210,7 +205,7 @@ class PaddleService implements BaseGatewayService
                     emails: [$user->getAttribute('email')]
                 ));
 
-            if ($findCustomer && $findCustomer->valid()){
+            if ($findCustomer && $findCustomer->valid()) {
                 $customer = $findCustomer->current();
             } else {
                 $customer = $paddle
@@ -229,9 +224,8 @@ class PaddleService implements BaseGatewayService
             $customerId = data_get($customer, 'id');
 
             $user->update([
-                'stripe_id' => $customerId
+                'stripe_id' => $customerId,
             ]);
-
 
             $address = $paddle->addresses->create($customerId, new CreateAddress(
                 countryCode: CountryCode::US(),
@@ -249,16 +243,17 @@ class PaddleService implements BaseGatewayService
             $customer['address'] = $address;
 
             $user->update([
-                'address_id' => $address['id'],
-                'customer_payload' => $customer
+                'address_id'       => $address['id'],
+                'customer_payload' => $customer,
             ]);
 
             $orderId = Str::random(10);
 
-            return view("panel.user.finance.subscription.". self::$GATEWAY_CODE, compact('plan','customerId', 'orderId', 'token', 'gateProduct', 'gateway'));
+            return view('panel.user.finance.subscription.' . self::$GATEWAY_CODE, compact('plan', 'customerId', 'orderId', 'token', 'gateProduct', 'gateway'));
 
-        }catch (Exception $ex) {
-            Log::error(self::$GATEWAY_CODE . "-> subscribe(): " . $ex->getMessage());
+        } catch (Exception $ex) {
+            Log::error(self::$GATEWAY_CODE . '-> subscribe(): ' . $ex->getMessage());
+
             return back()->with(['message' => $ex->getMessage(), 'type' => 'error']);
         }
     }
@@ -292,11 +287,11 @@ class PaddleService implements BaseGatewayService
 
             $price_id_product = data_get($data, 'data.items.0.price_id');
 
-            $subscription = new Subscriptions();
+            $subscription = new Subscriptions;
             $subscription->user_id = auth()->id();
             $subscription->name = $planId;
             $subscription->stripe_id = $currentArray['id'];
-            $subscription->stripe_status = $plan->trial_days != 0 ? "trialing" : "active";
+            $subscription->stripe_status = $plan->trial_days != 0 ? 'trialing' : 'active';
             $subscription->stripe_price = $price_id_product;
             $subscription->quantity = 1;
             $subscription->trial_ends_at = null;
@@ -326,16 +321,17 @@ class PaddleService implements BaseGatewayService
                     $order->update([
                         'status' => 'PAID',
                     ]);
-					\App\Models\Usage::getSingle()->updateSalesCount($plan->price);
+                    \App\Models\Usage::getSingle()->updateSalesCount($plan->price);
                 }
             }
 
             return to_route('dashboard.user.payment.subscription')
                 ->with([
-                    'message' => __('Subscription created successfully'), 'type' => 'success'
+                    'message' => __('Subscription created successfully'), 'type' => 'success',
                 ]);
         } catch (Exception $ex) {
-            Log::error(self::$GATEWAY_CODE . "-> subscribeCheckout(): " . $ex->getMessage());
+            Log::error(self::$GATEWAY_CODE . '-> subscribeCheckout(): ' . $ex->getMessage());
+
             return to_route('dashboard.user.payment.subscription')->with(['message' => $ex->getMessage(), 'type' => 'error']);
         }
 
@@ -368,23 +364,23 @@ class PaddleService implements BaseGatewayService
 
             $current = $subscriptions->current();
 
-//            $currentArray = json_decode(json_encode($current), true);
+            //            $currentArray = json_decode(json_encode($current), true);
 
-//            $price_id_product = data_get($data, 'data.items.0.price_id');
-//
-//            $subscription = new Subscriptions();
-//            $subscription->user_id = auth()->id();
-//            $subscription->name = $planId;
-//            $subscription->stripe_id = $currentArray['id'];
-//            $subscription->stripe_status = $plan->trial_days != 0 ? "trialing" : "active";
-//            $subscription->stripe_price = $price_id_product;
-//            $subscription->quantity = 1;
-//            $subscription->trial_ends_at = null;
-//            $subscription->ends_at = $plan->frequency == 'lifetime_monthly' ? Carbon::now()->addMonths(1) : Carbon::now()->addYears(1);
-//            $subscription->auto_renewal = 1;
-//            $subscription->plan_id = $plan->id;
-//            $subscription->paid_with = self::$GATEWAY_CODE;
-//            $subscription->save();
+            //            $price_id_product = data_get($data, 'data.items.0.price_id');
+            //
+            //            $subscription = new Subscriptions();
+            //            $subscription->user_id = auth()->id();
+            //            $subscription->name = $planId;
+            //            $subscription->stripe_id = $currentArray['id'];
+            //            $subscription->stripe_status = $plan->trial_days != 0 ? "trialing" : "active";
+            //            $subscription->stripe_price = $price_id_product;
+            //            $subscription->quantity = 1;
+            //            $subscription->trial_ends_at = null;
+            //            $subscription->ends_at = $plan->frequency == 'lifetime_monthly' ? Carbon::now()->addMonths(1) : Carbon::now()->addYears(1);
+            //            $subscription->auto_renewal = 1;
+            //            $subscription->plan_id = $plan->id;
+            //            $subscription->paid_with = self::$GATEWAY_CODE;
+            //            $subscription->save();
             $orderId = $request->input('orderID', null);
 
             if ($orderId) {
@@ -407,16 +403,17 @@ class PaddleService implements BaseGatewayService
                         'status' => 'PAID',
                     ]);
 
-					\App\Models\Usage::getSingle()->updateSalesCount($plan->price);
+                    \App\Models\Usage::getSingle()->updateSalesCount($plan->price);
                 }
             }
 
             return to_route('dashboard.user.payment.subscription')
                 ->with([
-                    'message' => __('Payment successfully'), 'type' => 'success'
+                    'message' => __('Payment successfully'), 'type' => 'success',
                 ]);
         } catch (Exception $ex) {
-            Log::error(self::$GATEWAY_CODE . "-> subscribeCheckout(): " . $ex->getMessage());
+            Log::error(self::$GATEWAY_CODE . '-> subscribeCheckout(): ' . $ex->getMessage());
+
             return to_route('dashboard.user.payment.subscription')->with(['message' => $ex->getMessage(), 'type' => 'error']);
         }
     }
@@ -454,23 +451,23 @@ class PaddleService implements BaseGatewayService
 
         UserOrder::query()
             ->create([
-                'order_id' => $orderId,
-                'plan_id' => $plan->id,
-                'user_id' => $user->id,
-                'payment_type' => self::$GATEWAY_CODE,
-                'price' => $plan->price,
+                'order_id'           => $orderId,
+                'plan_id'            => $plan->id,
+                'user_id'            => $user->id,
+                'payment_type'       => self::$GATEWAY_CODE,
+                'price'              => $plan->price,
                 'affiliate_earnings' => 0,
-                'status' => 'WAITING',
-                'country' => $user->country ?? 'Unknown',
-                'tax_rate' => 0,
-                'tax_value' => 0,
-                'type'  => $plan->type == 'prepaid' ? 'token-pack': 'subscription',
-                'payload' => [],
+                'status'             => 'WAITING',
+                'country'            => $user->country ?? 'Unknown',
+                'tax_rate'           => 0,
+                'tax_value'          => 0,
+                'type'               => $plan->type == 'prepaid' ? 'token-pack' : 'subscription',
+                'payload'            => [],
             ]);
 
         try {
             if (($customerId = $user->getAttribute('stripe_id')) && ($addressId = $user->getAttribute('address_id'))) {
-                return view("panel.user.finance.prepaid.". self::$GATEWAY_CODE, compact('plan','customerId', 'orderId', 'token', 'gateProduct'));
+                return view('panel.user.finance.prepaid.' . self::$GATEWAY_CODE, compact('plan', 'customerId', 'orderId', 'token', 'gateProduct'));
             }
 
             $findCustomer = $paddle
@@ -479,7 +476,7 @@ class PaddleService implements BaseGatewayService
                     emails: [$user->getAttribute('email')]
                 ));
 
-            if ($findCustomer && $findCustomer->current()){
+            if ($findCustomer && $findCustomer->current()) {
                 $customer = $findCustomer->current();
             } else {
                 $customer = $paddle
@@ -497,7 +494,7 @@ class PaddleService implements BaseGatewayService
             $customerId = data_get($customer, 'id');
 
             $user->update([
-                'stripe_id' => $customerId
+                'stripe_id' => $customerId,
             ]);
 
             $address = $paddle->addresses->create($customerId, new CreateAddress(
@@ -516,16 +513,17 @@ class PaddleService implements BaseGatewayService
             $customer['address'] = $address;
 
             $user->update([
-                'address_id' => $address['id'],
-                'customer_payload' => $customer
+                'address_id'       => $address['id'],
+                'customer_payload' => $customer,
             ]);
 
             $orderId = Str::random(10);
 
-            return view("panel.user.finance.prepaid.". self::$GATEWAY_CODE, compact('plan','customerId', 'orderId', 'token', 'gateProduct', 'gateway'));
+            return view('panel.user.finance.prepaid.' . self::$GATEWAY_CODE, compact('plan', 'customerId', 'orderId', 'token', 'gateProduct', 'gateway'));
 
-        }catch (Exception $ex) {
-            Log::error(self::$GATEWAY_CODE . "-> subscribe(): " . $ex->getMessage());
+        } catch (Exception $ex) {
+            Log::error(self::$GATEWAY_CODE . '-> subscribe(): ' . $ex->getMessage());
+
             return back()->with(['message' => $ex->getMessage(), 'type' => 'error']);
         }
     }
@@ -538,7 +536,6 @@ class PaddleService implements BaseGatewayService
 
         // Get current active subscription
         $activeSub = getCurrentActiveSubscription($userId);
-
 
         if (! $activeSub) {
             return;
@@ -584,10 +581,9 @@ class PaddleService implements BaseGatewayService
 
         $check = $subscription instanceof Subscriptions;
 
-        if (! $check){
+        if (! $check) {
             $subscription = Subscriptions::where('id', $subscription)->first();
         }
-
 
         if ($subscription == null) {
             return back()->with(['message' => __('Subscription not found'), 'type' => 'error']);
@@ -601,12 +597,13 @@ class PaddleService implements BaseGatewayService
             );
 
             $subscription->update([
-                'stripe_status' => 'canceled'
+                'stripe_status' => 'canceled',
             ]);
 
         } catch (Exception $ex) {
 
-            Log::error(self::$GATEWAY_CODE . "-> cancelSubscribedPlan(): " . $ex->getMessage());
+            Log::error(self::$GATEWAY_CODE . '-> cancelSubscribedPlan(): ' . $ex->getMessage());
+
             return back()->with(['message' => $ex->getMessage(), 'type' => 'error']);
         }
     }
@@ -630,7 +627,7 @@ class PaddleService implements BaseGatewayService
 
             $request = self::client()->subscriptions->get($id);
 
-            $next_delivery_date =  data_get($request, 'nextBilledAt');
+            $next_delivery_date = data_get($request, 'nextBilledAt');
         }
 
         if ($next_delivery_date) {
@@ -672,18 +669,20 @@ class PaddleService implements BaseGatewayService
                     if ($subscription->getAttribute('created_at') < Carbon::now()->subHours(2)) {
                         $subscription->update([
                             'stripe_status' => 'cancelled',
-                            'ends_at' => Carbon::now()
+                            'ends_at'       => Carbon::now(),
                         ]);
                     }
+
                     return false;
                 }
-            }catch (Exception $th) {
+            } catch (Exception $th) {
                 if ($subscription->getAttribute('created_at') < Carbon::now()->subHours(2)) {
                     $subscription->update([
                         'stripe_status' => 'cancelled',
-                        'ends_at' => Carbon::now(),
+                        'ends_at'       => Carbon::now(),
                     ]);
                 }
+
                 return false;
             }
         }
@@ -711,29 +710,26 @@ class PaddleService implements BaseGatewayService
             try {
                 $request = self::client()->subscriptions->get($id);
 
-                $next_delivery_date =  data_get($request, 'nextBilledAt');
+                $next_delivery_date = data_get($request, 'nextBilledAt');
 
                 if ($next_delivery_date) {
                     $next_delivery_date = Carbon::create($next_delivery_date);
 
                     return $next_delivery_date->diffInDays(Carbon::now());
                 }
-            } catch (\Exception $th) {
+            } catch (Exception $th) {
                 return false;
             }
         }
     }
 
-    public static function handleWebhook(Request $request)
-    {
-
-    }
+    public static function handleWebhook(Request $request) {}
 
     public static function client()
     {
         $gateway = self::geteway();
 
-        if (!$gateway) {
+        if (! $gateway) {
             return;
         }
 
@@ -741,13 +737,11 @@ class PaddleService implements BaseGatewayService
 
         $environment = Environment::PRODUCTION;
 
-        if ($gateway->getAttribute('mode') == 'sandbox')
-        {
+        if ($gateway->getAttribute('mode') == 'sandbox') {
             $apiKey = $gateway->getAttribute('sandbox_client_secret');
 
             $environment = Environment::SANDBOX;
         }
-
 
         return new Client($apiKey, options: new Options($environment));
     }
@@ -777,32 +771,32 @@ class PaddleService implements BaseGatewayService
     public static function gatewayDefinitionArray(): array
     {
         return [
-            "code"      => "paddle",
-            "title"     => "Paddle",
-            "link"      => "https://paddle.com/",
-            "active"    => 0,                      //if user activated this gateway - dynamically filled in main page
-            "available" => 1,                   //if gateway is available to use
-            "img"       => custom_theme_url('/assets/img/payments/paddle.svg'),
-            "whiteLogo" => 0,                   //if gateway logo is white
-            "mode"      => 1,                        // Option in settings - Automatically set according to the "Development" mode. "Development" ? sandbox : live (PAYPAL - 1)
-            "sandbox_client_id" => 1,           // Option in settings 0-Hidden 1-Visible
-            "sandbox_client_secret" => 1,       // Option in settings
-            "sandbox_app_id" => 0,              // Option in settings
-            "live_client_id" => 1,              // Option in settings
-            "live_client_secret" => 1,          // Option in settings
-            "live_app_id" => 0,                 // Option in settings
-            "currency" => 0,                    // Option in settings
-            "currency_locale" => 0,             // Option in settings
-            "base_url" => 0,                    // Option in settings
-            "sandbox_url" => 0,                 // Option in settings
-            "locale" => 0,                      // Option in settings
-            "validate_ssl" => 0,                // Option in settings
-            "logger" => 0,                      // Option in settings
-            "notify_url" => 0,                  // Gateway notification url at our side
-            "webhook_secret" => 0,              // Option in settings
-            "tax" => 1,              // Option in settings
-            "bank_account_details" => 0,
-            "bank_account_other" => 0,
+            'code'                  => 'paddle',
+            'title'                 => 'Paddle',
+            'link'                  => 'https://paddle.com/',
+            'active'                => 0,                      //if user activated this gateway - dynamically filled in main page
+            'available'             => 1,                   //if gateway is available to use
+            'img'                   => custom_theme_url('/assets/img/payments/paddle.svg'),
+            'whiteLogo'             => 0,                   //if gateway logo is white
+            'mode'                  => 1,                        // Option in settings - Automatically set according to the "Development" mode. "Development" ? sandbox : live (PAYPAL - 1)
+            'sandbox_client_id'     => 1,           // Option in settings 0-Hidden 1-Visible
+            'sandbox_client_secret' => 1,       // Option in settings
+            'sandbox_app_id'        => 0,              // Option in settings
+            'live_client_id'        => 1,              // Option in settings
+            'live_client_secret'    => 1,          // Option in settings
+            'live_app_id'           => 0,                 // Option in settings
+            'currency'              => 0,                    // Option in settings
+            'currency_locale'       => 0,             // Option in settings
+            'base_url'              => 0,                    // Option in settings
+            'sandbox_url'           => 0,                 // Option in settings
+            'locale'                => 0,                      // Option in settings
+            'validate_ssl'          => 0,                // Option in settings
+            'logger'                => 0,                      // Option in settings
+            'notify_url'            => 0,                  // Gateway notification url at our side
+            'webhook_secret'        => 0,              // Option in settings
+            'tax'                   => 1,              // Option in settings
+            'bank_account_details'  => 0,
+            'bank_account_other'    => 0,
         ];
     }
 }

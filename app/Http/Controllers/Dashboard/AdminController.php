@@ -4,10 +4,10 @@ namespace App\Http\Controllers\Dashboard;
 
 use App\Actions\CreateActivity;
 use App\Actions\EmailConfirmation;
+use App\Enums\Roles;
 use App\Helpers\Classes\Helper;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Finance\PaymentProcessController;
-use App\Jobs\SendConfirmationEmail;
 use App\Models\AccountDeletionReqs;
 use App\Models\Activity;
 use App\Models\Chatbot\Chatbot;
@@ -31,6 +31,11 @@ use App\Models\OpenAIGenerator;
 use App\Models\OpenaiGeneratorChatCategory;
 use App\Models\OpenaiGeneratorFilter;
 use App\Models\PaymentPlans;
+use App\Models\Section\AdvancedFeaturesSection;
+use App\Models\Section\BannerBottomText;
+use App\Models\Section\ComparisonSectionItems;
+use App\Models\Section\FeaturesMarquee;
+use App\Models\Section\FooterItem;
 use App\Models\Setting;
 use App\Models\SocialMediaAccounts;
 use App\Models\Testimonials;
@@ -40,9 +45,13 @@ use App\Models\UserActivity;
 use App\Models\UserAffiliate;
 use App\Models\UserOpenai;
 use App\Models\UserOrder;
+use App\Services\Assistant\AssistantService;
 use App\Services\CountryCodeService;
 use App\Services\UsersExportService;
 use Carbon\Carbon;
+use Illuminate\Contracts\View\Factory;
+use Illuminate\Foundation\Application;
+use Exception;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -51,7 +60,9 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rules\Enum;
 use Illuminate\View\View;
+use Spatie\Permission\Models\Role;
 
 class AdminController extends Controller
 {
@@ -82,7 +93,7 @@ class AdminController extends Controller
             'user_behavior_data',
         ];
         $missingCaches = array_filter($requiredCaches, function ($cacheKey) {
-            return ! Cache::has($cacheKey);
+            return !Cache::has($cacheKey);
         });
 
         $activeStatuses = [
@@ -114,16 +125,16 @@ class AdminController extends Controller
             ],
         ];
         $plan_counts = [
-            'monthly' => 0,
-            'yearly' => 0,
+            'monthly'          => 0,
+            'yearly'           => 0,
             'lifetime_monthly' => 0,
-            'lifetime_yearly' => 0,
-            'prepaid' => 0,
+            'lifetime_yearly'  => 0,
+            'prepaid'          => 0,
         ];
 
         $random_colors = ['#74DB84', '#74A9DB', '#DB9374', '#8185F44D', '#E3E8E8', '#C674DB'];
 
-        if (! empty($missingCaches)) {
+        if (!empty($missingCaches)) {
             $cacheDuration = now()->addMinutes(5);
 
             $daily_sales = json_encode(UserOrder::select(DB::raw('sum(price) as sums'), DB::raw("DATE_FORMAT(created_at,'%Y-%m-%d') as days"))->groupBy('days')->get());
@@ -198,24 +209,24 @@ class AdminController extends Controller
             ];
             Cache::putMany([
 
-                'sales_this_week' => Usage::getSingle()->this_week_sales,
-                'sales_previous_week' => Usage::getSingle()->last_week_sales,
-                'words_this_week' => Usage::getSingle()->this_week_word_count,
-                'words_previous_week' => Usage::getSingle()->last_week_word_count,
-                'images_this_week' => Usage::getSingle()->this_week_image_count,
+                'sales_this_week'      => Usage::getSingle()->this_week_sales,
+                'sales_previous_week'  => Usage::getSingle()->last_week_sales,
+                'words_this_week'      => Usage::getSingle()->this_week_word_count,
+                'words_previous_week'  => Usage::getSingle()->last_week_word_count,
+                'images_this_week'     => Usage::getSingle()->this_week_image_count,
                 'images_previous_week' => Usage::getSingle()->last_week_image_count,
-                'users_this_week' => Usage::getSingle()->this_week_user_count,
-                'users_previous_week' => Usage::getSingle()->last_week_user_count,
-                'daily_sales' => $daily_sales,
-                'total_sales' => Usage::getSingle()->total_sales,
-                'daily_usages' => $daily_usages,
-                'daily_users' => $daily_users,
-                'total_usage' => Usage::getSingle()->total_word_count + Usage::getSingle()->total_image_count,
-                'top_countries' => $top_countries,
-                'total_users' => Usage::getSingle()->total_user_count,
-                'popular_tools_data' => $most_used_last_openai_tools,
-                'popular_plans_data' => $popular_plans_data,
-                'user_behavior_data' => $userBehaviorData,
+                'users_this_week'      => Usage::getSingle()->this_week_user_count,
+                'users_previous_week'  => Usage::getSingle()->last_week_user_count,
+                'daily_sales'          => $daily_sales,
+                'total_sales'          => Usage::getSingle()->total_sales,
+                'daily_usages'         => $daily_usages,
+                'daily_users'          => $daily_users,
+                'total_usage'          => Usage::getSingle()->total_word_count + Usage::getSingle()->total_image_count,
+                'top_countries'        => $top_countries,
+                'total_users'          => Usage::getSingle()->total_user_count,
+                'popular_tools_data'   => $most_used_last_openai_tools,
+                'popular_plans_data'   => $popular_plans_data,
+                'user_behavior_data'   => $userBehaviorData,
             ], $cacheDuration);
         }
 
@@ -284,7 +295,7 @@ class AdminController extends Controller
     public function userExport($type)
     {
         $users = User::all();
-        $service = new UsersExportService();
+        $service = new UsersExportService;
         switch ($type) {
             case 'pdf':
                 return $service->exportAsPdf($users);
@@ -309,7 +320,7 @@ class AdminController extends Controller
         $users = User::all();
 
         foreach ($users as $user) {
-            if (Cache::has('user-is-online-'.$user->id)) {
+            if (Cache::has('user-is-online-' . $user->id)) {
                 $onlineUsers++;
             }
         }
@@ -318,8 +329,8 @@ class AdminController extends Controller
             ->get()
             ->map(function ($country) {
                 return [
-                    'code' => CountryCodeService::getCountryCode($country->country),
-                    'name' => $country->country,
+                    'code'  => CountryCodeService::getCountryCode($country->country),
+                    'name'  => $country->country,
                     'value' => $country->count,
                 ];
             })
@@ -425,8 +436,8 @@ class AdminController extends Controller
             'repassword' => 'required|same:password',
             'phone' => 'nullable|string|max:15',
             'avatar' => 'image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'type' => ['required', new Enum(Roles::class)],
             'country' => 'nullable',
-            'type' => 'nullable|in:admin,user',
             'status' => 'nullable|in:0,1',
             'remaining_words' => 'nullable|numeric',
             'remaining_images' => 'nullable|numeric',
@@ -439,19 +450,19 @@ class AdminController extends Controller
         }
 
         $user = User::query()->create([
-            'name' => $request->name,
-            'surname' => $request->surname,
-            'email' => $request->email,
-            'phone' => $request->phone,
-            'country' => $request->country,
-            'type' => $request->type,
-            'status' => $request->status,
+            'name'                    => $request->name,
+            'surname'                 => $request->surname,
+            'email'                   => $request->email,
+            'phone'                   => $request->phone,
+            'country'                 => $request->country,
+            'type'                    => $request->type,
+            'status'                  => $request->status,
             'email_confirmation_code' => Str::random(67),
-            'remaining_words' => $request->remaining_words ?? 0,
-            'remaining_images' => $request->remaining_images ?? 0,
-            'password' => Hash::make($request->password),
+            'remaining_words'         => $request->remaining_words ?? 0,
+            'remaining_images'        => $request->remaining_images ?? 0,
+            'password'                => Hash::make($request->password),
             'email_verification_code' => Str::random(67),
-            'affiliate_code' => Str::upper(Str::random(12)),
+            'affiliate_code'          => Str::upper(Str::random(12)),
         ]);
 
         if ($request->hasFile('avatar')) {
@@ -460,14 +471,14 @@ class AdminController extends Controller
             if ($image->getClientOriginalExtension() == 'svg') {
                 $image = self::sanitizeSVG($request->file('avatar'));
             }
-            $image_name = Str::random(4).'-'.Str::slug($user->fullName()).'-avatar.'.$image->getClientOriginalExtension();
+            $image_name = Str::random(4) . '-' . Str::slug($user->fullName()) . '-avatar.' . $image->getClientOriginalExtension();
             // Image extension check
             $imageTypes = ['jpg', 'jpeg', 'png', 'svg', 'webp'];
-            if (! in_array(Str::lower($image->getClientOriginalExtension()), $imageTypes)) {
+            if (!in_array(Str::lower($image->getClientOriginalExtension()), $imageTypes)) {
                 return back()->with(['message' => __('The file extension must be jpg, jpeg, png, webp or svg.'), 'type' => 'error']);
             }
             $image->move($path, $image_name);
-            $user->avatar = $path.$image_name;
+            $user->avatar = $path . $image_name;
             $user->save();
         }
 
@@ -478,7 +489,8 @@ class AdminController extends Controller
 
     public function usersDelete($id)
     {
-        $user = User::whereId($id)->firstOrFail();
+        $user = User::query()->findOrFail($id);
+
         $user->delete();
 
         return back()->with(['message' => __('Deleted Successfully'), 'type' => 'success']);
@@ -493,7 +505,7 @@ class AdminController extends Controller
             'phone' => 'nullable|string|max:15',
             'email' => 'required|email|max:255|unique:users,email,'.$request->user_id,
             'country' => 'nullable',
-            'type' => 'nullable|in:admin,user',
+            'type' => ['required', new Enum(Roles::class)],
             'status' => 'nullable|in:0,1',
             'remaining_words' => 'nullable|numeric',
             'remaining_images' => 'nullable|numeric',
@@ -502,16 +514,19 @@ class AdminController extends Controller
         User::query()
             ->where('id', $request->user_id)
             ->update([
-                'name' => $request->name,
-                'surname' => $request->surname,
-                'phone' => $request->phone,
-                'email' => $request->email,
-                'country' => $request->country,
-                'type' => $request->type,
-                'status' => $request->status,
-                'remaining_words' => $request->remaining_words ?: 0,
+                'name'             => $request->name,
+                'surname'          => $request->surname,
+                'phone'            => $request->phone,
+                'email'            => $request->email,
+                'country'          => $request->country,
+                'type'             => $request->type,
+                'status'           => $request->status,
+                'remaining_words'  => $request->remaining_words ?: 0,
                 'remaining_images' => $request->remaining_images ?: 0,
             ]);
+
+        $user = User::query()->where("id",$request->user_id)->first();
+        $user->syncRoles($request->type);
     }
 
     //OPENAI MANAGEMENT
@@ -547,17 +562,17 @@ class AdminController extends Controller
     {
         $data = [
             'ai_article_wizard_generator' => 'feature_ai_article_wizard',
-            'ai_writer' => 'feature_ai_writer',
-            'ai_rewriter' => 'feature_ai_rewriter',
-            'ai_chat_image' => 'feature_ai_chat_image',
-            'ai_image_generator' => 'feature_ai_image',
-            'ai_code_generator' => 'feature_ai_code',
-            'ai_speech_to_text' => 'feature_ai_speech_to_text',
-            'ai_voiceover' => 'feature_ai_voiceover',
-            'ai_vision' => 'feature_ai_vision',
-            'ai_pdf' => 'feature_ai_pdf',
-            'ai_youtube' => 'feature_ai_youtube',
-            'ai_rss' => 'feature_ai_youtube',
+            'ai_writer'                   => 'feature_ai_writer',
+            'ai_rewriter'                 => 'feature_ai_rewriter',
+            'ai_chat_image'               => 'feature_ai_chat_image',
+            'ai_image_generator'          => 'feature_ai_image',
+            'ai_code_generator'           => 'feature_ai_code',
+            'ai_speech_to_text'           => 'feature_ai_speech_to_text',
+            'ai_voiceover'                => 'feature_ai_voiceover',
+            'ai_vision'                   => 'feature_ai_vision',
+            'ai_pdf'                      => 'feature_ai_pdf',
+            'ai_youtube'                  => 'feature_ai_youtube',
+            'ai_rss'                      => 'feature_ai_youtube',
         ];
 
         if (array_key_exists($openAIGenerator->getAttribute('slug'), $data)) {
@@ -607,7 +622,7 @@ class AdminController extends Controller
         if ($request->item_id != 'undefined') {
             $item = ChatCategory::where('id', $request->item_id)->firstOrFail();
         } else {
-            $item = new ChatCategory();
+            $item = new ChatCategory;
         }
         $item->user_id = auth()->user()->id;
         $item->name = $request->name;
@@ -643,11 +658,14 @@ class AdminController extends Controller
             $template = OpenaiGeneratorChatCategory::where('id', $id)->firstOrFail();
         }
 
+        $assistantService = new AssistantService();
+        $assistants = $assistantService->listAssistant()['data'] ?? [];
+
         $categoryList = ChatCategory::all();
 
         $chatbots = Chatbot::query()->get();
 
-        return view('panel.admin.openai.chat.form', compact('template', 'categoryList', 'chatbots'));
+        return view('panel.admin.openai.chat.form', compact('template', 'categoryList', 'chatbots','assistants'));
     }
 
     public function updatePlan(Request $request)
@@ -670,7 +688,7 @@ class AdminController extends Controller
         if ($favourites->count() != 0) {
             $favourites->each->delete();
         } else {
-            $favourite = new Favourite();
+            $favourite = new Favourite;
             $favourite->user_id = auth()->user()->id;
             $favourite->type = 'chat';
             $favourite->item_id = $id;
@@ -694,11 +712,12 @@ class AdminController extends Controller
 
     public function openAIChatAddOrUpdateSave(Request $request)
     {
-
-        if ($request->template_id != 'undefined') {
+        if ($request->template_id !== null) {
             $template = OpenaiGeneratorChatCategory::where('id', $request->template_id)->firstOrFail();
+            $slug = $template->slug;
         } else {
-            $template = new OpenaiGeneratorChatCategory();
+            $template = new OpenaiGeneratorChatCategory;
+            $slug = Str::slug($request->name) . '-' . Str::random(5);
         }
 
         if ($request->chatbot_id == 'undefined') {
@@ -708,11 +727,11 @@ class AdminController extends Controller
         if ($request->hasFile('avatar')) {
             $path = 'upload/images/chatbot/';
             $image = $request->file('avatar');
-            $image_name = Str::random(4).'-'.Str::slug($request->name).'-avatar.'.$image->getClientOriginalExtension();
+            $image_name = Str::random(4) . '-' . Str::slug($request->name) . '-avatar.' . $image->getClientOriginalExtension();
 
             //Resim uzantı kontrolü
             $imageTypes = ['jpg', 'jpeg', 'png', 'svg', 'webp'];
-            if (! in_array(Str::lower($image->getClientOriginalExtension()), $imageTypes)) {
+            if (!in_array(Str::lower($image->getClientOriginalExtension()), $imageTypes)) {
                 $data = [
                     'errors' => ['The file extension must be jpg, jpeg, png, webp or svg.'],
                 ];
@@ -722,17 +741,16 @@ class AdminController extends Controller
 
             $image->move($path, $image_name);
 
-            $template->image = $path.$image_name;
+            $template->image = $path . $image_name;
         }
 
         $template->name = $request->name;
-        Log::info($request->category);
         if ($request->category == '') {
             $template->category = '';
         } else {
             $template->category = $request->category;
         }
-        $template->slug = Str::slug($request->name).'-'.Str::random(5);
+        $template->slug = $slug;
         $template->short_name = $request->short_name;
         $template->description = $request->description;
         $template->instructions = $request->instructions;
@@ -743,9 +761,12 @@ class AdminController extends Controller
         $template->color = $request->color;
         $template->plan = 'regular';
         $template->chat_completions = $request->chat_completions;
-        $template->prompt_prefix = 'As a '.$request->role.', ';
+        $template->prompt_prefix = 'As a ' . $request->role . ', ';
         $template->chatbot_id = $request->chatbot_id;
+        $template->assistant = $request->assistant;
         $template->save();
+
+        return redirect()->route('dashboard.admin.openai.chat.list')->with(['message' => __('Saved Successfully'), 'type' => 'success']);
     }
 
     //OPENAI CUSTOM TEMPLATES
@@ -834,7 +855,7 @@ class AdminController extends Controller
         if ($request->template_id != 'undefined') {
             $template = OpenAIGenerator::where('id', $request->template_id)->firstOrFail();
         } else {
-            $template = new OpenAIGenerator();
+            $template = new OpenAIGenerator;
         }
 
         // Set basic template attributes
@@ -846,7 +867,7 @@ class AdminController extends Controller
         $template->filters = $request->filters;
         $template->premium = $request->premium;
         $template->active = 1;
-        $template->slug = Str::slug($request->title).'-'.Str::random(6);
+        $template->slug = Str::slug($request->title) . '-' . Str::random(6);
         $template->type = 'text';
         $template->custom_template = 1;
 
@@ -858,10 +879,10 @@ class AdminController extends Controller
             foreach ($inputs as $input) {
                 // Save input data as arrays
                 $inputArray = [
-                    'name' => Str::slug($input['inputName']),
-                    'question' => $input['inputName'],
+                    'name'        => Str::slug($input['inputName']),
+                    'question'    => $input['inputName'],
                     'description' => $input['inputDescription'],
-                    'type' => $inputType,
+                    'type'        => $inputType,
                 ];
                 // If input type is select, include select list values
                 if ($inputType === 'select') {
@@ -881,7 +902,7 @@ class AdminController extends Controller
         // Save new filters
         foreach (explode(',', $request->filters) as $filter) {
             if (OpenaiGeneratorFilter::where('name', $filter)->first() == null) {
-                $newFilter = new OpenaiGeneratorFilter();
+                $newFilter = new OpenaiGeneratorFilter;
                 $newFilter->name = $filter;
                 $newFilter->save();
             }
@@ -923,7 +944,7 @@ class AdminController extends Controller
         if ($request->item_id != 'undefined') {
             $item = OpenaiGeneratorFilter::where('id', $request->item_id)->firstOrFail();
         } else {
-            $item = new OpenaiGeneratorFilter();
+            $item = new OpenaiGeneratorFilter;
         }
         $item->name = $request->name;
         $item->save();
@@ -982,7 +1003,7 @@ class AdminController extends Controller
         if ($id == null) {
             $selectedAiList = [];
 
-            return view('panel.admin.finance.plans.SubscriptionNewOrEdit', compact('isActiveGateway', 'openAiList', 'selectedAiList',  'models', 'selectedModels'));
+            return view('panel.admin.finance.plans.SubscriptionNewOrEdit', compact('isActiveGateway', 'openAiList', 'selectedAiList', 'models', 'selectedModels'));
         } else {
             $subscription = PaymentPlans::where('id', $id)->firstOrFail();
 
@@ -1002,9 +1023,6 @@ class AdminController extends Controller
                     $checkedGroups[$key] = true;
                 }
             }
-
-
-
 
             return view('panel.admin.finance.plans.SubscriptionNewOrEdit', compact('checkedGroups', 'subscription', 'selectedAiList', 'isActiveGateway', 'generatedData', 'openAiList', 'models', 'selectedModels'));
         }
@@ -1068,7 +1086,6 @@ class AdminController extends Controller
                 }
             }
 
-
             return view('panel.admin.finance.plans.PrepaidNewOrEdit', compact('checkedGroups', 'openAiList', 'selectedAiList', 'subscription', 'isActiveGateway', 'generatedData', 'models', 'selectedModels'));
         }
     }
@@ -1080,93 +1097,92 @@ class AdminController extends Controller
         if ($request->plan_id != 'undefined') {
             $plan = PaymentPlans::where('id', $request->plan_id)->firstOrFail();
         } else {
-            $plan = new PaymentPlans();
+            $plan = new PaymentPlans;
             $newPlan = true;
         }
 
         if ($request->type == 'subscription') {
-            if ($plan->price != (float) $request->price || $plan->trial_days != $request->trial_days || $plan->frequency != $request->frequency) {
+            if ($plan->price != (float)$request->price || $plan->trial_days != $request->trial_days || $plan->frequency != $request->frequency) {
                 $requireUpdate = true;
             }
 
             $plan->active = 1;
             $plan->name = $request->name;
             $plan->description = $request->description;
-            $plan->price = (float) $request->price;
+            $plan->price = (float)$request->price;
             $plan->frequency = $request->frequency;
-            $plan->is_featured = (int) $request->is_featured;
+            $plan->is_featured = (int)$request->is_featured;
             $plan->stripe_product_id = $request->stripe_product_id;
-            $plan->total_words = (int) $request->total_words;
-            $plan->total_images = (int) $request->total_images;
+            $plan->total_words = (int)$request->total_words;
+            $plan->total_images = (int)$request->total_images;
             $plan->ai_name = $request->ai_name;
             // $plan->max_tokens = (int)$request->max_tokens;
-            $plan->can_create_ai_images = (int) $request->can_create_ai_images;
+            $plan->can_create_ai_images = (int)$request->can_create_ai_images;
             $plan->plan_type = $request->plan_type;
             $plan->features = $request->features;
             $plan->trial_days = $request->trial_days;
             $plan->type = $request->type;
             $plan->display_imag_count = $request->display_img;
             $plan->display_word_count = $request->display_word;
-            $plan->is_team_plan = (bool) $request->is_team_plan;
-            $plan->plan_allow_seat = (int) $request->plan_allow_seat;
+            $plan->is_team_plan = (bool)$request->is_team_plan;
+            $plan->plan_allow_seat = (int)$request->plan_allow_seat;
             $plan->open_ai_items = $request->openaiItems;
             $plan->currency = currency()->code ?: 'USD';
             $plan->save();
         } else {
-            if ($plan->price != (float) $request->price) {
+            if ($plan->price != (float)$request->price) {
                 $requireUpdate = true;
             }
 
             $plan->active = 1;
             $plan->name = $request->name;
             $plan->description = $request->description;
-            $plan->price = (float) $request->price;
-            $plan->is_featured = (int) $request->is_featured;
-            $plan->total_words = (int) $request->total_words;
-            $plan->total_images = (int) $request->total_images;
+            $plan->price = (float)$request->price;
+            $plan->is_featured = (int)$request->is_featured;
+            $plan->total_words = (int)$request->total_words;
+            $plan->total_images = (int)$request->total_images;
             $plan->features = $request->features;
             $plan->type = $request->type;
             $plan->display_imag_count = $request->display_img;
             $plan->display_word_count = $request->display_word;
-            $plan->is_team_plan = (bool) $request->is_team_plan;
-            $plan->plan_allow_seat = (int) $request->plan_allow_seat;
+            $plan->is_team_plan = (bool)$request->is_team_plan;
+            $plan->plan_allow_seat = (int)$request->plan_allow_seat;
             $plan->open_ai_items = $request->openaiItems;
             $plan->currency = currency()->code ?: 'USD';
             $plan->save();
         }
 
-        $this->aiChatModelSave($plan->id, $request);
+        //        $this->aiChatModelSave($plan->id, $request);
 
         try {
 
             if ($newPlan || $requireUpdate) {
                 $tmp = PaymentProcessController::saveGatewayProducts($plan);
             }
-        } catch (\Exception $ex) {
+        } catch (Exception $ex) {
             Log::info($ex->getMessage());
-            Log::info("AdminController->paymentPlansSave()->PaymentProcessController::saveGatewayProducts()\n".$ex->getMessage());
+            Log::info("AdminController->paymentPlansSave()->PaymentProcessController::saveGatewayProducts()\n" . $ex->getMessage());
 
             return back()->with(['message' => $ex->getMessage(), 'type' => 'error']);
         }
     }
 
-
-    private function aiChatModelSave($planId, $request)
-    {
-        $models = $request->get('aiChatModelItems');
-        AiChatModelPlan::query()
-            ->where('plan_id', $planId)
-            ->delete();
-        if ($models && is_array($models)) {
-            foreach ($models as $model) {
-                AiChatModelPlan::query()
-                    ->create([
-                        'plan_id' => $planId,
-                        'ai_model_id' => $model,
-                    ]);
-            }
-        }
-    }
+    //    private function aiChatModelSave($planId, $request)
+    //    {
+    //        $models = $request->get('aiChatModelItems');
+    //        AiChatModelPlan::query()
+    //            ->where('plan_id', $planId)
+    //            ->delete();
+    //        if ($models && is_array($models)) {
+    //            foreach ($models as $model) {
+    //                AiChatModelPlan::query()
+    //                    ->create([
+    //                        'plan_id' => $planId,
+    //                        'ai_model_id' => $model,
+    //                    ]);
+    //            }
+    //        }
+    //    }
 
     // Testimonials
 
@@ -1204,12 +1220,12 @@ class AdminController extends Controller
         if ($request->testimonial_id != 'undefined') {
             $testimonial = Testimonials::where('id', $request->testimonial_id)->firstOrFail();
         } else {
-            $testimonial = new Testimonials();
+            $testimonial = new Testimonials;
         }
 
         if ($request->file('avatar')) {
             $file = $request->file('avatar');
-            $filename = date('YmdHi').$file->getClientOriginalName();
+            $filename = date('YmdHi') . $file->getClientOriginalName();
             $file->move(public_path('testimonialAvatar'), $filename);
             $testimonial->avatar = $filename;
         }
@@ -1226,7 +1242,7 @@ class AdminController extends Controller
     public function howitWorksDefaults()
     {
         $values = json_decode('{"option": TRUE, "html": ""}');
-        $default_html = 'Want to see? <a class="text-[#FCA7FF]" href="https://codecanyon.net/item/magicai-openai-content-text-image-chat-code-generator-as-saas/45408109" target="_blank">'.__('Join').' Magic</a>';
+        $default_html = 'Want to see? <a class="text-[#FCA7FF]" href="https://codecanyon.net/item/magicai-openai-content-text-image-chat-code-generator-as-saas/45408109" target="_blank">' . __('Join') . ' Magic</a>';
 
         //Check display bottom line
         $bottomline = CustomSettings::where('key', 'howitworks_bottomline')->first();
@@ -1234,7 +1250,7 @@ class AdminController extends Controller
             $values['option'] = $bottomline->value_int ?? 1;
             $values['html'] = $bottomline->value_html ?? $default_html;
         } else {
-            $bottomline = new CustomSettings();
+            $bottomline = new CustomSettings;
             $bottomline->key = 'howitworks_bottomline';
             $bottomline->title = 'Used in How it Works section bottom line. Controls visibility and HTML value of line.';
             $bottomline->value_int = 1;
@@ -1282,24 +1298,25 @@ class AdminController extends Controller
         if ($request->howitWorks_id != 'undefined') {
             $howitWorks = HowitWorks::where('id', $request->howitWorks_id)->firstOrFail();
         } else {
-            $howitWorks = new HowitWorks();
+            $howitWorks = new HowitWorks;
         }
         $howitWorks->bg_color = $request->bg_color;
         if ($request->file('bg_image')) {
             $file = $request->file('bg_image');
-            $filename = date('YmdHi').$file->getClientOriginalName();
+            $filename = date('YmdHi') . $file->getClientOriginalName();
             $file->move(public_path('howitWorks'), $filename);
             $howitWorks->bg_image = $filename;
         }
         $howitWorks->text_color = $request->text_color;
         if ($request->file('image')) {
             $file = $request->file('image');
-            $filename = date('YmdHi').$file->getClientOriginalName();
+            $filename = date('YmdHi') . $file->getClientOriginalName();
             $file->move(public_path('howitWorks'), $filename);
             $howitWorks->image = $filename;
         }
-        $howitWorks->order = (int) $request->order;
+        $howitWorks->order = (int)$request->order;
         $howitWorks->title = $request->title;
+        $howitWorks->description = $request->description;
         $howitWorks->save();
     }
 
@@ -1316,7 +1333,7 @@ class AdminController extends Controller
             }
 
             if ($request->text != 'undefined' && $request->text != null) {
-                $default_html = 'Want to see? <a class="text-[#FCA7FF]" href="https://codecanyon.net/item/magicai-openai-content-text-image-chat-code-generator-as-saas/45408109" target="_blank">'.__('Join').' Magic</a>';
+                $default_html = 'Want to see? <a class="text-[#FCA7FF]" href="https://codecanyon.net/item/magicai-openai-content-text-image-chat-code-generator-as-saas/45408109" target="_blank">' . __('Join') . ' Magic</a>';
                 $bottomline->value_html = $request->text ?? $default_html;
                 $save = 1;
             }
@@ -1366,12 +1383,12 @@ class AdminController extends Controller
         if ($request->client_id != 'undefined') {
             $client = Clients::where('id', $request->client_id)->firstOrFail();
         } else {
-            $client = new Clients();
+            $client = new Clients;
         }
 
         if ($request->file('avatar')) {
             $file = $request->file('avatar');
-            $filename = date('YmdHi').$file->getClientOriginalName();
+            $filename = date('YmdHi') . $file->getClientOriginalName();
             $file->move(public_path('clientAvatar'), $filename);
             $client->avatar = $filename;
         }
@@ -1432,14 +1449,14 @@ class AdminController extends Controller
     public function couponsAdd(Request $request)
     {
         $request->validate([
-            'name' => 'required|string|max:255',
-            'discount' => 'required|numeric|min:0|max:100',
-            'limit' => 'required|integer|min:-1',
-            'code' => 'required|in:auto,manual',
+            'name'      => 'required|string|max:255',
+            'discount'  => 'required|numeric|min:0|max:100',
+            'limit'     => 'required|integer|min:-1',
+            'code'      => 'required|in:auto,manual',
             'codeInput' => 'required_if:code,manual|max:20',
         ]);
 
-        $newCoupon = new Coupon();
+        $newCoupon = new Coupon;
         $newCoupon->name = $request->input('name');
         $newCoupon->discount = $request->input('discount');
         $newCoupon->limit = $request->input('limit');
@@ -1464,9 +1481,9 @@ class AdminController extends Controller
     public function couponsEdit(Request $request, $id)
     {
         $request->validate([
-            'name' => 'required|string|max:255',
+            'name'     => 'required|string|max:255',
             'discount' => 'required|numeric|min:0|max:100',
-            'limit' => 'required|integer|min:-1',
+            'limit'    => 'required|integer|min:-1',
         ]);
 
         $newCoupon = Coupon::find($id);
@@ -1487,7 +1504,7 @@ class AdminController extends Controller
 
         if ($validator->fails()) {
             return response()->json([
-                'valid' => false,
+                'valid'  => false,
                 'errors' => $validator->errors(),
             ]);
         }
@@ -1500,7 +1517,7 @@ class AdminController extends Controller
     private function checkCouponValidity($code)
     {
         $exist = Coupon::where('code', $code)->first();
-        if ($exist && (! ($exist->usersUsed->count() >= $exist->limit) || $exist->limit == -1)) {
+        if ($exist && (!($exist->usersUsed->count() >= $exist->limit) || $exist->limit == -1)) {
             return true;
         }
 
@@ -1584,23 +1601,24 @@ class AdminController extends Controller
             $fSettings->footer_button_url = $request->footer_button_url;
             $fSettings->footer_copyright = $request->footer_copyright;
             $fSettings->footer_text_color = $request->footer_text_color;
-			// hero_image
-			if ($request->hasFile('hero_image')) {
-				$path = 'upload/';
-				$image = $request->file('hero_image');
-				$image_name = Str::random(4).'-'.Str::slug($settings->site_name).'-hero-image.'.$image->getClientOriginalExtension();
+            // hero_image
+            if ($request->hasFile('hero_image')) {
+                $path = 'upload/';
+                $image = $request->file('hero_image');
+                $image_name = Str::random(4) . '-' . Str::slug($settings->site_name) . '-hero-image.' . $image->getClientOriginalExtension();
 
-				$imageTypes = ['jpg', 'jpeg', 'png', 'svg', 'webp'];
-				if (! in_array(Str::lower($image->getClientOriginalExtension()), $imageTypes)) {
-					$data = [
-						'errors' => ['The file extension must be jpg, jpeg, png, webp or svg.'],
-					];
-					return response()->json($data, 419);
-				}
+                $imageTypes = ['jpg', 'jpeg', 'png', 'svg', 'webp'];
+                if (!in_array(Str::lower($image->getClientOriginalExtension()), $imageTypes)) {
+                    $data = [
+                        'errors' => ['The file extension must be jpg, jpeg, png, webp or svg.'],
+                    ];
 
-				$image->move($path, $image_name);
-				$fSettings->hero_image = "/".$path.$image_name;
-			}
+                    return response()->json($data, 419);
+                }
+
+                $image->move($path, $image_name);
+                $fSettings->hero_image = '/' . $path . $image_name;
+            }
             $fSettings->save();
 
             $fSecSettings = FrontendSectionsStatusses::first();
@@ -1608,34 +1626,33 @@ class AdminController extends Controller
             $fSecSettings->save();
 
             $logo_types = [
-                'logo' => '',
-                'logo_dark' => 'dark',
-                'logo_sticky' => 'sticky',
-                'logo_dashboard' => 'dashboard',
+                'logo'                => '',
+                'logo_dark'           => 'dark',
+                'logo_sticky'         => 'sticky',
+                'logo_dashboard'      => 'dashboard',
                 'logo_dashboard_dark' => 'dashboard-dark',
-                'logo_collapsed' => 'collapsed',
+                'logo_collapsed'      => 'collapsed',
                 'logo_collapsed_dark' => 'collapsed-dark',
                 // retina
-                'logo_2x' => '2x',
-                'logo_dark_2x' => 'dark-2x',
-                'logo_sticky_2x' => 'sticky-2x',
-                'logo_dashboard_2x' => 'dashboard-2x',
+                'logo_2x'                => '2x',
+                'logo_dark_2x'           => 'dark-2x',
+                'logo_sticky_2x'         => 'sticky-2x',
+                'logo_dashboard_2x'      => 'dashboard-2x',
                 'logo_dashboard_dark_2x' => 'dashboard-dark-2x',
-                'logo_collapsed_2x' => 'collapsed-2x',
+                'logo_collapsed_2x'      => 'collapsed-2x',
                 'logo_collapsed_dark_2x' => 'collapsed-dark-2x',
             ];
-
 
             foreach ($logo_types as $logo => $logo_prefix) {
 
                 if ($request->hasFile($logo)) {
                     $path = 'upload/images/logo/';
                     $image = $request->file($logo);
-                    $image_name = Str::random(4).'-'.$logo_prefix.'-'.Str::slug($settings->site_name).'-logo.'.$image->getClientOriginalExtension();
+                    $image_name = Str::random(4) . '-' . $logo_prefix . '-' . Str::slug($settings->site_name) . '-logo.' . $image->getClientOriginalExtension();
 
                     //Resim uzantı kontrolü
                     $imageTypes = ['jpg', 'jpeg', 'png', 'svg', 'webp'];
-                    if (! in_array(Str::lower($image->getClientOriginalExtension()), $imageTypes)) {
+                    if (!in_array(Str::lower($image->getClientOriginalExtension()), $imageTypes)) {
                         $data = [
                             'errors' => ['The file extension must be jpg, jpeg, png, webp or svg.'],
                         ];
@@ -1645,7 +1662,7 @@ class AdminController extends Controller
 
                     $image->move($path, $image_name);
 
-                    $settings->{$logo.'_path'} = $path.$image_name;
+                    $settings->{$logo . '_path'} = $path . $image_name;
                     $settings->{$logo} = $image_name;
                     $settings->save();
                 }
@@ -1655,11 +1672,11 @@ class AdminController extends Controller
             if ($request->hasFile('favicon')) {
                 $path = 'upload/images/favicon/';
                 $image = $request->file('favicon');
-                $image_name = Str::random(4).'-'.Str::slug($settings->site_name).'-favicon.'.$image->getClientOriginalExtension();
+                $image_name = Str::random(4) . '-' . Str::slug($settings->site_name) . '-favicon.' . $image->getClientOriginalExtension();
 
                 //Resim uzantı kontrolü
                 $imageTypes = ['jpg', 'jpeg', 'png', 'svg', 'webp'];
-                if (! in_array(Str::lower($image->getClientOriginalExtension()), $imageTypes)) {
+                if (!in_array(Str::lower($image->getClientOriginalExtension()), $imageTypes)) {
                     $data = [
                         'errors' => ['The file extension must be jpg, jpeg, png, webp or svg.'],
                     ];
@@ -1669,7 +1686,7 @@ class AdminController extends Controller
 
                 $image->move($path, $image_name);
 
-                $settings->favicon_path = $path.$image_name;
+                $settings->favicon_path = $path . $image_name;
                 $settings->favicon = $image_name;
                 $settings->save();
             }
@@ -1685,15 +1702,17 @@ class AdminController extends Controller
 
     public function frontendSectionSettingsSave(Request $request)
     {
-
         if (Helper::appIsNotDemo()) {
             $settings = FrontendSectionsStatusses::first();
             $settings->features_active = $request->features_active;
             $settings->features_title = $request->features_title;
             $settings->features_subtitle = $request->features_subtitle;
             $settings->features_description = $request->features_description;
-
+            $settings->marquee_items = $request->marquee_items;
             $settings->generators_active = $request->generators_active;
+            $settings->generators_subtitle = $request->generators_subtitle;
+            $settings->generators_title = $request->generators_title;
+            $settings->generators_description = $request->generators_description;
 
             $settings->who_is_for_active = $request->who_is_for_active;
 
@@ -1746,10 +1765,132 @@ class AdminController extends Controller
             $settings->blog_a_description = $request->blog_a_description;
             $settings->blog_a_posts_per_page = $request->blog_a_posts_per_page;
 
+            $settings->advanced_features_section_title = $request->advanced_features_section_title;
+            $settings->advanced_features_section_description = $request->advanced_features_section_description;
+
+            $settings->plan_footer_text = $request->plan_footer_text;
             $settings->save();
 
-        }
+            // Handle advanced features section
+            $advancedFeaturesKeys = array_filter(array_keys($request->all()), function ($key) {
+                return preg_match('/^advanced_features_title_\d+$/', $key);
+            });
 
+            foreach ($advancedFeaturesKeys as $titleKey) {
+                $key = explode('_', $titleKey)[3];
+
+                // Retrieve the existing feature or create a new one
+                $feature = AdvancedFeaturesSection::firstOrNew(['id' => $key]);
+
+                $feature->title = $request->input('advanced_features_title_' . $key);
+                $feature->description = $request->input('advanced_features_description_' . $key);
+
+                // Handle image upload
+                if ($request->hasFile('advanced_features_image_' . $key)) {
+                    $path = 'upload/images/frontent/';
+                    $image = $request->file('advanced_features_image_' . $key);
+                    $image_name = Str::random(4) . '-' . Str::slug($request->input('advanced_features_title_' . $key)) . '.' . $image->getClientOriginalExtension();
+
+                    //Resim uzantı kontrolü
+                    $imageTypes = ['jpg', 'jpeg', 'png', 'svg', 'webp'];
+                    if (!in_array(Str::lower($image->getClientOriginalExtension()), $imageTypes)) {
+                        $data = [
+                            'errors' => ['The file extension must be jpg, jpeg, png, webp or svg.'],
+                        ];
+
+                        return response()->json($data, 419);
+                    }
+
+                    $image->move($path, $image_name);
+
+                    $feature->image = '/' . $path . $image_name;
+                }
+                $feature->save();
+            }
+
+            // comparison section
+
+            $comparison_section_items = array_filter(array_keys($request->all()), function ($key) {
+                return preg_match('/^comparison_section_item_label_\d+$/', $key);
+            });
+
+            foreach ($comparison_section_items as $comparison_section_item) {
+                $key = explode('_', $comparison_section_item)[4];
+
+                $comparison_section = ComparisonSectionItems::query()
+                    ->find($key);
+
+                if (!$comparison_section) {
+                    continue;
+                }
+
+                $comparison_section->update([
+                    'label'  => $request->input('comparison_section_item_label_' . $key),
+                    'others' => $request->input('comparison_section_item_others_' . $key) == 'true',
+                    'ours'   => $request->input('comparison_section_item_ours_' . $key) == 'true',
+                ]);
+            }
+
+            $features_marquees = array_filter(array_keys($request->all()), function ($key) {
+                return preg_match('/^features_marquee_\d+$/', $key);
+            });
+
+            foreach ($features_marquees as $features_marquee) {
+
+                $key = explode('_', $features_marquee)[2];
+
+                $features_marquee = FeaturesMarquee::query()
+                    ->find($key);
+
+                if (!$features_marquee) {
+                    continue;
+                }
+
+                $features_marquee->update([
+                    'title' => $request->input('features_marquee_' . $key),
+                ]);
+            }
+
+            $footer_items = array_filter(array_keys($request->all()), function ($key) {
+                return preg_match('/^footer_item_\d+$/', $key);
+            });
+
+            foreach ($footer_items as $footer_item) {
+
+                $key = explode('_', $footer_item)[2];
+
+                $footer_item = FooterItem::query()
+                    ->find($key);
+
+                if (!$footer_item) {
+                    continue;
+                }
+
+                $footer_item->update([
+                    'item' => $request->input('footer_item_' . $key),
+                ]);
+            }
+
+            $banner_bottom_texts = array_filter(array_keys($request->all()), function ($key) {
+                return preg_match('/^banner_bottom_text_\d+$/', $key);
+            });
+
+            foreach ($banner_bottom_texts as $banner_bottom_text) {
+
+                $key = explode('_', $banner_bottom_text)[3];
+
+                $banner_bottom_text = BannerBottomText::query()
+                    ->find($key);
+
+                if (!$banner_bottom_text) {
+                    continue;
+                }
+
+                $banner_bottom_text->update([
+                    'text' => $request->input('banner_bottom_text_' . $key),
+                ]);
+            }
+        }
     }
 
     //Menu
@@ -1790,9 +1931,9 @@ class AdminController extends Controller
             if ($request->hasFile('login_image')) {
                 $path = 'upload/images/auth/';
                 $image = $request->file('login_image');
-                $image_name = Str::random(4).'-login-image.'.$image->getClientOriginalExtension();
+                $image_name = Str::random(4) . '-login-image.' . $image->getClientOriginalExtension();
                 $image->move($path, $image_name);
-                $auth['login_image'] = $path.$image_name;
+                $auth['login_image'] = $path . $image_name;
             } else {
                 $auth['login_image'] = $old_auth?->login_image ?? null;
             }
@@ -1826,7 +1967,7 @@ class AdminController extends Controller
         if ($request->faq_id != 'undefined') {
             $faq = Faq::where('id', $request->faq_id)->firstOrFail();
         } else {
-            $faq = new Faq();
+            $faq = new Faq;
         }
 
         $faq->question = $request->question;
@@ -1867,7 +2008,7 @@ class AdminController extends Controller
         if ($request->item_id != 'undefined') {
             $item = FrontendTools::where('id', $request->item_id)->firstOrFail();
         } else {
-            $item = new FrontendTools();
+            $item = new FrontendTools;
         }
         $item->title = $request->title;
         $item->description = $request->description;
@@ -1879,11 +2020,11 @@ class AdminController extends Controller
         if ($request->hasFile('image')) {
             $path = 'upload/images/frontent/tools/';
             $image = $request->file('image');
-            $image_name = Str::random(4).'-'.Str::slug($request->title).'.'.$image->getClientOriginalExtension();
+            $image_name = Str::random(4) . '-' . Str::slug($request->title) . '.' . $image->getClientOriginalExtension();
 
             //Resim uzantı kontrolü
             $imageTypes = ['jpg', 'jpeg', 'png', 'svg', 'webp'];
-            if (! in_array(Str::lower($image->getClientOriginalExtension()), $imageTypes)) {
+            if (!in_array(Str::lower($image->getClientOriginalExtension()), $imageTypes)) {
                 $data = [
                     'errors' => ['The file extension must be jpg, jpeg, png, webp or svg.'],
                 ];
@@ -1893,7 +2034,7 @@ class AdminController extends Controller
 
             $image->move($path, $image_name);
 
-            $item->image = $path.$image_name;
+            $item->image = $path . $image_name;
         }
 
         $item->save();
@@ -1931,7 +2072,7 @@ class AdminController extends Controller
         if ($request->item_id != 'undefined') {
             $item = FrontendFuture::where('id', $request->item_id)->firstOrFail();
         } else {
-            $item = new FrontendFuture();
+            $item = new FrontendFuture;
         }
         $item->title = $request->title;
         $item->description = $request->description;
@@ -1971,7 +2112,7 @@ class AdminController extends Controller
         if ($request->item_id != 'undefined') {
             $item = FrontendForWho::where('id', $request->item_id)->firstOrFail();
         } else {
-            $item = new FrontendForWho();
+            $item = new FrontendForWho;
         }
         $item->title = $request->title;
         $item->color = $request->color;
@@ -2011,17 +2152,17 @@ class AdminController extends Controller
         if ($request->item_id != 'undefined') {
             $item = FrontendGenerators::where('id', $request->item_id)->firstOrFail();
         } else {
-            $item = new FrontendGenerators();
+            $item = new FrontendGenerators;
         }
 
         if ($request->hasFile('image')) {
             $path = 'upload/images/generatorlist/';
             $image = $request->file('image');
-            $image_name = Str::random(4).'-'.Str::slug($request->title).'-image.'.$image->getClientOriginalExtension();
+            $image_name = Str::random(4) . '-' . Str::slug($request->title) . '-image.' . $image->getClientOriginalExtension();
 
             //Resim uzantı kontrolü
             $imageTypes = ['jpg', 'jpeg', 'png', 'svg', 'webp'];
-            if (! in_array(Str::lower($image->getClientOriginalExtension()), $imageTypes)) {
+            if (!in_array(Str::lower($image->getClientOriginalExtension()), $imageTypes)) {
                 $data = [
                     'errors' => ['The file extension must be jpg, jpeg, png, webp or svg.'],
                 ];
@@ -2031,7 +2172,7 @@ class AdminController extends Controller
 
             $image->move($path, $image_name);
 
-            $item->image = $path.$image_name;
+            $item->image = $path . $image_name;
         }
 
         $item->menu_title = $request->menu_title;
@@ -2054,7 +2195,6 @@ class AdminController extends Controller
         return back()->with(['message' => __('Item deleted succesfully'), 'type' => 'success']);
     }
 
-
     // socialmedia, socialmediaSave
     public function socialmedia(): View
     {
@@ -2068,10 +2208,10 @@ class AdminController extends Controller
         if (Helper::appIsNotDemo()) {
             $accounts = SocialMediaAccounts::get();
             foreach ($accounts as $account) {
-                $account->subtitle = $request->input('subtitle_'.$account->key);
-                $account->icon = $request->input('icon_'.$account->key);
-                $account->link = $request->input('link_'.$account->key);
-                $account->is_active = $request->has('is_active_'.$account->key);
+                $account->subtitle = $request->input('subtitle_' . $account->key);
+                $account->icon = $request->input('icon_' . $account->key);
+                $account->link = $request->input('link_' . $account->key);
+                $account->is_active = $request->has('is_active_' . $account->key);
                 $account->save();
             }
         }
@@ -2094,7 +2234,7 @@ class AdminController extends Controller
             $deletionRequest->user->delete();
 
             return response()->json([
-                'status' => true,
+                'status'  => true,
                 'message' => __('User deleted successfully'),
             ], 200);
         }

@@ -10,14 +10,14 @@ class TeamInviteRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'email' =>[
+            'email' => [
                 'required',
                 'email',
                 'unique:team_members,email',
                 'unique:users,email',
-                new TeamInviteRule()
+                new TeamInviteRule,
             ],
-            'team_id' => 'required|exists:teams,id'
+            'team_id' => 'required|exists:teams,id',
         ];
     }
 }

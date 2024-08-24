@@ -12,10 +12,10 @@ class FavoriteIcon extends Component
      * Create a new component instance.
      */
     public function __construct(
-		public bool $isFavorited = false,
-		public string $idleIcon = 'tabler-star',
-		public string $activeIcon = 'tabler-star-filled',
-	){}
+        public bool $isFavorited = false,
+        public string $idleIcon = 'tabler-star',
+        public string $activeIcon = 'tabler-star-filled',
+    ) {}
 
     /**
      * Get the view / contents that represent the component.

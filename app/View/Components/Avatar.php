@@ -13,9 +13,8 @@ class Avatar extends Component
      * Create a new component instance.
      */
     public function __construct(
-		public User $user
-	)
-    {
+        public User $user
+    ) {
         //
     }
 

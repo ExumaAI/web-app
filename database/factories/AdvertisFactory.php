@@ -17,12 +17,12 @@ class AdvertisFactory extends Factory
     public function definition(): array
     {
         return [
-            'key' => str($this->faker->unique()->word())->snake(),
-            'title' => $this->faker->sentence(),
+            'key'           => str($this->faker->unique()->word())->snake(),
+            'title'         => $this->faker->sentence(),
             'tracking_code' => [
-                'mobile' => $this->faker->randomHtml(),
+                'mobile'  => $this->faker->randomHtml(),
                 'desktop' => $this->faker->randomHtml(),
-                'tablet' => $this->faker->randomHtml(),
+                'tablet'  => $this->faker->randomHtml(),
             ],
             'status' => $this->faker->boolean(),
         ];

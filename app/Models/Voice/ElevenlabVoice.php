@@ -2,7 +2,6 @@
 
 namespace App\Models\Voice;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class ElevenlabVoice extends Model
@@ -12,6 +11,6 @@ class ElevenlabVoice extends Model
         'name',
         'voice_id',
         'path',
-        'status'
+        'status',
     ];
 }

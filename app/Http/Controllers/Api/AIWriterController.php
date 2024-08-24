@@ -9,6 +9,7 @@ use App\Models\Setting;
 use App\Models\SettingTwo;
 use App\Models\UserFavorite;
 use App\Models\UserOpenai;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Response;
@@ -26,11 +27,11 @@ class AIWriterController extends Controller
 
     protected $settings_two;
 
-    const STABLEDIFFUSION = 'stablediffusion';
+    public const STABLEDIFFUSION = 'stablediffusion';
 
-    const STORAGE_S3 = 's3';
+    public const STORAGE_S3 = 's3';
 
-    const STORAGE_LOCAL = 'public';
+    public const STORAGE_LOCAL = 'public';
 
     public function __construct()
     {
@@ -98,10 +99,10 @@ class AIWriterController extends Controller
             $userOpenai = UserOpenai::where('user_id', Auth::id())->where('openai_id', $openai->id)->orderBy('created_at', 'desc')->get();
 
             return response()->json([
-                'openai' => $openai,
+                'openai'     => $openai,
                 'userOpenai' => $userOpenai,
             ], 200);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return response()->json(['error' => __('Resource not found')], 404);
         }
     }
@@ -155,7 +156,7 @@ class AIWriterController extends Controller
             return response()->json([
                 'openai' => $openai,
             ], 200);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return response()->json(['error' => __('Resource not found')], 404);
         }
     }
@@ -265,27 +266,28 @@ class AIWriterController extends Controller
             try {
                 if ($settings->openai_default_model == 'text-davinci-003') {
                     $stream = FacadesOpenAI::completions()->createStreamed([
-                        'model' => $this->settings->openai_default_model,
-                        'prompt' => $prompt,
+                        'model'       => $this->settings->openai_default_model,
+                        'prompt'      => $prompt,
                         'temperature' => (int) $creativity,
-                        'max_tokens' => (int) $maximum_length,
-                        'n' => (int) $number_of_results,
+                        'max_tokens'  => (int) $maximum_length,
+                        'n'           => (int) $number_of_results,
                     ]);
 
                 } else {
                     if ((int) $number_of_results > 1) {
-                        $prompt = $prompt.' number of results should be '.(int) $number_of_results;
+                        $prompt = $prompt . ' number of results should be ' . (int) $number_of_results;
                     }
                     $stream = FacadesOpenAI::chat()->createStreamed([
-                        'model' => $this->settings->openai_default_model,
+                        'model'    => $this->settings->openai_default_model,
                         'messages' => [
                             ['role' => 'user', 'content' => $prompt],
                         ],
                     ]);
                 }
-            } catch (\Exception $exception) {
-                $messageError = 'Error from API call. Please try again. If error persists again, please contact the system administrator with this message '.$exception->getMessage();
-                echo 'data: {"error": "'.$messageError.'"}';
+            } catch (Exception $exception) {
+                $messageError = 'Error from API call. Please try again. If error persists again, please contact the system administrator with this message ' . $exception->getMessage();
+                //echo 'data: {"error": "'.$messageError.'"}';
+                echo "error: $messageError";  // defined error: to handle error in frontend
                 echo "\n\n";
                 //ob_flush();
                 flush();
@@ -295,6 +297,7 @@ class AIWriterController extends Controller
                 //ob_flush();
                 flush();
                 usleep(50000);
+                $stream = []; // empty array to prevent further processing and $stream is undefined error
             }
 
             $total_used_tokens = 0;
@@ -317,7 +320,7 @@ class AIWriterController extends Controller
 
                 //save file on local storage or aws s3
                 Storage::disk('public')->put($nameOfImage, $contents);
-                $path = '/uploads/'.$nameOfImage;
+                $path = '/uploads/' . $nameOfImage;
                 $uploadedFile = new File(substr($path, 1));
 
                 if (SettingTwo::first()->ai_image_storage == 's3') {
@@ -325,8 +328,8 @@ class AIWriterController extends Controller
                         $aws_path = Storage::disk('s3')->put('', $uploadedFile);
                         unlink(substr($path, 1));
                         $path = Storage::disk('s3')->url($aws_path);
-                    } catch (\Exception $e) {
-                        return response()->json(['status' => 'error', 'message' => 'AWS Error - '.$e->getMessage()]);
+                    } catch (Exception $e) {
+                        return response()->json(['status' => 'error', 'message' => 'AWS Error - ' . $e->getMessage()]);
                     }
                 }
 
@@ -344,11 +347,11 @@ class AIWriterController extends Controller
             if ($rss_image) {
 
                 $contents = file_get_contents($rss_image);
-                $nameOfImage = 'rss-'.Str::random(12).'.jpg';
+                $nameOfImage = 'rss-' . Str::random(12) . '.jpg';
 
                 //save file on local storage or aws s3
                 Storage::disk('public')->put($nameOfImage, $contents);
-                $path = '/uploads/'.$nameOfImage;
+                $path = '/uploads/' . $nameOfImage;
                 $uploadedFile = new File(substr($path, 1));
 
                 if (SettingTwo::first()->ai_image_storage == 's3') {
@@ -356,8 +359,8 @@ class AIWriterController extends Controller
                         $aws_path = Storage::disk('s3')->put('', $uploadedFile);
                         unlink(substr($path, 1));
                         $path = Storage::disk('s3')->url($aws_path);
-                    } catch (\Exception $e) {
-                        return response()->json(['status' => 'error', 'message' => 'AWS Error - '.$e->getMessage()]);
+                    } catch (Exception $e) {
+                        return response()->json(['status' => 'error', 'message' => 'AWS Error - ' . $e->getMessage()]);
                     }
                 }
 
@@ -371,6 +374,12 @@ class AIWriterController extends Controller
                 usleep(500);
             }
 
+            // Disable output buffering
+            while (ob_get_level() > 0) {
+                ob_end_flush();
+            }
+            ob_start();
+
             foreach ($stream as $response) {
                 if ($settings->openai_default_model == 'text-davinci-003') {
                     if (isset($response->choices[0]->text)) {
@@ -380,11 +389,11 @@ class AIWriterController extends Controller
                         $responsedText .= $message;
                         $total_used_tokens += countWords($messageFix);
 
-                        echo PHP_EOL;
                         echo $messageFix;
-                        //ob_flush();
+                        echo PHP_EOL;
+                        ob_flush();
                         flush();
-                        usleep(50000); //500
+                        usleep(100); //500
                     }
                 } else {
 
@@ -395,11 +404,11 @@ class AIWriterController extends Controller
                         $responsedText .= $message;
                         $total_used_tokens += countWords($messageFix);
 
-                        echo PHP_EOL;
                         echo $messageFix;
-                        //ob_flush();
+                        echo PHP_EOL;
+                        ob_flush();
                         flush();
-                        usleep(50000); //500
+                        usleep(100); //500
                     }
                 }
 
@@ -423,13 +432,13 @@ class AIWriterController extends Controller
             // echo 'data: {"status": "DONE"}';
             echo "\n\n";
             echo 'data: [DONE]';
-            //ob_flush();
+            ob_flush();
             flush();
             usleep(50000);
         }, 200, [
-            'Cache-Control' => 'no-cache',
+            'Cache-Control'     => 'no-cache',
             'X-Accel-Buffering' => 'no',
-            'Content-Type' => 'text/event-stream',
+            'Content-Type'      => 'text/event-stream',
         ]);
     }
 
@@ -509,7 +518,7 @@ class AIWriterController extends Controller
             ->get();
 
         return response()->json([
-            'images' => $images,
+            'images'  => $images,
             'hasMore' => $images->count() === $limit,
         ]);
     }
@@ -739,7 +748,7 @@ class AIWriterController extends Controller
 
         $userId = Auth::user()->id;
 
-        $favorite = new UserFavorite();
+        $favorite = new UserFavorite;
         $favorite->user_id = $userId;
         $favorite->openai_id = $openAi->id;
         $favorite->save();

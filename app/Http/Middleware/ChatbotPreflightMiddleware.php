@@ -4,14 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
-use App\Models\Chatbot\Domain;
-use App\Support\Chatbot\ChatbotHelper;
 use Closure;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
-use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Str;
 
 class ChatbotPreflightMiddleware
 {

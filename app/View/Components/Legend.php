@@ -12,9 +12,9 @@ class Legend extends Component
      * Create a new component instance.
      */
     public function __construct(
-		public string $label = 'Label',
-		public string $size = 'md',
-	){}
+        public string $label = 'Label',
+        public string $size = 'md',
+    ) {}
 
     /**
      * Get the view / contents that represent the component.

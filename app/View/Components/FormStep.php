@@ -12,10 +12,9 @@ class FormStep extends Component
      * Create a new component instance.
      */
     public function __construct(
-		public string $step = '',
-		public string $label = '',
-	)
-    {
+        public string $step = '',
+        public string $label = '',
+    ) {
         //
     }
 

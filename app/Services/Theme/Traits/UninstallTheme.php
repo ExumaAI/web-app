@@ -3,6 +3,7 @@
 namespace App\Services\Theme\Traits;
 
 use App\Models\Extension;
+use Exception;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
@@ -21,8 +22,8 @@ trait UninstallTheme
 
             if (empty($this->indexJsonArray)) {
                 return [
-                    'status' => false,
-                    'message' => trans('index.json not found')
+                    'status'  => false,
+                    'message' => trans('index.json not found'),
                 ];
             }
 
@@ -42,18 +43,18 @@ trait UninstallTheme
 
             Extension::query()->where('slug', $extensionSlug)
                 ->update([
-                    'installed' => 0
+                    'installed' => 0,
                 ]);
 
             return [
                 'success' => true,
-                'status' => true,
-                'message' => trans('Extension uninstalled successfully')
+                'status'  => true,
+                'message' => trans('Extension uninstalled successfully'),
             ];
-        }catch (\Exception $e) {
+        } catch (Exception $e) {
             return [
-                'status' => false,
-                'message' => $e->getMessage()
+                'status'  => false,
+                'message' => $e->getMessage(),
             ];
         }
     }
@@ -82,10 +83,9 @@ trait UninstallTheme
             return;
         }
 
-        $routePath = base_path("routes/extroutes/". basename($route));
+        $routePath = base_path('routes/extroutes/' . basename($route));
 
-        if (File::exists($routePath))
-        {
+        if (File::exists($routePath)) {
             File::delete($routePath);
         }
     }
@@ -119,7 +119,7 @@ trait UninstallTheme
 
             $column = data_get($value, 'condition.column', null);
 
-            $sqlPath = $this->zipExtractPath . DIRECTORY_SEPARATOR . 'migrations'. DIRECTORY_SEPARATOR . data_get($value, 'path');
+            $sqlPath = $this->zipExtractPath . DIRECTORY_SEPARATOR . 'migrations' . DIRECTORY_SEPARATOR . data_get($value, 'path');
 
             if (
                 Schema::hasTable($table)
@@ -131,7 +131,7 @@ trait UninstallTheme
                 );
 
                 DB::unprepared($query);
-            } else if (
+            } elseif (
                 Schema::hasTable($table)
                 && File::exists($sqlPath)
                 && $column

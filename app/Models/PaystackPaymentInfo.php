@@ -9,8 +9,7 @@ class PaystackPaymentInfo extends Model
 {
     use HasFactory;
 
-
-    protected $fillable = [ 
+    protected $fillable = [
         'user_id',
         'email',
         'reference',
@@ -23,6 +22,6 @@ class PaystackPaymentInfo extends Model
         'currency',
         'plan_code',
         'customer_code',
-        'other'
+        'other',
     ];
 }

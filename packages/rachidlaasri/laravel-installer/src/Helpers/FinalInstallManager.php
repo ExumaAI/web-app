@@ -26,7 +26,6 @@ class FinalInstallManager
     /**
      * Generate New Application Key.
      *
-     * @param \Symfony\Component\Console\Output\BufferedOutput $outputLog
      * @return \Symfony\Component\Console\Output\BufferedOutput|array
      */
     private static function generateKey(BufferedOutput $outputLog)
@@ -45,7 +44,6 @@ class FinalInstallManager
     /**
      * Publish vendor assets.
      *
-     * @param \Symfony\Component\Console\Output\BufferedOutput $outputLog
      * @return \Symfony\Component\Console\Output\BufferedOutput|array
      */
     private static function publishVendorAssets(BufferedOutput $outputLog)
@@ -64,15 +62,13 @@ class FinalInstallManager
     /**
      * Return a formatted error messages.
      *
-     * @param $message
-     * @param \Symfony\Component\Console\Output\BufferedOutput $outputLog
      * @return array
      */
     private static function response($message, BufferedOutput $outputLog)
     {
         return [
-            'status' => 'error',
-            'message' => $message,
+            'status'      => 'error',
+            'message'     => $message,
             'dbOutputLog' => $outputLog->fetch(),
         ];
     }

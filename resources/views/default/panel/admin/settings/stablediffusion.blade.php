@@ -26,7 +26,7 @@
                         type="checkbox"
                         name="stable_hidden"
                         :checked="setting('stable_hidden') == 1"
-                        label="{{ __('Hide StableDiffusion') }}"
+                        label="{{ __('Hide StableDiffusion from AI Image') }}"
                         switcher
                     />
                 </div>
@@ -286,6 +286,7 @@
                         class="form-select"
                         id="stablediffusion_default_model"
                         name="stablediffusion_default_model"
+                        onchange="toggleBedrockModel(this.value)"
                     >
                         <option
                             value="stable-diffusion-xl-1024-v0-9"
@@ -315,6 +316,56 @@
                             {{ $settings_two->stablediffusion_default_model == 'sd3-turbo' ? 'selected' : null }}
                         >
                             {{ __('Stable Diffusion 3 turbo') }}</option>
+
+                        {{-- sd3-large sd3-large-turbo sd3-medium --}}
+                        <option
+                            value="sd3-large"
+                            {{ $settings_two->stablediffusion_default_model == 'sd3-large' ? 'selected' : null }}
+                        >
+                            {{ __('Stable Diffusion 3 Large') }}</option>
+                        </option>
+                        <option
+                            value="sd3-large-turbo"
+                            {{ $settings_two->stablediffusion_default_model == 'sd3-large-turbo' ? 'selected' : null }}
+                        >
+                            {{ __('Stable Diffusion 3 Large Turbo') }}</option>
+                        </option>
+                        <option
+                            value="sd3-medium"
+                            {{ $settings_two->stablediffusion_default_model == 'sd3-medium' ? 'selected' : null }}
+                        >
+                            {{ __('Stable Diffusion 3 Medium') }}</option>
+                        </option>
+                        <option
+                            value="{{ \App\Enums\BedrockEngine::BEDROCK->value }}"
+                            {{ $settings_two->stablediffusion_default_model == \App\Enums\BedrockEngine::BEDROCK->value ? 'selected' : null }}
+                        >
+                            {{ __(\App\Enums\BedrockEngine::BEDROCK->label()) }}
+                        </option>
+                    </select>
+                </div>
+            </div>
+
+            <div
+                class="col-md-12"
+                id="stable_bedrock"
+                style="display: none;"
+            >
+                <div class="mb-3">
+                    <label class="form-label">{{ __('Default AWS Bedrock Model') }}
+                        <x-info-tooltip text="{{ __('To use Bedrock, you must first configure your AWS settings.') }}" />
+                    </label>
+                    <select
+                        class="form-select"
+                        id="stablediffusion_bedrock_model"
+                        name="stablediffusion_bedrock_model"
+                    >
+                        <option
+                            value="{{ \App\Enums\BedrockEngine::STABLE_DIFFUSION_1->value }}"
+                            {{ $settings_two->stablediffusion_bedrock_model == \App\Enums\BedrockEngine::STABLE_DIFFUSION_1->value ? 'selected' : null }}
+                        >
+                            {{ __(\App\Enums\BedrockEngine::STABLE_DIFFUSION_1->label()) }}
+                        </option>
                     </select>
                 </div>
             </div>
@@ -352,6 +403,21 @@
 @endsection
 
 @push('script')
+    <script>
+        function toggleBedrockModel(value) {
+            const bedrockSelect = document.getElementById('stable_bedrock');
+            if (value === "aws_bedrock") {
+                bedrockSelect.style.display = 'block';
+            } else {
+                bedrockSelect.style.display = 'none';
+            }
+        }
+        document.addEventListener("DOMContentLoaded", function() {
+            const defaultModelSelect = document.getElementById('stablediffusion_default_model');
+            toggleBedrockModel(defaultModelSelect.value);
+        });
+    </script>
+
     <script src="{{ custom_theme_url('/assets/js/panel/settings.js') }}"></script>
     <script src="{{ custom_theme_url('/assets/libs/select2/select2.min.js') }}"></script>
 @endpush

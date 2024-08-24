@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Models\UserOpenai;
 use App\Models\UserOpenaiChat;
 use App\Models\UserOpenaiChatMessage;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -89,7 +90,7 @@ class AIChatController extends Controller
             ->get();
 
         return response()->json([
-            'category' => $category,
+            'category'      => $category,
             'conversations' => $conversations,
         ], 200);
     }
@@ -159,7 +160,7 @@ class AIChatController extends Controller
 
         $conversations = UserOpenaiChat::where([
             ['user_id', '=', $request->user()->id],
-            ['title', 'like', '%'.$word.'%'],
+            ['title', 'like', '%' . $word . '%'],
         ])
             ->orderBy('updated_at', 'desc')
             ->take(20)
@@ -224,22 +225,22 @@ class AIChatController extends Controller
         }
 
         $category = OpenaiGeneratorChatCategory::where('id', $request->category_id)->firstOrFail();
-        $chat = new UserOpenaiChat();
+        $chat = new UserOpenaiChat;
         $chat->user_id = Auth::id();
         $chat->openai_chat_category_id = $category->id;
-        $chat->title = $category->name.' Chat';
+        $chat->title = $category->name . ' Chat';
         $chat->total_credits = 0;
         $chat->total_words = 0;
         $chat->save();
 
-        $message = new UserOpenaiChatMessage();
+        $message = new UserOpenaiChatMessage;
         $message->user_openai_chat_id = $chat->id;
         $message->user_id = Auth::id();
         $message->response = 'First Initiation';
         if ($category->role == 'default') {
-            $output = __('Hi! I am').' '.$category->name.__(', and I\'m here to answer all your questions');
+            $output = __('Hi! I am') . ' ' . $category->name . __(', and I\'m here to answer all your questions');
         } else {
-            $output = __('Hi! I am').' '.$category->human_name.__(', and I\'m').' '.$category->role.'. '.$category->helps_with;
+            $output = __('Hi! I am') . ' ' . $category->human_name . __(', and I\'m') . ' ' . $category->role . '. ' . $category->helps_with;
         }
         $message->output = $output;
         $message->hash = Str::random(256);
@@ -426,7 +427,7 @@ class AIChatController extends Controller
         $list = UserOpenaiChat::where('user_id', $request->user()->id)
             ->where('openai_chat_category_id', $categoryId)
             ->orderBy('updated_at', 'desc')
-            ->where('title', 'like', '%'.$search.'%')
+            ->where('title', 'like', '%' . $search . '%')
             ->get();
 
         return response()->json($list, 200);
@@ -554,8 +555,7 @@ class AIChatController extends Controller
             } else {
                 $chat_bot = 'gpt-3.5-turbo';
             }
-			$chat_bot == null ? 'gpt-3.5-turbo': $chat_bot;      
-
+            $chat_bot == null ? 'gpt-3.5-turbo' : $chat_bot;
 
             $conver_id = $request->conver_id;
             $message_id = $request->message_id;
@@ -585,7 +585,7 @@ class AIChatController extends Controller
 
                 foreach ($chat_completions as $item) {
                     $history[] = [
-                        'role' => $item['role'],
+                        'role'    => $item['role'],
                         'content' => $item['content'],
                     ];
                 }
@@ -595,10 +595,10 @@ class AIChatController extends Controller
 
             if ($category->prompt_prefix != null) {
                 $prompt = "You will now play a character and respond as that character (You will never break character). Your name is $category->human_name.
-                I want you to act as a $category->role.".$category->prompt_prefix;
+                I want you to act as a $category->role." . $category->prompt_prefix;
 
                 $history[] = [
-                    'role' => 'system',
+                    'role'    => 'system',
                     'content' => $prompt,
                 ];
             }
@@ -618,15 +618,16 @@ class AIChatController extends Controller
 
                 try {
                     $stream = OpenAI::chat()->createStreamed([
-                        'model' => $chat_bot,
-                        'messages' => $history,
-                        'presence_penalty' => 0.6,
+                        'model'             => $chat_bot,
+                        'messages'          => $history,
+                        'presence_penalty'  => 0.6,
                         'frequency_penalty' => 0,
                     ]);
-                } catch (\Exception $exception) {
+                } catch (Exception $exception) {
                     Log::info($exception);
-                    $messageError = 'Error from API call. Please try again. If error persists again please contact system administrator with this message '.$exception->getMessage();
-                    echo "data: $messageError";
+                    $messageError = 'Error from API call. Please try again. If error persists again please contact system administrator with this message ' . $exception->getMessage();
+                    // echo "data: $messageError";
+                    echo "error: $messageError";  // defined error: to handle error in frontend
                     echo "\n\n";
                     //ob_flush();
                     flush();
@@ -635,11 +636,18 @@ class AIChatController extends Controller
                     //ob_flush();
                     flush();
                     usleep(50000);
+                    $stream = []; // empty array to prevent further processing and $stream is undefined error
                 }
 
                 $total_used_tokens = 0;
                 $output = '';
                 $responsedText = '';
+
+                // Disable output buffering
+                while (ob_get_level() > 0) {
+                    ob_end_flush();
+                }
+                ob_start();
 
                 foreach ($stream as $response) {
                     if (isset($response['choices'][0]['delta']['content'])) {
@@ -649,11 +657,11 @@ class AIChatController extends Controller
                         $responsedText .= $message;
                         $total_used_tokens += countWords($message);
 
-                        echo PHP_EOL;
                         echo $messageFix;
-                        //ob_flush();
+                        echo PHP_EOL;
+                        ob_flush();
                         flush();
-                        usleep(50000); //5000
+                        usleep(100); //5000
                     }
                     if (connection_aborted()) {
                         break;
@@ -681,13 +689,13 @@ class AIChatController extends Controller
                 $chat->save();
                 echo 'data: [DONE]';
                 echo "\n\n";
-                //ob_flush();
+                ob_flush();
                 flush();
                 usleep(50000);
             }, 200, [
-                'Cache-Control' => 'no-cache',
+                'Cache-Control'     => 'no-cache',
                 'X-Accel-Buffering' => 'no',
-                'Content-Type' => 'text/event-stream',
+                'Content-Type'      => 'text/event-stream',
             ]);
         } else { // method POST
 
@@ -713,7 +721,7 @@ class AIChatController extends Controller
 
             $total_used_tokens = 0;
 
-            $entry = new UserOpenaiChatMessage();
+            $entry = new UserOpenaiChatMessage;
             $entry->user_id = $request->user()->id;
             $entry->user_openai_chat_id = $chat->id;
             $entry->input = $prompt;
@@ -784,8 +792,8 @@ class AIChatController extends Controller
         }
 
         return response()->json([
-            'category' => $category,
-            'conversation' => $conversation,
+            'category'         => $category,
+            'conversation'     => $conversation,
             'chat_completions' => $chat_completions,
         ], 200);
     }
@@ -1022,20 +1030,20 @@ class AIChatController extends Controller
             ];
 
             if ($search != '') {
-                $query[] = ['output', 'LIKE', '%'.$search.'%'];
-                $query[] = ['ai_title', 'LIKE', '%'.$search.'%'];
+                $query[] = ['output', 'LIKE', '%' . $search . '%'];
+                $query[] = ['ai_title', 'LIKE', '%' . $search . '%'];
             }
 
             $workbook_search = UserOpenai::select('user_openai.*', 'openai.title as ai_title', 'openai.image as ai_image', 'openai.color as ai_color')
                 ->join('openai', 'openai.id', '=', 'user_openai.openai_id')
                 ->where($workbook_query)->get();
 
-            $template_search = OpenAIGenerator::where('title', 'like', '%'.$search.'%')->get();
+            $template_search = OpenAIGenerator::where('title', 'like', '%' . $search . '%')->get();
             // $workbook_search = UserOpenai::where('title', 'like', "%".$word."%")->get();
-            $ai_chat_search = OpenaiGeneratorChatCategory::where('name', 'like', '%'.$search.'%')
-                ->orWhere('description', 'like', '%'.$search.'%')->get();
+            $ai_chat_search = OpenaiGeneratorChatCategory::where('name', 'like', '%' . $search . '%')
+                ->orWhere('description', 'like', '%' . $search . '%')->get();
 
-            $ai_chat_history_search = UserOpenaiChat::where('title', 'like', '%'.$search.'%')->get();
+            $ai_chat_history_search = UserOpenaiChat::where('title', 'like', '%' . $search . '%')->get();
 
             if (count($template_search) == 0 and count($workbook_search) == 0 and count($ai_chat_search) == 0 and count($ai_chat_history_search) == 0) {
                 $result = 'null';
@@ -1043,11 +1051,75 @@ class AIChatController extends Controller
         }
 
         return response()->json([
-            'template_search' => $template_search,
-            'workbook_search' => $workbook_search,
-            'ai_chat_search' => $ai_chat_search,
+            'template_search'        => $template_search,
+            'workbook_search'        => $workbook_search,
+            'ai_chat_search'         => $ai_chat_search,
             'ai_chat_history_search' => $ai_chat_history_search,
-            'result' => $result,
+            'result'                 => $result,
         ], 200);
+    }
+
+    public function developerStreamTest()
+    {
+
+        return response()->stream(function () {
+
+            $streamText400 = 'Crafting unique spaces is an art form that balances aesthetics and practicality. As an interior designer, I specialize in translating your vision into personalized designs that reflect your style. By selecting colors, furniture, and decor elements thoughtfully, we can transform your space into a meaningful reflection of your personality and preferences.';
+
+            $words = explode(' ', $streamText400);
+
+            foreach ($words as $response) {
+                echo $response . ' ';
+                ob_flush();
+                flush();
+                usleep(50000);
+
+                if (connection_aborted()) {
+                    break;
+                }
+            }
+        }, 200, [
+            'Cache-Control'     => 'no-cache',
+            'X-Accel-Buffering' => 'no',
+            'Content-Type'      => 'text/event-stream',
+        ]);
+    }
+
+    public function changeChatTitle(Request $request)
+    {
+        if ($request->streamed_message_id == null) {
+            return response()->json(['error' => __('ID required')], 412);
+        }
+
+        $changed = false;
+        $streamed_message_id = $request->streamed_message_id;
+        $message = UserOpenaiChatMessage::whereId($streamed_message_id)->first();
+        $chat_id = $message->user_openai_chat_id;
+        $chat = UserOpenaiChat::whereId($chat_id)->first();
+
+        $newTitle = '';
+        if ($chat->messages()->count() <= 2) {
+            $generatedNewChatTitle = OpenAI::chat()->create([
+                'model'    => $this->settings->openai_default_model,
+                'messages' => [
+                    [
+                        'role'    => 'system',
+                        'content' => 'You are a chatbot. Generate a title for a chat based on provided conversation. You must return a title only.',
+                    ],
+                    [
+                        'role'    => 'user',
+                        'content' => "Generate a title for a chat based on the following conversation: \n\n\n\n\n"
+                        . 'User Input: ' . $message->input . "\n\n\n\n\n"
+                        . 'Assistant Response: ' . $message->response,
+                    ],
+                ],
+            ]);
+            $newTitle = $generatedNewChatTitle['choices'][0]['message']['content'];
+            $chat->title = $newTitle;
+            $chat->save();
+            $changed = true;
+        }
+
+        return response()->json(['chat_id' => $chat_id, 'changed' => $changed, 'new_title' => $newTitle]);
     }
 }

@@ -12,11 +12,8 @@ class ChangeIndicator extends Component
      * Create a new component instance.
      */
     public function __construct(
-		public float $value = 0
-	)
-    {
-
-    }
+        public float $value = 0
+    ) {}
 
     /**
      * Get the view / contents that represent the component.

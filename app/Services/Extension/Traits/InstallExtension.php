@@ -4,7 +4,6 @@ namespace App\Services\Extension\Traits;
 
 use App\Helpers\Classes\Helper;
 use App\Models\Extension;
-use App\Services\Common\MenuService;
 use Exception;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Facades\Artisan;
@@ -34,7 +33,7 @@ trait InstallExtension
 
         if ($response->failed()) {
             return [
-                'status' => false,
+                'status'  => false,
                 'message' => trans('Failed to download extension'),
             ];
         }
@@ -63,7 +62,7 @@ trait InstallExtension
 
                 if (empty($this->indexJsonArray)) {
                     return [
-                        'status' => false,
+                        'status'  => false,
                         'message' => trans('index.json not found'),
                     ];
                 }
@@ -99,21 +98,20 @@ trait InstallExtension
                 Extension::query()->where('slug', $extensionSlug)
                     ->update([
                         'installed' => 1,
-                        'version' => data_get($this->indexJsonArray, 'version'),
+                        'version'   => data_get($this->indexJsonArray, 'version'),
                     ]);
-
 
                 Artisan::call('cache:clear');
 
                 return [
                     'success' => true,
-                    'status' => true,
+                    'status'  => true,
                     'message' => trans('Extension installed successfully'),
                 ];
 
             } catch (Exception $e) {
                 return [
-                    'status' => false,
+                    'status'  => false,
                     'message' => $e->getMessage(),
                 ];
             }
@@ -138,7 +136,7 @@ trait InstallExtension
 
             $column = data_get($value, 'condition.column', null);
 
-            $sqlPath = $this->zipExtractPath.DIRECTORY_SEPARATOR.'migrations'.DIRECTORY_SEPARATOR.data_get($value, 'path');
+            $sqlPath = $this->zipExtractPath . DIRECTORY_SEPARATOR . 'migrations' . DIRECTORY_SEPARATOR . data_get($value, 'path');
 
             if (! $no_table) {
                 if (
@@ -190,7 +188,7 @@ trait InstallExtension
         $extensionSlug = $this->extensionSlug;
 
         File::copy(
-            $zipExtractPath.DIRECTORY_SEPARATOR.'index.json',
+            $zipExtractPath . DIRECTORY_SEPARATOR . 'index.json',
             resource_path("extensions/$extensionSlug/index.json")
         );
 
@@ -203,7 +201,7 @@ trait InstallExtension
         foreach ($data as $value) {
             $path = data_get($value, 'path');
 
-            $sqlPath = $zipExtractPath.DIRECTORY_SEPARATOR.'migrations'.DIRECTORY_SEPARATOR.$path;
+            $sqlPath = $zipExtractPath . DIRECTORY_SEPARATOR . 'migrations' . DIRECTORY_SEPARATOR . $path;
 
             File::copy($sqlPath, resource_path("extensions/$extensionSlug/migrations/$path"));
         }
@@ -219,12 +217,12 @@ trait InstallExtension
             return;
         }
 
-        $routePath = $zipExtractPath.DIRECTORY_SEPARATOR.$route;
+        $routePath = $zipExtractPath . DIRECTORY_SEPARATOR . $route;
 
         if (File::exists($routePath)) {
             File::copy(
                 $routePath,
-                base_path('routes/extroutes/'.basename($routePath))
+                base_path('routes/extroutes/' . basename($routePath))
             );
         }
     }
@@ -241,7 +239,7 @@ trait InstallExtension
 
         foreach ($controllers as $controller) {
 
-            $controllerPath = $zipExtractPath.DIRECTORY_SEPARATOR.$controller;
+            $controllerPath = $zipExtractPath . DIRECTORY_SEPARATOR . $controller;
 
             if (! File::isDirectory(dirname(base_path($controller)))) {
                 File::makeDirectory(dirname(base_path($controller)), 0777, true);
@@ -271,7 +269,7 @@ trait InstallExtension
 
             $fileName = is_numeric($key) ? basename($file) : $key;
 
-            $sourcePath = $zipExtractPath.DIRECTORY_SEPARATOR.'stubs'.DIRECTORY_SEPARATOR.$fileName;
+            $sourcePath = $zipExtractPath . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . $fileName;
 
             $destinationPath = base_path($file);
 
@@ -292,7 +290,7 @@ trait InstallExtension
     {
         $licenseKey = $licenseKey ?? Helper::settingTwo('liquid_license_domain_key');
 
-        $response = Http::get('https://portal.liquid-themes.com/api/license/'.$licenseKey);
+        $response = Http::get('https://portal.liquid-themes.com/api/license/' . $licenseKey);
 
         if ($response->failed()) {
             return false;

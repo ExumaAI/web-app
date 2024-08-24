@@ -229,7 +229,7 @@
                                                 $upgrade = true;
                                             }
                                         } else {
-                                            if ($auth->type != 'admin' && $item->premium == 1 && $plan_type === 'regular') {
+                                            if (!$auth->isAdmin() && $item->premium == 1 && $plan_type === 'regular') {
                                                 $upgrade = true;
                                             }
                                         }
@@ -305,7 +305,7 @@
                                                             </a>
                                                         @endif
                                                     @endif
-                                                @elseif($item->type == 'voiceover')
+                                                @elseif($item->type == 'voiceover' || $item->type == 'isolator')
                                                     @if (Auth::user()->remaining_words > 0 or Auth::user()->remaining_words == -1)
                                                         <a
                                                             class="size-full absolute left-0 top-0 inline-block overflow-hidden text-start -indent-[99999px]"

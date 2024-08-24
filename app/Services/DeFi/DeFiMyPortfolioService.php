@@ -13,24 +13,22 @@ class DeFiMyPortfolioService
 
         $key = (count($tokens) > 1) ? 'wallets' : 'wallet';
 
-        $cacheKey = 'defi-my-portfolio'.md5($token . $key);
+        $cacheKey = 'defi-my-portfolio' . md5($token . $key);
 
-       $data = $this->dataCache($cacheKey, $token, $key);
+        $data = $this->dataCache($cacheKey, $token, $key);
 
-       if (! $data) {
-           Cache::forget($cacheKey);
-       }
+        if (! $data) {
+            Cache::forget($cacheKey);
+        }
 
-
-       return $this->dataCache($cacheKey, $token, $key);
+        return $this->dataCache($cacheKey, $token, $key);
     }
-
 
     public function dataCache($cacheKey, $token, $key)
     {
         return Cache::remember($cacheKey, 10000, function () use ($token, $key) {
             $http = Http::get('https://api.mobula.io/api/1/wallet/portfolio', [
-                $key => $token
+                $key => $token,
             ]);
 
             if ($http->failed()) {

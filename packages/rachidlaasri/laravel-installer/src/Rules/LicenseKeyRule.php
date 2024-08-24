@@ -8,8 +8,6 @@ use RachidLaasri\LaravelInstaller\Repositories\ApplicationStatusRepositoryInterf
 
 class LicenseKeyRule implements ValidationRule
 {
-
-
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
         $licenseRepository = app(ApplicationStatusRepositoryInterface::class);

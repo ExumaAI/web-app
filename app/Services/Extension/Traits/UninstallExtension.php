@@ -3,6 +3,7 @@
 namespace App\Services\Extension\Traits;
 
 use App\Models\Extension;
+use Exception;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
@@ -15,13 +16,13 @@ trait UninstallExtension
         try {
             $this->extensionSlug = $extensionSlug;
 
-            $this->zipExtractPath = resource_path('extensions'.DIRECTORY_SEPARATOR.$extensionSlug);
+            $this->zipExtractPath = resource_path('extensions' . DIRECTORY_SEPARATOR . $extensionSlug);
 
             $this->getIndexJson();
 
             if (empty($this->indexJsonArray)) {
                 return [
-                    'status' => false,
+                    'status'  => false,
                     'message' => trans('index.json not found'),
                 ];
             }
@@ -53,12 +54,12 @@ trait UninstallExtension
 
             return [
                 'success' => true,
-                'status' => true,
+                'status'  => true,
                 'message' => trans('Extension uninstalled successfully'),
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return [
-                'status' => false,
+                'status'  => false,
                 'message' => $e->getMessage(),
             ];
         }
@@ -88,7 +89,7 @@ trait UninstallExtension
             return;
         }
 
-        $routePath = base_path('routes/extroutes/'.basename($route));
+        $routePath = base_path('routes/extroutes/' . basename($route));
 
         if (File::exists($routePath)) {
             File::delete($routePath);
@@ -124,7 +125,7 @@ trait UninstallExtension
 
             $column = data_get($value, 'condition.column', null);
 
-            $sqlPath = $this->zipExtractPath.DIRECTORY_SEPARATOR.'migrations'.DIRECTORY_SEPARATOR.data_get($value, 'path');
+            $sqlPath = $this->zipExtractPath . DIRECTORY_SEPARATOR . 'migrations' . DIRECTORY_SEPARATOR . data_get($value, 'path');
 
             if (
                 Schema::hasTable($table)
@@ -163,6 +164,6 @@ trait UninstallExtension
     {
         $zipExtractPath = $zipExtractPath ?? $this->zipExtractPath;
 
-        return file_get_contents($zipExtractPath.DIRECTORY_SEPARATOR.'uninstall.sql');
+        return file_get_contents($zipExtractPath . DIRECTORY_SEPARATOR . 'uninstall.sql');
     }
 }

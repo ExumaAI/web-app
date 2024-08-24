@@ -91,6 +91,20 @@
                         class="w-full"
                         size="sm"
                     >
+                        <div class="col-md-12">
+                            <div class="mb-3">
+                                <x-forms.input
+                                        class:container="mb-2"
+                                        id="dalle_hidden"
+                                        type="checkbox"
+                                        name="dalle_hidden"
+                                        :checked="setting('dalle_hidden') == 1"
+                                        label="{{ __('Hide Dall-E from AI Image') }}"
+                                        switcher
+                                />
+                            </div>
+                        </div>
+
                         <label class="form-label">{{ __('Default Dall-E Model') }}</label>
                         <select
                             class="form-select"
@@ -178,6 +192,12 @@
                                 @selected($setting->openai_default_model == 'gpt-4o')
                             >
                                 {{ __('GPT-4o Most advanced, multimodal flagship model that’s cheaper and faster than GPT-4 Turbo.  (Updated Knowleddge cutoff of Oct 2023, 128k)') }}
+                            </option>
+                            <option
+                                value="gpt-4o-mini"
+                                @selected($setting->openai_default_model == 'gpt-4o-mini')
+                            >
+                                {{ __('Gpt-4o-mini Our affordable and intelligent small model for fast, lightweight tasks. GPT-4o mini is cheaper and more capable than GPT-3.5 Turbo.') }}
                             </option>
                             {{-- <option value="gpt-4-vision-preview" {{$setting->openai_default_model == 'gpt-4-vision-preview' ? 'selected' : null}}>{{__('GPT-4 Turbo with vision (Understand images, in addition to all other GPT-4 Turbo capabilites)')}}</option> --}}
                             @php App\Http\Controllers\AIFineTuneController::getFineModelOption( $setting->openai_default_model ); @endphp

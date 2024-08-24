@@ -25,10 +25,12 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('settings', function (Blueprint $table) {
-            $table->dropColumn('logo_sticky');
-            $table->dropColumn('logo_sticky_path');
-            $table->dropColumn('logo_sticky_2x');
-            $table->dropColumn('logo_sticky_2x_path');
+            $table->dropColumn([
+                'logo_sticky',
+                'logo_sticky_path',
+                'logo_sticky_2x',
+                'logo_sticky_2x_path',
+            ]);
         });
     }
 };

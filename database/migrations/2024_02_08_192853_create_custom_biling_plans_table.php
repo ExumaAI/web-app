@@ -13,10 +13,10 @@ return new class extends Migration
     {
         Schema::create('custom_biling_plans', function (Blueprint $table) {
             $table->id();
-			$table->string('gateway')->nullable();
-			$table->string('plan_id')->nullable();
-			$table->string('main_plan_price_id')->nullable();
-			$table->string('custom_plan_price_id')->nullable();
+            $table->string('gateway')->nullable();
+            $table->string('plan_id')->nullable();
+            $table->string('main_plan_price_id')->nullable();
+            $table->string('custom_plan_price_id')->nullable();
             $table->timestamps();
         });
     }

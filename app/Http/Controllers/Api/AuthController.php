@@ -5,18 +5,17 @@ namespace App\Http\Controllers\Api;
 use App\Actions\EmailConfirmation;
 use App\Helpers\Classes\Helper;
 use App\Http\Controllers\Controller;
-use App\Http\Middleware\isAdmin;
+use App\Jobs\SendConfirmationEmail;
+use App\Jobs\SendPasswordResetEmail;
+use App\Models\Setting;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use App\Models\User;
-use Illuminate\Validation\Rules\Password;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
-use App\Models\Setting;
 use Illuminate\Support\Facades\Validator;
-use App\Jobs\SendPasswordResetEmail;
-use App\Jobs\SendConfirmationEmail;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rules\Password;
 
 class AuthController extends Controller
 {
@@ -27,10 +26,13 @@ class AuthController extends Controller
      *      tags={"Authentication"},
      *      summary="Register a new user",
      *      description="Registers a new user with the provided data",
+     *
      *      @OA\RequestBody(
      *          required=true,
+     *
      *          @OA\JsonContent(
      *              required={"name", "surname", "email", "password", "password_confirmation"},
+     *
      *              @OA\Property(property="name", type="string", example="John"),
      *              @OA\Property(property="surname", type="string", example="Doe"),
      *              @OA\Property(property="email", type="string", format="email", example="john.doe@example.com"),
@@ -39,6 +41,7 @@ class AuthController extends Controller
      *              @OA\Property(property="affiliate_code", type="string", nullable=true, example="your_affiliate_code"),
      *          ),
      *      ),
+     *
      *      @OA\Response(
      *          response=201,
      *          description="User registered successfully",
@@ -48,13 +51,13 @@ class AuthController extends Controller
      *          description="Validation error or user already exists",
      *      ),
      * )
-    */
+     */
     public function register(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'name' => ['required', 'string', 'max:255'],
-            'surname' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:' . User::class],
+            'name'     => ['required', 'string', 'max:255'],
+            'surname'  => ['required', 'string', 'max:255'],
+            'email'    => ['required', 'string', 'email', 'max:255', 'unique:' . User::class],
             'password' => ['required', 'confirmed', Password::defaults()],
         ]);
 
@@ -72,36 +75,36 @@ class AuthController extends Controller
 
         if (Helper::appIsDemo()) {
             $user = User::create([
-                'name' => $request->name,
-                'surname' => $request->surname,
-                'email' => $request->email,
+                'name'                    => $request->name,
+                'surname'                 => $request->surname,
+                'email'                   => $request->email,
                 'email_confirmation_code' => Str::random(67),
-                'remaining_words' => 5000,
-                'remaining_images' => 200,
-                'password' => Hash::make($request->password),
+                'remaining_words'         => 5000,
+                'remaining_images'        => 200,
+                'password'                => Hash::make($request->password),
                 'email_verification_code' => Str::random(67),
-                'affiliate_id' => $affCode,
-                'affiliate_code' => Str::upper(Str::random(12)),
+                'affiliate_id'            => $affCode,
+                'affiliate_code'          => Str::upper(Str::random(12)),
             ]);
         } else {
             $settings = Setting::first();
             $user = User::create([
-                'name' => $request->name,
-                'surname' => $request->surname,
-                'email' => $request->email,
+                'name'                    => $request->name,
+                'surname'                 => $request->surname,
+                'email'                   => $request->email,
                 'email_confirmation_code' => Str::random(67),
-                'remaining_words' => explode(',', $settings->free_plan)[0],
-                'remaining_images' => explode(',', $settings->free_plan)[1] ?? 0,
-                'password' => Hash::make($request->password),
+                'remaining_words'         => explode(',', $settings->free_plan)[0],
+                'remaining_images'        => explode(',', $settings->free_plan)[1] ?? 0,
+                'password'                => Hash::make($request->password),
                 'email_verification_code' => Str::random(67),
-                'affiliate_id' => $affCode,
-                'affiliate_code' => Str::upper(Str::random(12)),
+                'affiliate_id'            => $affCode,
+                'affiliate_code'          => Str::upper(Str::random(12)),
             ]);
         }
 
         //event(new Registered($user));
 
-        # the email confirmation process gonna be inside the app?
+        // the email confirmation process gonna be inside the app?
         // dispatch(new SendConfirmationEmail($user));
         // $settings = Setting::first();
         // if ($settings->login_without_confirmation == 1) {
@@ -116,6 +119,7 @@ class AuthController extends Controller
 
         return response()->json('OK', 200);
     }
+
     /**
      * @OA\Post(
      *      path="/api/auth/logout",
@@ -124,6 +128,7 @@ class AuthController extends Controller
      *      summary="Logout the authenticated user",
      *      description="Logs out the authenticated user and revokes the access token",
      *      security={{ "passport": {} }},
+     *
      *      @OA\Response(
      *          response=200,
      *          description="Logout successful",
@@ -133,14 +138,16 @@ class AuthController extends Controller
      *          description="Unauthenticated",
      *      ),
      * )
-    */
+     */
     public function logout(Request $request)
     {
         $request->user()->tokens()->each(function ($token, $key) {
             $token->delete();
         });
+
         return response()->json(['message' => 'Logout successful'], 200);
     }
+
     /**
      * Send a password reset link to the given user.
      *
@@ -150,13 +157,17 @@ class AuthController extends Controller
      *      tags={"Authentication"},
      *      summary="Initiate password reset",
      *      description="Initiate the password reset process by sending an email with a reset link.",
+     *
      *      @OA\RequestBody(
      *          required=true,
+     *
      *          @OA\JsonContent(
      *              required={"email"},
+     *
      *              @OA\Property(property="email", type="string", format="email", example="user@example.com"),
      *          ),
      *      ),
+     *
      *      @OA\Response(
      *          response=200,
      *          description="Password reset link sent successfully",
@@ -166,7 +177,7 @@ class AuthController extends Controller
      *          description="Validation error or user not found",
      *      ),
      * )
-    */
+     */
     public function sendPasswordResetMail(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -186,9 +197,9 @@ class AuthController extends Controller
             // Dispatch the job to send the password reset email asynchronously
             dispatch(new SendPasswordResetEmail($user));
 
-            return response()->json(['message' => __("Password reset link sent successfully")], 200);
+            return response()->json(['message' => __('Password reset link sent successfully')], 200);
         } else {
-            return response()->json(['error' => __("User not found")], 422);
+            return response()->json(['error' => __('User not found')], 422);
         }
     }
 
@@ -201,13 +212,16 @@ class AuthController extends Controller
      *      tags={"Authentication"},
      *      summary="Verify user's email",
      *      description="Verify the user's email using the provided confirmation code.",
+     *
      *      @OA\Parameter(
      *          name="email_confirmation_code",
      *          in="query",
      *          required=true,
      *          description="Email confirmation code",
+     *
      *          @OA\Schema(type="string"),
      *      ),
+     *
      *      @OA\Response(
      *          response=200,
      *          description="Email verified successfully",
@@ -217,7 +231,7 @@ class AuthController extends Controller
      *          description="Validation error or user not found",
      *      ),
      * )
-    */
+     */
     public function emailConfirmationMail(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -241,6 +255,7 @@ class AuthController extends Controller
             return response()->json(['error' => __('Email not found')], 422);
         }
     }
+
     /**
      * Resend the confirmation email.
      *
@@ -250,31 +265,38 @@ class AuthController extends Controller
      *      tags={"Authentication"},
      *      summary="Resend confirmation email",
      *      description="Resend the confirmation email to the user if not already verified.",
+     *
      *      @OA\RequestBody(
      *          required=true,
+     *
      *          @OA\JsonContent(
      *              required={"email"},
+     *
      *              @OA\Property(property="email", type="string", format="email", example="user@example.com"),
      *          ),
      *      ),
+     *
      *      @OA\Response(
      *          response=200,
      *          description="Confirmation email resent successfully",
+     *
      *          @OA\JsonContent(
      *              type="object",
      *              example={"message": "Confirmation email resent successfully"},
      *          ),
      *      ),
+     *
      *      @OA\Response(
      *          response=403,
      *          description="Email already verified",
+     *
      *          @OA\JsonContent(
      *              type="object",
      *              example={"error": "Email already verified"},
      *          ),
      *      ),
      * )
-    */
+     */
     public function resend(Request $request): JsonResponse
     {
         $request->validate([
@@ -285,6 +307,7 @@ class AuthController extends Controller
 
         if (! $user->isConfirmed() && ! $user->isAdmin()) {
             EmailConfirmation::forUser($user)->resend();
+
             return response()->json(['message' => __('Confirmation email resent successfully')], 200);
         }
 
@@ -300,11 +323,14 @@ class AuthController extends Controller
      *      tags={"Authentication"},
      *      summary="Get supported login methods",
      *      description="Get actively supported login methods as a list.",
+     *
      *      @OA\Response(
      *          response=200,
      *          description="Successful operation",
+     *
      *          @OA\JsonContent(
      *              type="array",
+     *
      *              @OA\Items(
      *                  type="string",
      *                  example="github",
@@ -313,7 +339,7 @@ class AuthController extends Controller
      *          ),
      *      ),
      * )
-    */
+     */
     public function getSupportedLoginMethods(): JsonResponse
     {
         $setting = Setting::first();

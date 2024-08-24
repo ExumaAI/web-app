@@ -12,8 +12,8 @@ return [
     | and organization on your OpenAI dashboard, at https://openai.com.
     */
 
-    'api_key' => env('OPENAI_API_KEY'),
+    'api_key'         => env('OPENAI_API_KEY'),
     'request_timeout' => env('OPENAI_REQUEST_TIMEOUT', 120),
-    'organization' => env('OPENAI_ORGANIZATION'),
+    'organization'    => env('OPENAI_ORGANIZATION'),
 
 ];

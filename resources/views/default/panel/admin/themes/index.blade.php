@@ -64,7 +64,7 @@
                         >
                             <x-tabler-zoom-in class="size-10" />
                             <span>
-                                @lang('live Preview')
+                                @lang('Live Preview')
                             </span>
                         </a>
                     </figure>

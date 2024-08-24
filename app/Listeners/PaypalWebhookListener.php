@@ -10,6 +10,7 @@ use App\Models\UserOrder;
 use App\Models\WebhookHistory;
 use App\Services\GatewaySelector;
 use Carbon\Carbon;
+use Exception;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Facades\Log;
@@ -70,7 +71,7 @@ class PaypalWebhookListener implements ShouldQueue
 
             // save incoming data
 
-            $newData = new WebhookHistory();
+            $newData = new WebhookHistory;
             $newData->gatewaycode = 'paypal';
             $newData->webhook_id = $incomingJson->id;
             $newData->create_time = $incomingJson->create_time;
@@ -109,8 +110,8 @@ class PaypalWebhookListener implements ShouldQueue
 
                 $filters = [
                     'transaction_id' => $resource_id,
-                    'start_date' => Carbon::now()->subDays(7)->toIso8601String(),
-                    'end_date' => Carbon::now()->addDays(2)->toIso8601String(),
+                    'start_date'     => Carbon::now()->subDays(7)->toIso8601String(),
+                    'end_date'       => Carbon::now()->addDays(2)->toIso8601String(),
                 ];
 
                 // https://developer.paypal.com/docs/api/transaction-search/v1/#transactions_get
@@ -171,7 +172,7 @@ class PaypalWebhookListener implements ShouldQueue
                                                     $subscription = $provider->showSubscriptionDetails($activeSub->stripe_id);
 
                                                     if (isset($subscription['error'])) {
-                                                        Log::error("PaypalWebhookListener::handle() -> getSubscriptionStatus() :\n".json_encode($subscription));
+                                                        Log::error("PaypalWebhookListener::handle() -> getSubscriptionStatus() :\n" . json_encode($subscription));
                                                     } else {
 
                                                         if ($subscription['status'] == 'ACTIVE') {
@@ -188,7 +189,7 @@ class PaypalWebhookListener implements ShouldQueue
                                                                 $activeSub->save();
                                                             }
 
-                                                            $payment = new UserOrder();
+                                                            $payment = new UserOrder;
                                                             $payment->order_id = $transaction_id;
                                                             $payment->plan_id = $plan->id;
                                                             $payment->user_id = $user->id;
@@ -221,7 +222,7 @@ class PaypalWebhookListener implements ShouldQueue
                                                 $subscription = $provider->showSubscriptionDetails($activeSub->stripe_id);
 
                                                 if (isset($subscription['error'])) {
-                                                    Log::error("PaypalWebhookListener::handle() -> getSubscriptionStatus() :\n".json_encode($subscription));
+                                                    Log::error("PaypalWebhookListener::handle() -> getSubscriptionStatus() :\n" . json_encode($subscription));
                                                 } else {
 
                                                     // check for duplication
@@ -240,7 +241,7 @@ class PaypalWebhookListener implements ShouldQueue
                                                                 $activeSub->save();
                                                             }
 
-                                                            $payment = new UserOrder();
+                                                            $payment = new UserOrder;
                                                             $payment->order_id = $transaction_id;
                                                             $payment->plan_id = $plan->id;
                                                             $payment->user_id = $user->id;
@@ -272,25 +273,25 @@ class PaypalWebhookListener implements ShouldQueue
                                             }
 
                                         } else {
-                                            Log::error('PaypalWebhookListener::handle() Error : Subscription prices do not match. || '.json_encode($transactions));
+                                            Log::error('PaypalWebhookListener::handle() Error : Subscription prices do not match. || ' . json_encode($transactions));
                                         }
                                     } else {
-                                        Log::error('PaypalWebhookListener::handle() Error : Membership Plan Not Found || '.json_encode($transactions));
+                                        Log::error('PaypalWebhookListener::handle() Error : Membership Plan Not Found || ' . json_encode($transactions));
                                     }
 
                                 } else {
-                                    Log::error('PaypalWebhookListener::handle() Error : Subscription Not Found || '.json_encode($transactions));
+                                    Log::error('PaypalWebhookListener::handle() Error : Subscription Not Found || ' . json_encode($transactions));
                                 }
 
                             } else {
-                                Log::error('PaypalWebhookListener::handle() Error : User Not Found || '.json_encode($transactions));
+                                Log::error('PaypalWebhookListener::handle() Error : User Not Found || ' . json_encode($transactions));
                             }
 
                         }
                     }
 
                 } else {
-                    Log::error('PaypalWebhookListener::handle() Error : '.$transactions->error->message);
+                    Log::error('PaypalWebhookListener::handle() Error : ' . $transactions->error->message);
                 }
 
             }
@@ -298,8 +299,8 @@ class PaypalWebhookListener implements ShouldQueue
             // save new order if required
             // on cancel we do not delete anything. just check if subs cancelled
 
-        } catch (\Exception $ex) {
-            Log::error("PaypalWebhookListener::handle()\n".$ex->getMessage());
+        } catch (Exception $ex) {
+            Log::error("PaypalWebhookListener::handle()\n" . $ex->getMessage());
         }
     }
 
@@ -310,11 +311,11 @@ class PaypalWebhookListener implements ShouldQueue
     {
         // $space = "*************************************************************************************************************";
         $space = '*****';
-        $msg = '\n'.$space.'\n'.$space;
-        $msg = $msg.json_encode($event->payload);
-        $msg = $msg.'\n'.$space.'\n';
-        $msg = $msg.'\n'.$exception.'\n';
-        $msg = $msg.'\n'.$space.'\n'.$space;
+        $msg = '\n' . $space . '\n' . $space;
+        $msg = $msg . json_encode($event->payload);
+        $msg = $msg . '\n' . $space . '\n';
+        $msg = $msg . '\n' . $exception . '\n';
+        $msg = $msg . '\n' . $space . '\n' . $space;
 
         Log::error($msg);
     }

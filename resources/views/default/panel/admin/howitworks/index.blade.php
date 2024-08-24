@@ -23,6 +23,9 @@
                         {{ __('Title') }}
                     </th>
                     <th>
+                        {{ __('Description') }}
+                    </th>
+                    <th>
                         {{ __('Updated At') }}
                     </th>
                     <th class="text-end">
@@ -39,6 +42,9 @@
                         </td>
                         <td>
                             {!! $entry->title !!}
+                        </td>
+                        <td>
+                            {!! $entry->description !!}
                         </td>
                         <td>
                             <p class="m-0">

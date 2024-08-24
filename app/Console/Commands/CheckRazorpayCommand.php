@@ -2,7 +2,6 @@
 
 namespace App\Console\Commands;
 
-use App\Services\PaymentGateways\CoingateService;
 use App\Services\PaymentGateways\RazorpayService;
 use Illuminate\Console\Command;
 

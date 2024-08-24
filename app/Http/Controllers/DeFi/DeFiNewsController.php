@@ -13,8 +13,7 @@ class DeFiNewsController extends Controller
 {
     public function __construct(
         public DeFiNewsService $service
-    ) {
-    }
+    ) {}
 
     public function __invoke(Request $request)
     {
@@ -24,7 +23,7 @@ class DeFiNewsController extends Controller
             $data = $this->paginate(
                 $data,
                 8,
-            null,
+                null,
                 ['path' => $request->url(), 'query' => $request->query()]);
 
             return view('panel.user.defi.news.index', [
@@ -40,7 +39,7 @@ class DeFiNewsController extends Controller
         if ($item) {
             return view('panel.user.defi.news.single', [
                 'title' => 'News Title',
-                'item' => $item
+                'item'  => $item,
             ]);
         }
     }
@@ -49,6 +48,7 @@ class DeFiNewsController extends Controller
     {
         $page = $page ?: (Paginator::resolveCurrentPage() ?: 1);
         $items = $items instanceof Collection ? $items : Collection::make($items);
+
         return new LengthAwarePaginator($items->forPage($page, $perPage), $items->count(), $perPage, $page, $options);
     }
 }

@@ -6,8 +6,8 @@ return [
      * Shared translations.
      *
      */
-    'title' => 'Laravel Installer',
-    'next' => 'Passo successivo',
+    'title'  => 'Laravel Installer',
+    'next'   => 'Passo successivo',
     'finish' => 'Installa',
     /*
      *
@@ -40,10 +40,10 @@ return [
      *
      */
     'environment' => [
-        'title' => 'Configurazione ambiente',
-        'save' => 'Salva .env',
+        'title'   => 'Configurazione ambiente',
+        'save'    => 'Salva .env',
         'success' => 'La configurazione del file .env &egrave; stata salvata correttamente.',
-        'errors' => 'Impossibile salvare il file .env, per favore crealo manualmente.',
+        'errors'  => 'Impossibile salvare il file .env, per favore crealo manualmente.',
     ],
     /*
      *
@@ -51,8 +51,8 @@ return [
      *
      */
     'final' => [
-        'title' => 'Finito',
+        'title'    => 'Finito',
         'finished' => 'L\'applicazione è stata configurata correttamente.',
-        'exit' => 'Clicca qui per uscire',
+        'exit'     => 'Clicca qui per uscire',
     ],
 ];

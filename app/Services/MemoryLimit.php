@@ -2,7 +2,8 @@
 
 namespace App\Services;
 
-use Spatie\Health\Checks\{Check, Result};
+use Spatie\Health\Checks\Check;
+use Spatie\Health\Checks\Result;
 
 class MemoryLimit extends Check
 {

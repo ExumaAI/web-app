@@ -5,7 +5,8 @@
 	group-[&.lqd-is-active]/dropdown:before:pointer-events-auto';
     $dropdown_base_class = 'lqd-dropdown-dropdown absolute top-full opacity-0 invisible z-50 translate-y-1 pointer-events-none transition-all mt-[--dropdown-offset]
 		before:absolute before:bottom-full before:-top-[--dropdown-offset] before:inset-x-0
-		group-[&.lqd-is-active]/dropdown:opacity-100 group-[&.lqd-is-active]/dropdown:visible group-[&.lqd-is-active]/dropdown:translate-y-0 group-[&.lqd-is-active]/dropdown:pointer-events-auto';
+		group-[&.lqd-is-active]/dropdown:opacity-100 group-[&.lqd-is-active]/dropdown:visible group-[&.lqd-is-active]/dropdown:translate-y-0 group-[&.lqd-is-active]/dropdown:pointer-events-auto
+		[&.dropdown-anchor-bottom]:top-auto [&.dropdown-anchor-bottom]:bottom-full [&.dropdown-anchor-bottom]:mt-0 [&.dropdown-anchor-bottom]:mb-[--dropdown-offset] [&.dropdown-anchor-bottom]:before:bottom-full [&.dropdown-anchor-bottom]:before:-top-[--dropdown-offset]';
     $dropdown_content_base_class =
         'lqd-dropdown-dropdown-content min-w-44 border border-dropdown-border rounded-dropdown bg-dropdown-background text-dropdown-foreground shadow-lg shadow-black/5';
 
@@ -36,6 +37,11 @@
     <div
         {{ $attributes->twMergeFor('dropdown-dropdown', $dropdown_base_class) }}
         x-bind="dropdown"
+        x-init="$refs.parent.addEventListener('mouseenter', function() {
+            const parentRect = $refs.parent.getBoundingClientRect();
+            const dropdownRect = $el.getBoundingClientRect();
+            $el.classList.toggle('dropdown-anchor-bottom', parentRect.bottom + dropdownRect.height > window.innerHeight);
+        })"
     >
         <div {{ $attributes->twMergeFor('dropdown', $dropdown_content_base_class, $dropdown->attributes->get('class')) }}>
             {{ $dropdown }}

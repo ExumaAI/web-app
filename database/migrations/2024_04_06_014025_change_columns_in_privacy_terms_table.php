@@ -25,8 +25,8 @@ return new class extends Migration
     {
         Schema::table('privacy_terms', function (Blueprint $table) {
             $table->string('type')->nullable(false)->change();
-			$table->string('lang')->nullable(false)->change();
-			$table->text('content')->nullable(false)->change();
+            $table->string('lang')->nullable(false)->change();
+            $table->text('content')->nullable(false)->change();
         });
     }
 };

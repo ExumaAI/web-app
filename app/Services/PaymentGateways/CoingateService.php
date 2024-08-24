@@ -11,6 +11,7 @@ use App\Models\PaymentPlans;
 use App\Models\User;
 use App\Models\UserOrder;
 use App\Services\Contracts\BaseGatewayService;
+use Arr;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Contracts\View\View;
@@ -26,15 +27,16 @@ class CoingateService implements BaseGatewayService
 {
     public static $gateway;
 
-    protected static string $GATEWAY_CODE = "coingate";
+    protected static string $GATEWAY_CODE = 'coingate';
 
-    protected static string $GATEWAY_NAME = "Coingate";
+    protected static string $GATEWAY_NAME = 'Coingate';
 
-    public static function saveAllProducts(){
-        try{
+    public static function saveAllProducts()
+    {
+        try {
             $gateway = self::geteway();
 
-            if($gateway == null) {
+            if ($gateway == null) {
                 return back()->with(['message' => __('Please enable coingate'), 'type' => 'error']);
             }
 
@@ -44,8 +46,9 @@ class CoingateService implements BaseGatewayService
                 self::saveProduct($plan);
             }
 
-        }catch (Exception $ex) {
-            Log::error(self::$GATEWAY_CODE."-> saveAllProducts(): " . $ex->getMessage());
+        } catch (Exception $ex) {
+            Log::error(self::$GATEWAY_CODE . '-> saveAllProducts(): ' . $ex->getMessage());
+
             return back()->with(['message' => $ex->getMessage(), 'type' => 'error']);
         }
     }
@@ -56,25 +59,25 @@ class CoingateService implements BaseGatewayService
 
         try {
             $request = $client->request('post', 'api/v2/billing/details', [
-                'payment_method' => 'monthly',
-                'price_currency' => $plan->currency,
-                'receive_currency' => $plan->currency,
-                'title' => $plan->name,
-                'description' => $plan->name,
-                'details_id' =>  $plan->id,
-                'callback_url' => Helper::setting('site_url') . '/webhooks/coingate',
+                'payment_method'         => 'monthly',
+                'price_currency'         => $plan->currency,
+                'receive_currency'       => $plan->currency,
+                'title'                  => $plan->name,
+                'description'            => $plan->name,
+                'details_id'             => $plan->id,
+                'callback_url'           => Helper::setting('site_url') . '/webhooks/coingate',
                 'send_paid_notification' => true,
-                'send_payment_email' => false,
-                'underpaid_cover_pct' => '"0.0"',
-                'items' => [
+                'send_payment_email'     => false,
+                'underpaid_cover_pct'    => '"0.0"',
+                'items'                  => [
                     [
                         'description' => $plan->name . ' item',
-                        'price' => $plan->getAttribute('price'),
-                        'currency' => $plan->getAttribute('currency'),
-                        'quantity' => 1,
-                        'item_id' => $plan->id,
-                    ]
-                ]
+                        'price'       => $plan->getAttribute('price'),
+                        'currency'    => $plan->getAttribute('currency'),
+                        'quantity'    => 1,
+                        'item_id'     => $plan->id,
+                    ],
+                ],
             ]);
 
             $id = null;
@@ -90,8 +93,8 @@ class CoingateService implements BaseGatewayService
             if ($id) {
                 $product = GatewayProducts::query()
                     ->firstOrCreate([
-                        'plan_id' => $plan->id,
-                        'gateway_code' => self::$GATEWAY_CODE,
+                        'plan_id'       => $plan->id,
+                        'gateway_code'  => self::$GATEWAY_CODE,
                         'gateway_title' => self::$GATEWAY_NAME,
                     ]);
 
@@ -100,34 +103,34 @@ class CoingateService implements BaseGatewayService
                 $wasRecentlyCreated = $product->wasRecentlyCreated;
 
                 $product->update([
-                    'plan_name' => $plan->name,
+                    'plan_name'  => $plan->name,
                     'product_id' => $id,
-                    'payload' => $request,
+                    'payload'    => $request,
                 ]);
 
-                if (!$wasRecentlyCreated && $oldProductId) {
+                if (! $wasRecentlyCreated && $oldProductId) {
                     OldGatewayProducts::query()->firstOrCreate([
-                        'plan_id' => $plan->id,
-                        'plan_name' => $plan->name,
-                        'gateway_code' => self::$GATEWAY_CODE,
-                        'product_id' => $product->product_id,
+                        'plan_id'        => $plan->id,
+                        'plan_name'      => $plan->name,
+                        'gateway_code'   => self::$GATEWAY_CODE,
+                        'product_id'     => $product->product_id,
                         'old_product_id' => $oldProductId,
-                        'status' => 'check',
+                        'status'         => 'check',
                     ]);
                 }
             }
-        }catch (Exception $ex) {
-            Log::error(self::$GATEWAY_CODE."-> saveProduct(): " . $ex->getMessage());
+        } catch (Exception $ex) {
+            Log::error(self::$GATEWAY_CODE . '-> saveProduct(): ' . $ex->getMessage());
+
             return back()->with(['message' => $ex->getMessage(), 'type' => 'error']);
         }
     }
 
-
     public static function subscribe($plan): View
     {
-        $product = GatewayProducts::where(["plan_id" => $plan->id, "gateway_code" => self::$GATEWAY_CODE])->first();
+        $product = GatewayProducts::where(['plan_id' => $plan->id, 'gateway_code' => self::$GATEWAY_CODE])->first();
 
-        if($product == null){
+        if ($product == null) {
             self::saveProduct($plan);
         }
 
@@ -135,7 +138,7 @@ class CoingateService implements BaseGatewayService
 
         $newDiscountedPrice = null;
 
-        return view("panel.user.finance.subscription.". self::$GATEWAY_CODE, compact('plan','order_id', 'newDiscountedPrice'));
+        return view('panel.user.finance.subscription.' . self::$GATEWAY_CODE, compact('plan', 'order_id', 'newDiscountedPrice'));
     }
 
     public static function subscribeCheckout(Request $request, $referral = null)
@@ -162,43 +165,39 @@ class CoingateService implements BaseGatewayService
 
         $client = self::client();
 
-        $request = $client->request('POST', 'api/v2/billing/subscriptions',[
+        $request = $client->request('POST', 'api/v2/billing/subscriptions', [
             'subscription_id' => 'TEST-' . $user->id,
-            'subscriber' => $user->getAttribute('coingate_subscriber_id'),
-            'details' => $gatewayProduct->getAttribute('product_id'),
-            'start_date' => date('Y-m-d H:i:s'),
+            'subscriber'      => $user->getAttribute('coingate_subscriber_id'),
+            'details'         => $gatewayProduct->getAttribute('product_id'),
+            'start_date'      => date('Y-m-d H:i:s'),
         ]);
 
         $request = self::objectToArray($request);
 
-
-        if (array_key_exists('id', $request)){
+        if (array_key_exists('id', $request)) {
             $id = $request['id'];
 
-            # payment activate
+            // payment activate
             $client->request(
                 'PATCH',
-                'api/v2/billing/subscriptions/'.$id.'/activate', [
-                'id' => $id
-            ]);
+                'api/v2/billing/subscriptions/' . $id . '/activate', [
+                    'id' => $id,
+                ]);
 
             $payment = $client->request(
                 'GET',
                 '/api/v2/billing/subscriptions/' . $id . '/payments', [
-                'id' => $id
-            ]);
-
+                    'id' => $id,
+                ]);
 
             $payment = self::objectToArray($payment);
 
-            if (array_key_exists('id', $payment)){
+            if (array_key_exists('id', $payment)) {
 
                 $payments = data_get($payment, 'payments');
 
-
-                if (is_array($payments) && count($payments) > 0)
-                {
-                    $last = \Arr::last($payments);
+                if (is_array($payments) && count($payments) > 0) {
+                    $last = Arr::last($payments);
 
                     $payment_url = data_get($last, 'payment_url');
 
@@ -207,44 +206,46 @@ class CoingateService implements BaseGatewayService
                         try {
                             Subscriptions::query()
                                 ->create([
-                                    'user_id' => $user->id,
-                                    'name' => $plan->id,
-                                    'stripe_id' => $id,
-                                    'stripe_status' => "WAITING",
-                                    'stripe_price' => $payment['id'],
-                                    'quantity' => 1,
+                                    'user_id'       => $user->id,
+                                    'name'          => $plan->id,
+                                    'stripe_id'     => $id,
+                                    'stripe_status' => 'WAITING',
+                                    'stripe_price'  => $payment['id'],
+                                    'quantity'      => 1,
                                     'trial_ends_at' => null,
-                                    'tax_rate' => 0,
-                                    'tax_value' => 0,
-                                    'coupon' => null,
-                                    'total_amount' => $total,
-                                    'plan_id' => $plan->id,
-                                    'paid_with' => self::$GATEWAY_CODE,
+                                    'tax_rate'      => 0,
+                                    'tax_value'     => 0,
+                                    'coupon'        => null,
+                                    'total_amount'  => $total,
+                                    'plan_id'       => $plan->id,
+                                    'paid_with'     => self::$GATEWAY_CODE,
 
                                 ]);
 
                             $order = UserOrder::query()
                                 ->create([
-                                    'order_id' => $payment['id'],
-                                    'plan_id' => $plan->id,
-                                    'user_id' => $user->id,
-                                    'payment_type' => self::$GATEWAY_CODE,
-                                    'price' => $total,
+                                    'order_id'           => $payment['id'],
+                                    'plan_id'            => $plan->id,
+                                    'user_id'            => $user->id,
+                                    'payment_type'       => self::$GATEWAY_CODE,
+                                    'price'              => $total,
                                     'affiliate_earnings' => 0,
-                                    'status' => 'WAITING',
-                                    'country' => $user->country ?? 'Unknown',
-                                    'tax_rate' => 0,
-                                    'tax_value' => 0,
-                                    'payload' => $payment,
+                                    'status'             => 'WAITING',
+                                    'country'            => $user->country ?? 'Unknown',
+                                    'tax_rate'           => 0,
+                                    'tax_value'          => 0,
+                                    'payload'            => $payment,
                                 ]);
 
-                            # sent mail if required here later
-                            CreateActivity::for($order->user, __('Purchased'), $order->plan->name. ' '. __('Plan'). ' '. __('For free'));
-							\App\Models\Usage::getSingle()->updateSalesCount($total);
+                            // sent mail if required here later
+                            CreateActivity::for($order->user, __('Purchased'), $order->plan->name . ' ' . __('Plan') . ' ' . __('For free'));
+                            \App\Models\Usage::getSingle()->updateSalesCount($total);
+
                             return redirect($payment_url);
-                        } catch (\Exception $th) {
-                            Log::error(self::$GATEWAY_CODE."-> subscribe(): ". $th->getMessage());
-                            return back()->with(['message' => Str::before($th->getMessage(), ':'),'type' => 'error' ]);
+                        } catch (Exception $th) {
+                            Log::error(self::$GATEWAY_CODE . '-> subscribe(): ' . $th->getMessage());
+
+                            return back()->with(['message' => Str::before($th->getMessage(), ':'), 'type' => 'error']);
                         }
                     }
                 }
@@ -309,49 +310,48 @@ class CoingateService implements BaseGatewayService
 
         $user = Auth::user();
 
-
         $order = UserOrder::query()
             ->create([
-                'order_id' => $orderID,
-                'plan_id' => $plan->id,
-                'user_id' => $user->id,
-                'payment_type' => self::$GATEWAY_CODE,
-                'price' => $plan->price,
+                'order_id'           => $orderID,
+                'plan_id'            => $plan->id,
+                'user_id'            => $user->id,
+                'payment_type'       => self::$GATEWAY_CODE,
+                'price'              => $plan->price,
                 'affiliate_earnings' => 0,
-                'status' => 'WAITING',
-                'country' => $user->country ?? 'Unknown',
-                'tax_rate' => 0,
-                'tax_value' => 0,
-                'type'  => 'token-pack',
-                'payload' => [],
+                'status'             => 'WAITING',
+                'country'            => $user->country ?? 'Unknown',
+                'tax_rate'           => 0,
+                'tax_value'          => 0,
+                'type'               => 'token-pack',
+                'payload'            => [],
             ]);
 
         $client = self::client();
 
         $request = $client->request('POST', 'api/v2/orders', [
-            'order_id' => $orderID,
-            'price_amount' => $plan->price,
-            'price_currency' => $plan->currency,
+            'order_id'         => $orderID,
+            'price_amount'     => $plan->price,
+            'price_currency'   => $plan->currency,
             'receive_currency' => $plan->currency,
-            'title' => $plan->name,
-            'description' => $plan->name,
-            'callback_url' => Helper::setting('site_url') . '/webhooks/coingate',
-            'cancel_url' => Helper::setting('site_url') . '/dashboard',
-            'success_url' => Helper::setting('site_url') . '/dashboard/user/payment/succesful',
-            'token' => base64_encode($orderID),
-            'purchaser_email' => $user->email,
+            'title'            => $plan->name,
+            'description'      => $plan->name,
+            'callback_url'     => Helper::setting('site_url') . '/webhooks/coingate',
+            'cancel_url'       => Helper::setting('site_url') . '/dashboard',
+            'success_url'      => Helper::setting('site_url') . '/dashboard/user/payment/succesful',
+            'token'            => base64_encode($orderID),
+            'purchaser_email'  => $user->email,
         ]);
-
 
         $request = self::objectToArray($request);
 
-        $order->update([ 'payload' => $request ]);
+        $order->update(['payload' => $request]);
 
-        if (array_key_exists('id', $request)){
+        if (array_key_exists('id', $request)) {
             $id = $request['id'];
 
-            $order->update([ 'order_id' => $id ]);
-			\App\Models\Usage::getSingle()->updateSalesCount($plan->price);
+            $order->update(['order_id' => $id]);
+            \App\Models\Usage::getSingle()->updateSalesCount($plan->price);
+
             return redirect(data_get($request, 'payment_url'));
         }
 
@@ -360,14 +360,14 @@ class CoingateService implements BaseGatewayService
 
     public static function prepaid($plan)
     {
-        $product = GatewayProducts::where(["plan_id" => $plan->id, "gateway_code" => self::$GATEWAY_CODE])->first();
-        if($product == null){
+        $product = GatewayProducts::where(['plan_id' => $plan->id, 'gateway_code' => self::$GATEWAY_CODE])->first();
+        if ($product == null) {
             self::saveProduct($plan);
         }
 
         $order_id = 'ORDER-' . strtoupper(Str::random(13));
 
-        return view("panel.user.finance.prepaid.". self::$GATEWAY_CODE, compact('plan','order_id'));
+        return view('panel.user.finance.prepaid.' . self::$GATEWAY_CODE, compact('plan', 'order_id'));
     }
 
     public static function subscribeCancel(?User $internalUser = null)
@@ -378,7 +378,6 @@ class CoingateService implements BaseGatewayService
 
         // Get current active subscription
         $activeSub = getCurrentActiveSubscription($userId);
-
 
         if (! $activeSub) {
             return;
@@ -407,7 +406,7 @@ class CoingateService implements BaseGatewayService
             $user->remaining_images = $recent_images < 0 ? 0 : $recent_images;
             $user->save();
 
-            CreateActivity::for($user, 'Cancelled', 'Subscription plan',);
+            CreateActivity::for($user, 'Cancelled', 'Subscription plan');
 
             return back()->with(['message' => __('Your subscription is cancelled succesfully.'), 'type' => 'success']);
         }
@@ -421,7 +420,7 @@ class CoingateService implements BaseGatewayService
 
         $check = $subscription instanceof Subscriptions;
 
-        if (! $check){
+        if (! $check) {
             $subscription = Subscriptions::where('id', $subscription)->first();
         }
 
@@ -432,17 +431,19 @@ class CoingateService implements BaseGatewayService
             self::client()->request('PATCH', 'api/v2/billing/subscriptions/' . $id . '/cancel', []);
 
             $user->save();
+
             return true;
-        } catch (\Exception $th) {
-            Log::error(self::$GATEWAY_CODE."-> cancelSubscribedPlan():\n" . $th->getMessage());
+        } catch (Exception $th) {
+            Log::error(self::$GATEWAY_CODE . "-> cancelSubscribedPlan():\n" . $th->getMessage());
             $plan = PaymentPlans::where('id', $planId)->first();
             $recent_words = $user->remaining_words - $plan->total_words;
             $recent_images = $user->remaining_images - $plan->total_images;
-            $subscription->stripe_status = "cancelled";
+            $subscription->stripe_status = 'cancelled';
             $subscription->save();
             $user->remaining_words = $recent_words < 0 ? 0 : $recent_words;
             $user->remaining_images = $recent_images < 0 ? 0 : $recent_images;
             $user->save();
+
             return true;
         }
     }
@@ -472,7 +473,6 @@ class CoingateService implements BaseGatewayService
                 ]);
 
             $request = self::objectToArray($client);
-
 
             $next_delivery_date = data_get($request, 'next_delivery_date');
 
@@ -524,17 +524,17 @@ class CoingateService implements BaseGatewayService
                     if ($subscription->getAttribute('created_at') < Carbon::now()->subHours(2)) {
                         $subscription->update([
                             'stripe_status' => 'cancelled',
-                            'ends_at' => \Carbon\Carbon::now(),
+                            'ends_at'       => \Carbon\Carbon::now(),
                         ]);
                     }
 
                     return false;
                 }
-            }catch (\Exception $th) {
+            } catch (Exception $th) {
                 if ($subscription->getAttribute('created_at') < Carbon::now()->subHours(2)) {
                     $subscription->update([
                         'stripe_status' => 'cancelled',
-                        'ends_at' => \Carbon\Carbon::now(),
+                        'ends_at'       => \Carbon\Carbon::now(),
                     ]);
                 }
 
@@ -572,7 +572,6 @@ class CoingateService implements BaseGatewayService
 
                 $request = self::objectToArray($client);
 
-
                 $next_delivery_date = data_get($request, 'next_delivery_date');
 
                 if ($next_delivery_date) {
@@ -580,7 +579,7 @@ class CoingateService implements BaseGatewayService
 
                     return $next_delivery_date->diffInDays(Carbon::now());
                 }
-            } catch (\Exception $th) {
+            } catch (Exception $th) {
                 return false;
             }
         }
@@ -590,7 +589,7 @@ class CoingateService implements BaseGatewayService
     {
         $gateway = self::geteway();
 
-        if (!$gateway) {
+        if (! $gateway) {
             return;
         }
 
@@ -624,20 +623,20 @@ class CoingateService implements BaseGatewayService
 
         if (is_null($user->coingate_subscriber_id)) {
             $request = $client->request('post', '/api/v2/billing/subscribers', [
-                'email' => $user->email,
+                'email'         => $user->email,
                 'subscriber_id' => Auth::id(),
-                'first_name' => $user->name,
-                'last_name' => $user->surname
+                'first_name'    => $user->name,
+                'last_name'     => $user->surname,
             ]);
 
             $request = self::objectToArray($request);
 
-            if (array_key_exists('id', $request)){
+            if (array_key_exists('id', $request)) {
                 $id = $request['id'];
 
                 if ($id) {
                     $user->update([
-                        'coingate_subscriber_id' => $id
+                        'coingate_subscriber_id' => $id,
                     ]);
                 }
             }
@@ -660,15 +659,14 @@ class CoingateService implements BaseGatewayService
         foreach ($orders as $order) {
             $payments = $order->payload['payments'];
 
-            $last = \Arr::last($payments);
-
+            $last = Arr::last($payments);
 
             $path = 'api/v2/billing/payments/' . $last['id'];
 
             try {
                 $client = self::client()
                     ->request('get', $path, [
-                        'id' =>  $last['id'],
+                        'id' => $last['id'],
                     ]);
 
                 $request = self::objectToArray($client);
@@ -700,14 +698,13 @@ class CoingateService implements BaseGatewayService
                         $subscription->save();
                     }
 
-                    CreateActivity::for($user, 'Purchased', $plan->name. ' Plan');
+                    CreateActivity::for($user, 'Purchased', $plan->name . ' Plan');
                 }
-            }  catch (\Exception $th) {
+            } catch (Exception $th) {
 
             }
         }
     }
-
 
     public static function objectToArray($request)
     {
@@ -723,32 +720,32 @@ class CoingateService implements BaseGatewayService
     public static function gatewayDefinitionArray(): array
     {
         return [
-            "code" => "coingate",
-            "title" => "Coingate",
-            "link" => "https://coingate.com/",
-            "active" => 0,                      //if user activated this gateway - dynamically filled in main page
-            "available" => 1,                   //if gateway is available to use
-            "img" => "/assets/img/payments/coingate.svg",
-            "whiteLogo" => 0,                   //if gateway logo is white
-            "mode" => 1,                        // Option in settings - Automatically set according to the "Development" mode. "Development" ? sandbox : live (PAYPAL - 1)
-            "sandbox_client_id" => 0,           // Option in settings 0-Hidden 1-Visible
-            "sandbox_client_secret" => 1,       // Option in settings
-            "sandbox_app_id" => 0,              // Option in settings
-            "live_client_id" => 0,              // Option in settings
-            "live_client_secret" => 1,          // Option in settings
-            "live_app_id" => 0,                 // Option in settings
-            "currency" => 0,                    // Option in settings
-            "currency_locale" => 0,             // Option in settings
-            "base_url" => 0,                    // Option in settings
-            "sandbox_url" => 0,                 // Option in settings
-            "locale" => 0,                      // Option in settings
-            "validate_ssl" => 0,                // Option in settings
-            "logger" => 0,                      // Option in settings
-            "notify_url" => 0,                  // Gateway notification url at our side
-            "webhook_secret" => 0,              // Option in settings
-            "tax" => 1,              // Option in settings
-            "bank_account_details" => 0,
-            "bank_account_other" => 0,
+            'code'                  => 'coingate',
+            'title'                 => 'Coingate',
+            'link'                  => 'https://coingate.com/',
+            'active'                => 0,                      //if user activated this gateway - dynamically filled in main page
+            'available'             => 1,                   //if gateway is available to use
+            'img'                   => '/assets/img/payments/coingate.svg',
+            'whiteLogo'             => 0,                   //if gateway logo is white
+            'mode'                  => 1,                        // Option in settings - Automatically set according to the "Development" mode. "Development" ? sandbox : live (PAYPAL - 1)
+            'sandbox_client_id'     => 0,           // Option in settings 0-Hidden 1-Visible
+            'sandbox_client_secret' => 1,       // Option in settings
+            'sandbox_app_id'        => 0,              // Option in settings
+            'live_client_id'        => 0,              // Option in settings
+            'live_client_secret'    => 1,          // Option in settings
+            'live_app_id'           => 0,                 // Option in settings
+            'currency'              => 0,                    // Option in settings
+            'currency_locale'       => 0,             // Option in settings
+            'base_url'              => 0,                    // Option in settings
+            'sandbox_url'           => 0,                 // Option in settings
+            'locale'                => 0,                      // Option in settings
+            'validate_ssl'          => 0,                // Option in settings
+            'logger'                => 0,                      // Option in settings
+            'notify_url'            => 0,                  // Gateway notification url at our side
+            'webhook_secret'        => 0,              // Option in settings
+            'tax'                   => 1,              // Option in settings
+            'bank_account_details'  => 0,
+            'bank_account_other'    => 0,
         ];
     }
 }

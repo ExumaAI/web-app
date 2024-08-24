@@ -12,11 +12,10 @@ class Alert extends Component
      * Create a new component instance.
      */
     public function __construct(
-		public string $variant = 'info',
-		public string $size = 'md',
-		public string $icon = 'tabler-info-circle-filled',
-	)
-    {
+        public string $variant = 'info',
+        public string $size = 'md',
+        public string $icon = 'tabler-info-circle-filled',
+    ) {
         //
     }
 

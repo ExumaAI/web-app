@@ -12,6 +12,6 @@ class ChatbotData extends Model
         'type',
         'type_value',
         'path',
-        'status'
+        'status',
     ];
 }

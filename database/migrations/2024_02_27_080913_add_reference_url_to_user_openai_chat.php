@@ -23,8 +23,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('user_openai_chat', function (Blueprint $table) {
-            $table->dropColumn('reference_url');
-            $table->dropColumn('doc_name');
+            $table->dropColumn(['reference_url', 'doc_name']);
         });
     }
 };

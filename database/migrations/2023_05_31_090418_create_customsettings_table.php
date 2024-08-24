@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('key');                                      // Unique key value of setting e.g. : howitworks_link
             $table->string('title')->nullable();                        // Short description to remember where/what for it is used
-            $table->string('value_str')->nullable();                    // String value 
+            $table->string('value_str')->nullable();                    // String value
             $table->text('value_text')->nullable();                     // Text value
             $table->longText('value_longtext')->nullable();             // Long Text value
             $table->text('value_html')->nullable();                     // HTML value (Cleans/Sanitizes in Model)
@@ -23,7 +23,7 @@ return new class extends Migration
             $table->bigInteger('value_bigint')->nullable();             // Big integer value
             $table->unsignedBigInteger('value_ubigint')->nullable();    // Unsigned big integer value
             $table->double('value_double')->default(0);                 // Double value
-            $table->boolean('value_bool')->default(FALSE);              // Boolean value
+            $table->boolean('value_bool')->default(false);              // Boolean value
             $table->date('value_date')->nullable();                     // Date value
             $table->timestamp('value_timestamp')->nullable();           // Timestamp value
             $table->timestamps();

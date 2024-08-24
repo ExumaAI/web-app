@@ -8,9 +8,7 @@ use App\Services\DeFi\DeFiMarketDataService;
 
 class DeFiMarketDataController extends Controller
 {
-    public function __construct(public DeFiMarketDataService $service)
-    {
-    }
+    public function __construct(public DeFiMarketDataService $service) {}
 
     public function __invoke()
     {
@@ -19,7 +17,6 @@ class DeFiMarketDataController extends Controller
             request('column'),
             request('direction', 'asc')
         );
-
 
         return view('panel.user.defi.market-data.index', compact('data'));
     }

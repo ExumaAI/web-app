@@ -125,8 +125,8 @@ return [
     |   "payment.key"
     |
     */
-   'encrypted_keys' => [
+    'encrypted_keys' => [
 
-   ],
+    ],
 
 ];

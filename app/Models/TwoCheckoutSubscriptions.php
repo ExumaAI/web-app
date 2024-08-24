@@ -8,14 +8,16 @@ use Illuminate\Database\Eloquent\Model;
 class TwoCheckoutSubscriptions extends Model
 {
     use HasFactory;
+
     protected $table = 'subscriptions_twocheckout';
+
     protected $fillable = [
         'subscription_status',
-        'plan_id'
+        'plan_id',
     ];
 
     public function plan()
     {
         return $this->belongsTo(PaymentPlans::class, 'plan_id');
-    }  
+    }
 }

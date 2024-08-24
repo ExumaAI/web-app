@@ -12,7 +12,7 @@ class canUpdate
      * Handle an incoming request.
      *
      * @param  \Illuminate\Http\Request  $request
-     * @param  \Closure  $next
+     *
      * @return mixed
      */
     public function handle($request, Closure $next)
@@ -31,11 +31,13 @@ class canUpdate
                 if ($this->alreadyUpdated()) {
                     abort(404);
                 }
+
                 break;
 
             case false:
             default:
                 abort(404);
+
                 break;
         }
 

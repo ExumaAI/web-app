@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Model;
 class Favourite extends Model
 {
     use HasFactory;
+
     protected $table = 'favourite_list';
+
     protected $guarded = [];
 }

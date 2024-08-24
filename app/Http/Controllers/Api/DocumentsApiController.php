@@ -230,11 +230,11 @@ class DocumentsApiController extends Controller
         ];
 
         if ($filter != 'all' && $filter != 'All') {
-            $query[] = ['openai.filters', 'LIKE', '%'.$filter.'%'];
+            $query[] = ['openai.filters', 'LIKE', '%' . $filter . '%'];
         }
 
         if ($search != '') {
-            $query[] = ['output', 'LIKE', '%'.$search.'%'];
+            $query[] = ['output', 'LIKE', '%' . $search . '%'];
         }
 
         $sortColumn = 'created_at';

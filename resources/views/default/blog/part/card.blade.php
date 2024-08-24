@@ -11,7 +11,7 @@
                 class="text-sm">{{ date('d M', strtotime($post->updated_at)) }}</time>
             <div class="border-b grow relative -top-2"></div>
             <a class="text-sm"
-                href="{{ url('/blog/author', $post->user_id) }}">{{ App\Models\User::where('id', $post->user_id)->first()->name }}</a>
+                href="{{ url('/blog/author', $post->user_id) }}">{{ App\Models\User::where('id', $post->user_id)->first()?->name }}</a>
         </div>
         <h2 class="!text-[21px] mb-4 tracking-tight leading-[26px]"><a
                 href="{{ url('/blog', $post->slug) }}">{{ $post->title }}</a></h2>

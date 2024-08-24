@@ -1,283 +1,51 @@
 {
-  "_clipboard-f64d1f4d.js": {
-    "file": "assets/clipboard-f64d1f4d.js"
-  },
-  "_fetch-701d0618.js": {
-    "file": "assets/fetch-701d0618.js"
+  "_clipboard-4db12c4b.js": {
+    "file": "assets/clipboard-4db12c4b.js"
   },
   "_pusher-32a7bc32.js": {
     "file": "assets/pusher-32a7bc32.js",
     "isDynamicEntry": true
-  },
-  "_typed.module-00a59234.js": {
-    "dynamicImports": [
-      "node_modules/laravel-echo/dist/echo.js",
-      "_pusher-32a7bc32.js"
-    ],
-    "file": "assets/typed.module-00a59234.js"
   },
   "node_modules/laravel-echo/dist/echo.js": {
     "file": "assets/echo-4c3fda6b.js",
     "isDynamicEntry": true,
     "src": "node_modules/laravel-echo/dist/echo.js"
   },
-  "public/themes/magic-works/assets/img/bg.png": {
-    "file": "assets/bg-7c484055.png",
-    "src": "public/themes/magic-works/assets/img/bg.png"
-  },
-  "public/themes/myai-tools/assets/img/bg/bg.png": {
-    "file": "assets/bg-fe2dfa5d.png",
-    "src": "public/themes/myai-tools/assets/img/bg/bg.png"
-  },
-  "public/themes/neura/assets/img/bg/bg-2.jpeg": {
-    "file": "assets/bg-2-59f936fa.jpeg",
-    "src": "public/themes/neura/assets/img/bg/bg-2.jpeg"
-  },
-  "public/themes/neura/assets/img/bg/bg.svg": {
-    "file": "assets/bg-afefa1f8.svg",
-    "src": "public/themes/neura/assets/img/bg/bg.svg"
-  },
-  "public/themes/sleek/assets/img/bg/bg.png": {
-    "file": "assets/bg-45d19523.png",
-    "src": "public/themes/sleek/assets/img/bg/bg.png"
-  },
-  "resources/views/classic/js/app.js": {
-    "file": "assets/app-9cbd565b.js",
-    "imports": [
-      "_typed.module-00a59234.js",
-      "_fetch-701d0618.js"
-    ],
-    "isEntry": true,
-    "src": "resources/views/classic/js/app.js"
-  },
-  "resources/views/classic/js/chatbotApp.js": {
-    "file": "assets/chatbotApp-37fabb53.js",
-    "imports": [
-      "resources/views/default/js/chatbotApp.js",
-      "_fetch-701d0618.js",
-      "_clipboard-f64d1f4d.js"
-    ],
-    "isEntry": true,
-    "src": "resources/views/classic/js/chatbotApp.js"
-  },
-  "resources/views/classic/scss/dashboard.scss": {
-    "file": "assets/dashboard-47b6eb65.css",
-    "isEntry": true,
-    "src": "resources/views/classic/scss/dashboard.scss"
-  },
-  "resources/views/classic/scss/landing-page.scss": {
-    "file": "assets/landing-page-9cf96b60.css",
-    "isEntry": true,
-    "src": "resources/views/sleek/scss/landing-page.scss"
-  },
-  "resources/views/creative/js/app.js": {
-    "file": "assets/app-cca899e6.js",
-    "imports": [
-      "_typed.module-00a59234.js",
-      "_fetch-701d0618.js"
-    ],
-    "isEntry": true,
-    "src": "resources/views/creative/js/app.js"
-  },
-  "resources/views/creative/js/chatbotApp.js": {
-    "file": "assets/chatbotApp-dbdbd596.js",
-    "imports": [
-      "resources/views/default/js/chatbotApp.js",
-      "_fetch-701d0618.js",
-      "_clipboard-f64d1f4d.js"
-    ],
-    "isEntry": true,
-    "src": "resources/views/creative/js/chatbotApp.js"
-  },
-  "resources/views/creative/scss/dashboard.scss": {
-    "file": "assets/dashboard-046969d0.css",
-    "isEntry": true,
-    "src": "resources/views/default/scss/dashboard.scss"
-  },
-  "resources/views/creative/scss/landing-page.scss": {
-    "file": "assets/landing-page-3118cf78.css",
-    "isEntry": true,
-    "src": "resources/views/creative/scss/landing-page.scss"
-  },
-  "resources/views/dark/js/app.js": {
-    "file": "assets/app-58f1717c.js",
-    "imports": [
-      "_typed.module-00a59234.js",
-      "_fetch-701d0618.js"
-    ],
-    "isEntry": true,
-    "src": "resources/views/dark/js/app.js"
-  },
-  "resources/views/dark/js/chatbotApp.js": {
-    "file": "assets/chatbotApp-f8ac7b28.js",
-    "imports": [
-      "resources/views/default/js/chatbotApp.js",
-      "_fetch-701d0618.js",
-      "_clipboard-f64d1f4d.js"
-    ],
-    "isEntry": true,
-    "src": "resources/views/dark/js/chatbotApp.js"
-  },
-  "resources/views/dark/scss/dashboard.scss": {
-    "file": "assets/dashboard-046969d0.css",
-    "isEntry": true,
-    "src": "resources/views/default/scss/dashboard.scss"
-  },
-  "resources/views/dark/scss/landing-page.scss": {
-    "file": "assets/landing-page-1d07187d.css",
-    "isEntry": true,
-    "src": "resources/views/dark/scss/landing-page.scss"
-  },
   "resources/views/default/js/app.js": {
-    "file": "assets/app-8298c334.js",
+    "dynamicImports": [
+      "node_modules/laravel-echo/dist/echo.js",
+      "_pusher-32a7bc32.js"
+    ],
+    "file": "assets/app-2a13c465.js",
     "imports": [
-      "_typed.module-00a59234.js",
-      "_fetch-701d0618.js",
-      "_clipboard-f64d1f4d.js"
+      "_clipboard-4db12c4b.js"
     ],
     "isEntry": true,
     "src": "resources/views/default/js/app.js"
   },
   "resources/views/default/js/chatbotApp.css": {
-    "file": "assets/chatbotApp-377032ad.css",
+    "file": "assets/chatbotApp-82066f50.css",
     "src": "resources/views/default/js/chatbotApp.css"
   },
   "resources/views/default/js/chatbotApp.js": {
     "css": [
-      "assets/chatbotApp-377032ad.css"
+      "assets/chatbotApp-82066f50.css"
     ],
-    "file": "assets/chatbotApp-47b250d4.js",
+    "file": "assets/chatbotApp-98627d1c.js",
     "imports": [
-      "_fetch-701d0618.js",
-      "_clipboard-f64d1f4d.js"
+      "_clipboard-4db12c4b.js"
     ],
     "isEntry": true,
     "src": "resources/views/default/js/chatbotApp.js"
   },
   "resources/views/default/scss/dashboard.scss": {
-    "file": "assets/dashboard-046969d0.css",
+    "file": "assets/dashboard-ddc7aee0.css",
     "isEntry": true,
     "src": "resources/views/default/scss/dashboard.scss"
   },
   "resources/views/default/scss/landing-page.scss": {
-    "file": "assets/landing-page-9cf96b60.css",
+    "file": "assets/landing-page-8357fcf7.css",
     "isEntry": true,
-    "src": "resources/views/sleek/scss/landing-page.scss"
-  },
-  "resources/views/magic-works/js/app.js": {
-    "file": "assets/app-6e3bf2a0.js",
-    "imports": [
-      "_typed.module-00a59234.js",
-      "_fetch-701d0618.js"
-    ],
-    "isEntry": true,
-    "src": "resources/views/magic-works/js/app.js"
-  },
-  "resources/views/magic-works/js/chatbotApp.js": {
-    "file": "assets/chatbotApp-991af0d1.js",
-    "imports": [
-      "resources/views/default/js/chatbotApp.js",
-      "_fetch-701d0618.js",
-      "_clipboard-f64d1f4d.js"
-    ],
-    "isEntry": true,
-    "src": "resources/views/magic-works/js/chatbotApp.js"
-  },
-  "resources/views/magic-works/scss/dashboard.scss": {
-    "file": "assets/dashboard-6bca936b.css",
-    "isEntry": true,
-    "src": "resources/views/magic-works/scss/dashboard.scss"
-  },
-  "resources/views/magic-works/scss/landing-page.scss": {
-    "file": "assets/landing-page-a0b31b32.css",
-    "isEntry": true,
-    "src": "resources/views/magic-works/scss/landing-page.scss"
-  },
-  "resources/views/myai-tools/js/app.js": {
-    "file": "assets/app-5acbb03a.js",
-    "imports": [
-      "_typed.module-00a59234.js",
-      "_fetch-701d0618.js"
-    ],
-    "isEntry": true,
-    "src": "resources/views/myai-tools/js/app.js"
-  },
-  "resources/views/myai-tools/js/chatbotApp.js": {
-    "file": "assets/chatbotApp-730ffa76.js",
-    "imports": [
-      "resources/views/default/js/chatbotApp.js",
-      "_fetch-701d0618.js",
-      "_clipboard-f64d1f4d.js"
-    ],
-    "isEntry": true,
-    "src": "resources/views/myai-tools/js/chatbotApp.js"
-  },
-  "resources/views/myai-tools/scss/dashboard.scss": {
-    "file": "assets/dashboard-9c521336.css",
-    "isEntry": true,
-    "src": "resources/views/myai-tools/scss/dashboard.scss"
-  },
-  "resources/views/myai-tools/scss/landing-page.scss": {
-    "file": "assets/landing-page-ce006546.css",
-    "isEntry": true,
-    "src": "resources/views/myai-tools/scss/landing-page.scss"
-  },
-  "resources/views/neura/js/app.js": {
-    "file": "assets/app-cb81adec.js",
-    "imports": [
-      "_typed.module-00a59234.js",
-      "_fetch-701d0618.js"
-    ],
-    "isEntry": true,
-    "src": "resources/views/neura/js/app.js"
-  },
-  "resources/views/neura/js/chatbotApp.js": {
-    "file": "assets/chatbotApp-538bba20.js",
-    "imports": [
-      "resources/views/default/js/chatbotApp.js",
-      "_fetch-701d0618.js",
-      "_clipboard-f64d1f4d.js"
-    ],
-    "isEntry": true,
-    "src": "resources/views/neura/js/chatbotApp.js"
-  },
-  "resources/views/neura/scss/dashboard.scss": {
-    "file": "assets/dashboard-cc19aa79.css",
-    "isEntry": true,
-    "src": "resources/views/neura/scss/dashboard.scss"
-  },
-  "resources/views/neura/scss/landing-page.scss": {
-    "file": "assets/landing-page-9cf96b60.css",
-    "isEntry": true,
-    "src": "resources/views/sleek/scss/landing-page.scss"
-  },
-  "resources/views/sleek/js/app.js": {
-    "file": "assets/app-71931196.js",
-    "imports": [
-      "_typed.module-00a59234.js",
-      "_fetch-701d0618.js"
-    ],
-    "isEntry": true,
-    "src": "resources/views/sleek/js/app.js"
-  },
-  "resources/views/sleek/js/chatbotApp.js": {
-    "file": "assets/chatbotApp-2d31d5f9.js",
-    "imports": [
-      "resources/views/default/js/chatbotApp.js",
-      "_fetch-701d0618.js",
-      "_clipboard-f64d1f4d.js"
-    ],
-    "isEntry": true,
-    "src": "resources/views/sleek/js/chatbotApp.js"
-  },
-  "resources/views/sleek/scss/dashboard.scss": {
-    "file": "assets/dashboard-1dc04b9e.css",
-    "isEntry": true,
-    "src": "resources/views/sleek/scss/dashboard.scss"
-  },
-  "resources/views/sleek/scss/landing-page.scss": {
-    "file": "assets/landing-page-9cf96b60.css",
-    "isEntry": true,
-    "src": "resources/views/sleek/scss/landing-page.scss"
+    "src": "resources/views/default/scss/landing-page.scss"
   }
 }

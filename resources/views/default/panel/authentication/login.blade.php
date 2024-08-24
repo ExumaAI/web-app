@@ -87,12 +87,14 @@
                 <a class="text-indigo-600" href="{{ route('forgot_password') }}">{{ __('Forgot Password?') }}</a>
             </div>
         </div>
-        @if($setting->recaptcha_login == 1)
+
+        @if($setting->recaptcha_login && config('services.recaptcha.key') && config('services.recaptcha.secret'))
             <!-- Google Recaptcha Widget-->
             <div class="g-recaptcha mt-4" data-sitekey="{{config('services.recaptcha.key')}}"></div>
+            <input class="hidden" id="recaptcha" value="1">
+        @else
+            <input class="hidden" id="recaptcha" value="0">
         @endif
-
-        <input class="hidden" id="recaptcha" value="{{$setting->recaptcha_login}}">
 
         <x-button class="text-sm" id="LoginFormButton" size="lg" type="submit" tag="button">
             {{ __('Sign in') }}
@@ -140,3 +142,7 @@
         </div>
     @endif
 @endsection
+
+@push('script')
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+@endpush

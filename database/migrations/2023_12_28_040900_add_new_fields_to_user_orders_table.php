@@ -23,8 +23,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('user_orders', function (Blueprint $table) {
-            $table->dropColumn('tax_rate');
-            $table->dropColumn('tax_value');
+            $table->dropColumn(['tax_rate', 'tax_value']);
         });
     }
 };

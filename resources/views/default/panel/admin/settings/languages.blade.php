@@ -158,6 +158,10 @@
 >
     {{ __('Russian (Russia)') }}</option>
 <option
+        value="sk-SK"
+        {{ $setting->openai_default_language == 'sk-SK' ? 'selected' : null }}
+>{{ __('Slovak (Slovakia)') }}</option>
+<option
     value="sl-SI"
     {{ $setting->openai_default_language == 'sl-SI' ? 'selected' : null }}
 >

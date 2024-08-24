@@ -20,7 +20,7 @@ class Advertis extends Model
     ];
 
     protected $casts = [
-        'status' => 'boolean'
+        'status' => 'boolean',
     ];
 
     public function trackingCode(): Attribute

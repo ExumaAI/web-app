@@ -18,7 +18,7 @@ class AIFineTuneController extends Controller
             return response()->json(__('This feature is disabled in Demo version.'), 419);
         }
 
-        $title = ! empty($_POST['title']) ? $_POST['title'] : 'model-'.Str::random(7);
+        $title = ! empty($_POST['title']) ? $_POST['title'] : 'model-' . Str::random(7);
         $purpose = ! empty($_POST['purpose']) ? $_POST['purpose'] : 'fine-tune';
         $model = ! empty($_POST['model']) ? $_POST['model'] : 'gpt-3.5-turbo-1106';
         $file = ! empty($_FILES['file']) ? $_FILES['file'] : [];
@@ -51,7 +51,7 @@ class AIFineTuneController extends Controller
         // upload file
         $uploadFile = $open_ai->uploadFile([
             'purpose' => $purpose,
-            'file' => $c_file,
+            'file'    => $c_file,
         ]);
         $uploadFile_array = json_decode($uploadFile, true);
         $uploadFile = json_decode($uploadFile);
@@ -62,7 +62,7 @@ class AIFineTuneController extends Controller
 
         // create fine-tune
         $createFineTune = $open_ai->createFineTune([
-            'model' => $model,
+            'model'         => $model,
             'training_file' => $uploadFile->id,
         ]);
         $createFineTune = json_decode($createFineTune);
@@ -74,7 +74,7 @@ class AIFineTuneController extends Controller
         // update data
         $fine_tune_list[$uploadFile->id] = [
             'title' => $title,
-            'file' => $uploadFile_array,
+            'file'  => $uploadFile_array,
         ];
 
         $save_settings = SettingTwo::first();

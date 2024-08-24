@@ -4,6 +4,7 @@ namespace App\Listeners;
 
 use App\Actions\CreateActivity;
 use App\Events\IyzicoLifetimeEvent;
+use Exception;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Facades\Log;
 
@@ -41,14 +42,17 @@ class IyzicoLifetimeListener
                         case 'lifetime_monthly':
                             Subscriptions::where('stripe_id', $order->order_id)->update(['stripe_status' => $status, 'ends_at' => \Carbon\Carbon::now()->addMonths(1)]);
                             $msg = __('Subscription renewed for 1 month.');
+
                             break;
                         case 'lifetime_yearly':
                             Subscriptions::where('stripe_id', $order->order_id)->update(['stripe_status' => $status, 'ends_at' => \Carbon\Carbon::now()->addYears(1)]);
                             $msg = __('Subscription renewed for 1 year.');
+
                             break;
                         default:
                             Subscriptions::where('stripe_id', $order->order_id)->update(['stripe_status' => $status, 'ends_at' => \Carbon\Carbon::now()->addMonths(1)]);
                             $msg = __('Subscription renewed for 1 month.');
+
                             break;
                     }
                     // all old tokens deleted
@@ -56,11 +60,11 @@ class IyzicoLifetimeListener
                     $order->plan->total_images == -1 ? ($order->user->remaining_images = -1) : ($order->user->remaining_images = $order->plan->total_images);
                     $order->user->save();
                     // sent mail if required here later
-                    CreateActivity::for($order->user, $msg, $order->plan->name.' '.__('Plan'));
+                    CreateActivity::for($order->user, $msg, $order->plan->name . ' ' . __('Plan'));
                 }
             }
-        } catch (\Exception $ex) {
-            Log::error("IyzicoLifetimeListener::handle()\n".$ex->getMessage());
+        } catch (Exception $ex) {
+            Log::error("IyzicoLifetimeListener::handle()\n" . $ex->getMessage());
         }
     }
 }

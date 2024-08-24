@@ -13,6 +13,12 @@
             />
             <div class="lqd-tabs text-center">
                 <div class="lqd-tabs-triggers mx-auto mb-9 inline-flex flex-wrap gap-2 rounded-md border text-[15px] font-medium leading-none">
+                    @php
+                    $plan = $plansSubscriptionMonthly;
+                    @endphp
+
+
+
                     @if ($plansSubscriptionMonthly->count() > 0)
                         @include('landing-page.pricing.item-trigger', [
                             'target' => '#pricing-monthly',

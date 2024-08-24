@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('pages', function (Blueprint $table) {
-            $table->tinyInteger("show_on_footer")->default(0);
+            $table->tinyInteger('show_on_footer')->default(0);
         });
     }
 

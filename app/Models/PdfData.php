@@ -8,5 +8,6 @@ use Illuminate\Database\Eloquent\Model;
 class PdfData extends Model
 {
     use HasFactory;
+
     protected $table = 'pdf_data';
 }

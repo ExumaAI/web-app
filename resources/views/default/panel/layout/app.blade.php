@@ -160,7 +160,7 @@
     </script>
 
     <div
-        class="pointer-events-none invisible fixed left-0 right-0 top-0 z-[999] opacity-0 transition-opacity"
+        class="pointer-events-none invisible fixed left-0 right-0 top-[0.5px] z-[999] bg-background opacity-0 transition-opacity"
         id="app-loading-indicator"
         x-data
         :class="{ 'opacity-0': !$store.appLoadingIndicator.showing, 'invisible': !$store.appLoadingIndicator.showing }"
@@ -256,7 +256,6 @@
             !(route('dashboard.user.openai.generator.workbook', 'ai_pdf') == url()->current()),
         'panel.chatbot.widget')
 
-
     @include('panel.layout.scripts')
 
     @if (\Session::has('message'))
@@ -274,20 +273,20 @@
     @endif
 
     @auth
-{{--        <script type="module">--}}
-{{--            Echo.private(`App.Models.User.{{ auth()->user()?->id }}`)--}}
-{{--                .listen(".Illuminate\\Notifications\\Events\\BroadcastNotificationCreated", (notification) => {--}}
-{{--                    if (Alpine) {--}}
-{{--                        Alpine.store('notifications').add({--}}
-{{--                            id: notification.id,--}}
-{{--                            title: notification.data.title,--}}
-{{--                            message: notification.data.message,--}}
-{{--                            link: notification.data.link,--}}
-{{--                            unread: true--}}
-{{--                        })--}}
-{{--                    }--}}
-{{--                });--}}
-{{--        </script>--}}
+        {{--        <script type="module"> --}}
+        {{--            Echo.private(`App.Models.User.{{ auth()->user()?->id }}`) --}}
+        {{--                .listen(".Illuminate\\Notifications\\Events\\BroadcastNotificationCreated", (notification) => { --}}
+        {{--                    if (Alpine) { --}}
+        {{--                        Alpine.store('notifications').add({ --}}
+        {{--                            id: notification.id, --}}
+        {{--                            title: notification.data.title, --}}
+        {{--                            message: notification.data.message, --}}
+        {{--                            link: notification.data.link, --}}
+        {{--                            unread: true --}}
+        {{--                        }) --}}
+        {{--                    } --}}
+        {{--                }); --}}
+        {{--        </script> --}}
     @endauth
     @stack('script')
 
@@ -298,7 +297,7 @@
     @endif
 
     @auth()
-        @if (\Illuminate\Support\Facades\Auth::user()->type == 'admin')
+        @if (\Illuminate\Support\Facades\Auth::user()->isAdmin())
             <script src="{{ custom_theme_url('/assets/js/panel/update-check.js') }}"></script>
         @endif
     @endauth
@@ -324,6 +323,10 @@
     @endif
 
     @livewireScriptConfig()
+{{--    @stack('live-script')--}}
+
+
+    @include('default.panel.layout.includes.intercom')
 
 </body>
 

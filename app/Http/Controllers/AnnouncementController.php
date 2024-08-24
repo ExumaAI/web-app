@@ -18,16 +18,16 @@ class AnnouncementController extends Controller
     {
         if ($request->input('announcement_active')) {
             $request->validate([
-                'announcement_title' => 'required|string|max:255',
+                'announcement_title'       => 'required|string|max:255',
                 'announcement_description' => 'required|string',
 
-                'announcement_image' => 'nullable',
+                'announcement_image'      => 'nullable',
                 'announcement_image_dark' => 'nullable',
 
-                'announcement_background_color' => 'nullable',
+                'announcement_background_color'      => 'nullable',
                 'announcement_background_color_dark' => 'nullable',
 
-                'announcement_background_image' => 'nullable',
+                'announcement_background_image'      => 'nullable',
                 'announcement_background_image_dark' => 'nullable',
             ]);
             $title = $request->input('announcement_title');
@@ -41,50 +41,50 @@ class AnnouncementController extends Controller
             if ($request->hasFile('announcement_image')) {
                 $path = 'upload/images/';
                 $image = $request->file('announcement_image');
-                $image_name = Str::random(8).'-ann-img.'.$image->getClientOriginalExtension();
+                $image_name = Str::random(8) . '-ann-img.' . $image->getClientOriginalExtension();
                 $image->move($path, $image_name);
-                $image_name = '/'.$path.$image_name;
+                $image_name = '/' . $path . $image_name;
             }
 
             $dark_image_name = setting('announcement_image_dark', '/upload/images/speaker.png');
             if ($request->hasFile('announcement_image_dark')) {
                 $path = 'upload/images/';
                 $image = $request->file('announcement_image_dark');
-                $dark_image_name = Str::random(8).'-ann-img-dark.'.$image->getClientOriginalExtension();
+                $dark_image_name = Str::random(8) . '-ann-img-dark.' . $image->getClientOriginalExtension();
                 $image->move($path, $dark_image_name);
-                $dark_image_name = '/'.$path.$dark_image_name;
+                $dark_image_name = '/' . $path . $dark_image_name;
             }
 
             $dark_bg_image_name = setting('announcement_background_image_dark', null);
             if ($request->hasFile('announcement_background_image_dark')) {
                 $path = 'upload/images/';
                 $image = $request->file('announcement_background_image_dark');
-                $dark_bg_image_name = Str::random(8).'-ann-bg-dark.'.$image->getClientOriginalExtension();
+                $dark_bg_image_name = Str::random(8) . '-ann-bg-dark.' . $image->getClientOriginalExtension();
                 $image->move($path, $dark_bg_image_name);
-                $dark_bg_image_name = '/'.$path.$dark_bg_image_name;
+                $dark_bg_image_name = '/' . $path . $dark_bg_image_name;
             }
 
             $bg_image_name = setting('announcement_background_image', null);
             if ($request->hasFile('announcement_background_image')) {
                 $path = 'upload/images/';
                 $image = $request->file('announcement_background_image');
-                $bg_image_name = Str::random(8).'-ann-bg.'.$image->getClientOriginalExtension();
+                $bg_image_name = Str::random(8) . '-ann-bg.' . $image->getClientOriginalExtension();
                 $image->move($path, $bg_image_name);
-                $bg_image_name = '/'.$path.$bg_image_name;
+                $bg_image_name = '/' . $path . $bg_image_name;
             }
 
             setting(
                 [
-                    'announcement_active' => true,
-                    'announcement_title' => $title,
-                    'announcement_description' => $message,
-                    'announcement_url' => $url,
-                    'announcement_button_text' => $button_text,
-                    'announcement_image' => $image_name,
-                    'announcement_image_dark' => $dark_image_name,
-                    'announcement_background_color' => $background_color,
+                    'announcement_active'                => true,
+                    'announcement_title'                 => $title,
+                    'announcement_description'           => $message,
+                    'announcement_url'                   => $url,
+                    'announcement_button_text'           => $button_text,
+                    'announcement_image'                 => $image_name,
+                    'announcement_image_dark'            => $dark_image_name,
+                    'announcement_background_color'      => $background_color,
                     'announcement_background_color_dark' => $background_color_dark,
-                    'announcement_background_image' => $bg_image_name,
+                    'announcement_background_image'      => $bg_image_name,
                     'announcement_background_image_dark' => $dark_bg_image_name,
                 ]
             )->save();
@@ -93,9 +93,9 @@ class AnnouncementController extends Controller
         }
 
         $request->validate([
-            'title' => 'required|string|max:255',
+            'title'   => 'required|string|max:255',
             'message' => 'required|string',
-            'url' => 'nullable|url',
+            'url'     => 'nullable|url',
         ]);
         $title = $request->input('title');
         $message = $request->input('message');
@@ -118,16 +118,16 @@ class AnnouncementController extends Controller
     public function reset(Request $request)
     {
         setting([
-            'announcement_active' => 0,
-            'announcement_title' => null,
-            'announcement_description' => null,
-            'announcement_url' => null,
-            'announcement_button_text' => null,
-            'announcement_image' => null,
-            'announcement_image_dark' => null,
-            'announcement_background_color' => null,
+            'announcement_active'                => 0,
+            'announcement_title'                 => null,
+            'announcement_description'           => null,
+            'announcement_url'                   => null,
+            'announcement_button_text'           => null,
+            'announcement_image'                 => null,
+            'announcement_image_dark'            => null,
+            'announcement_background_color'      => null,
             'announcement_background_color_dark' => null,
-            'announcement_background_image' => null,
+            'announcement_background_image'      => null,
             'announcement_background_image_dark' => null,
         ])->save();
 

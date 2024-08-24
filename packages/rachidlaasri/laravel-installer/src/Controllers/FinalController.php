@@ -13,9 +13,6 @@ class FinalController extends Controller
     /**
      * Update installed file and display finished view.
      *
-     * @param \RachidLaasri\LaravelInstaller\Helpers\InstalledFileManager $fileManager
-     * @param \RachidLaasri\LaravelInstaller\Helpers\FinalInstallManager $finalInstall
-     * @param \RachidLaasri\LaravelInstaller\Helpers\EnvironmentManager $environment
      * @return \Illuminate\Contracts\View\Factory|\Illuminate\View\View
      */
     public function finish(

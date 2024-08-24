@@ -1,4 +1,5 @@
 <?php
+
 namespace RachidLaasri\LaravelInstaller\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
@@ -9,7 +10,7 @@ class LicenseKeyRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'liquid_license_domain_key' => ['required', 'string', 'max:255', new LicenseKeyRule()],
+            'liquid_license_domain_key' => ['required', 'string', 'max:255', new LicenseKeyRule],
         ];
     }
 }

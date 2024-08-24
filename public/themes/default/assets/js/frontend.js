@@ -56,7 +56,6 @@
 			const clickedOutside = !dd.parentElement.contains(target);
 			if (clickedOutside) {
 				dd.classList.remove('show');
-				searchResultsVisible = false;
 			}
 		});
 	});
@@ -165,8 +164,8 @@
 		});
 	});
 
-	if (frontendLocalNav) {
-		const scrollspy = VanillaScrollspy({ menu: frontendLocalNav });
+	if (frontendLocalNav?.querySelector('ul')) {
+		const scrollspy = VanillaScrollspy({ menu: frontendLocalNav.querySelector('ul') });
 		scrollspy.init();
 	}
 

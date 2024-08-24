@@ -25,9 +25,9 @@ trait WithChatbotMiddleware
         $originDomain = parse_url($this->request()->headers->get('Origin'), PHP_URL_HOST);
 
         $domain = Domain::whereDomain($originDomain)
-                        ->when($withKey, function ($query) {
-                            return $query->whereAppKey($this->getAppKey());
-                        });
+            ->when($withKey, function ($query) {
+                return $query->whereAppKey($this->getAppKey());
+            });
 
         if ($domain->exists()) {
             $this->setDomain($domain->first());
@@ -94,9 +94,9 @@ trait WithChatbotMiddleware
     public static function corsHeaders(string $originUrl = '*'): array
     {
         return [
-            'Access-Control-Allow-Origin' => $originUrl,
-            'Access-Control-Allow-Methods' => 'GET, POST, OPTIONS',
-            'Access-Control-Allow-Headers' => 'Accept, Origin, Content-Type, X-MagicAI-Chatbot, X-Livewire, Authorization',
+            'Access-Control-Allow-Origin'      => $originUrl,
+            'Access-Control-Allow-Methods'     => 'GET, POST, OPTIONS',
+            'Access-Control-Allow-Headers'     => 'Accept, Origin, Content-Type, X-MagicAI-Chatbot, X-Livewire, Authorization',
             'Access-Control-Allow-Credentials' => 'true',
         ];
     }
@@ -138,5 +138,4 @@ trait WithChatbotMiddleware
             // ray(['User not found', $this->domain, $this->getToken(), $this->getAppKey(), $this->domain->chatbot->user]);
         }
     }
-
 }

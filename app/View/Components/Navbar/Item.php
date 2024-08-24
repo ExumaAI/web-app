@@ -12,8 +12,8 @@ class Item extends Component
      * Create a new component instance.
      */
     public function __construct(
-		public bool $hasDropdown = false
-	) {}
+        public bool $hasDropdown = false
+    ) {}
 
     /**
      * Get the view / contents that represent the component.

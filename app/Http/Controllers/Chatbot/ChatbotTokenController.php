@@ -4,11 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Chatbot;
 
-use App\Http\Requests\Chatbot\ChatbotEmbedRequest;
 use App\Support\Chatbot\ChatbotHelper;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Blade;
-use Livewire\Features\SupportScriptsAndAssets\SupportScriptsAndAssets;
 
 class ChatbotTokenController
 {
@@ -16,7 +13,7 @@ class ChatbotTokenController
     {
         $token = ChatbotHelper::generateJWT($request->input('appKey'));
 
-        if ( ! $token) {
+        if (! $token) {
             return response()->json([
                 'message' => 'Unauthorized',
             ], 401);

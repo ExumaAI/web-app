@@ -5,17 +5,19 @@ declare(strict_types=1);
 namespace App\Support\Chatbot;
 
 use App\Models\Chatbot\Domain;
+use Exception;
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 use Illuminate\Foundation\Vite;
 use Livewire\Exceptions\ComponentNotFoundException;
 use Livewire\Mechanisms\ComponentRegistry;
 use ReflectionClass;
+use ReflectionException;
 
 class ChatbotHelper
 {
     /**
-     * @throws \ReflectionException
+     * @throws ReflectionException
      */
     public static function isEmbeddable($component): bool
     {
@@ -71,8 +73,9 @@ class ChatbotHelper
     {
         try {
             $decoded = JWT::decode($token, new Key(static::appSecret(), 'HS256'));
+
             return (array) $decoded;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return false; // Token geçersiz
         }
     }

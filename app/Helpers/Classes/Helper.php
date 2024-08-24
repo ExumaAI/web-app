@@ -6,14 +6,16 @@ use App\Models\RateLimit;
 use App\Models\Setting;
 use App\Models\SettingTwo;
 use Carbon\Carbon;
+use Exception;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Route;
 
 class Helper
 {
     public static function hasRoute($route = null): bool
     {
-        if ($route && \Route::has($route)) {
+        if ($route && Route::has($route)) {
             return true;
         }
 
@@ -28,7 +30,6 @@ class Helper
 
         return $array;
     }
-
 
     public static function routeWithoutTranslate($route = null)
     {
@@ -49,6 +50,7 @@ class Helper
         if ($start !== false) {
             // İstenen kısmı dizi olarak al
             $specificPathParts = array_slice($pathParts, $start);
+
             // Dizi elemanlarını birleştirerek string haline getir
             return '/' . implode('/', $specificPathParts);
         }
@@ -90,8 +92,9 @@ class Helper
     {
         try {
             DB::connection()->getPdo();
+
             return true;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return false;
         }
     }
@@ -112,6 +115,22 @@ class Helper
         return $data->sortByDesc('selected');
     }
 
+    public static function setFalAIKey(): string
+    {
+//        $settings = Setting::query()->first();
+
+//        $apiKeys = [];
+
+//        if ($settings?->getAttribute('user_api_option')) {
+//            $apiKeys = explode(',', auth()->user()?->getAttribute('anthropic_api_keys'));
+//        } else {
+//            $apiKeys = explode(',', setting('fal_ai'));
+//        }
+
+        $apiKeys = explode(',', setting('fal_ai_api_secret'));
+
+        return Arr::random($apiKeys);
+    }
 
     public static function setAnthropicKey(): string
     {
@@ -153,6 +172,7 @@ class Helper
         }
         config(['gemini.api_key' => $apiKeys[array_rand($apiKeys)]]);
         config(['gemini.request_timeout' => 120]);
+
         return config('gemini.api_key');
     }
 
@@ -162,7 +182,7 @@ class Helper
             return '';
         }
 
-        if (!is_scalar($text)) {
+        if (! is_scalar($text)) {
             /*
              * To maintain consistency with pre-PHP 8 error levels,
              * trigger_error() is used to trigger an E_USER_WARNING,
@@ -170,7 +190,7 @@ class Helper
              */
             trigger_error(
                 sprintf(
-                /* translators: 1: The function name, 2: The argument number, 3: The argument name, 4: The expected type, 5: The provided type. */
+                    /* translators: 1: The function name, 2: The argument number, 3: The argument name, 4: The expected type, 5: The provided type. */
                     __('Warning: %1$s expects parameter %2$s (%3$s) to be a %4$s, %5$s given.'),
                     __FUNCTION__,
                     '#1',
@@ -281,7 +301,7 @@ class Helper
             }
             $member = $user->teamMember;
             if ($member) {
-                if (!$member->allow_unlimited_credits) {
+                if (! $member->allow_unlimited_credits) {
                     if ($member->remaining_images <= 0 and $member->remaining_images != -1) {
                         $data = [
                             'errors' => ['You have no credits left. Please consider upgrading your plan.'],

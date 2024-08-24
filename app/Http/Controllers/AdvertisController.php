@@ -13,7 +13,7 @@ class AdvertisController extends Controller
     public function index()
     {
         return view('panel.admin.advertis.index')->with([
-            'advertises' => Advertis::all()
+            'advertises' => Advertis::all(),
         ]);
     }
 
@@ -47,7 +47,7 @@ class AdvertisController extends Controller
     public function edit($advertis)
     {
         return view('panel.admin.advertis.edit')->with([
-            'advertis' => Advertis::find($advertis)
+            'advertis' => Advertis::find($advertis),
         ]);
     }
 
@@ -57,14 +57,14 @@ class AdvertisController extends Controller
     public function update(Request $request, Advertis $advertis)
     {
         $request->validate([
-            'title' => 'required',
+            'title'         => 'required',
             'tracking_code' => 'required|array',
         ]);
 
         $trackingCode = $request->tracking_code;
 
         foreach (array_keys($trackingCode) as $key) {
-            if (!in_array($key, ['desktop', 'mobile', 'tablet'])) {
+            if (! in_array($key, ['desktop', 'mobile', 'tablet'])) {
                 $trackingCode[$key] = null;
             }
         }

@@ -13,11 +13,11 @@ class Item extends Component
      * Create a new component instance.
      */
     public function __construct(
-		public UserOpenai $entry,
-		public string $style = 'min',
-		public string $trim = '50',
-		public bool $hideFav = false
-	) {}
+        public UserOpenai $entry,
+        public string $style = 'min',
+        public string $trim = '50',
+        public bool $hideFav = false
+    ) {}
 
     /**
      * Get the view / contents that represent the component.

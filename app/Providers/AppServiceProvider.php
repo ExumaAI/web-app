@@ -18,6 +18,8 @@ use Spatie\Health\Checks\Checks\DatabaseCheck;
 use Spatie\Health\Checks\Checks\DebugModeCheck;
 use Spatie\Health\Checks\Checks\EnvironmentCheck;
 use Spatie\Health\Facades\Health;
+use Theme;
+use URL;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -25,9 +27,7 @@ class AppServiceProvider extends ServiceProvider
         ExtensionRepositoryInterface::class => ExtensionRepository::class,
     ];
 
-    public function register(): void
-    {
-    }
+    public function register(): void {}
 
     public function boot(): void
     {
@@ -61,19 +61,19 @@ class AppServiceProvider extends ServiceProvider
                 $activated_dash_theme = setting('dash_theme');
 
                 if ($activated_front_theme == $activated_dash_theme) {
-                    \Theme::set($activated_front_theme);
+                    Theme::set($activated_front_theme);
                 } else {
                     if (request()->is('dashboard*') || request()->is('*/dashboard*')) {
-                        \Theme::set($activated_dash_theme);
+                        Theme::set($activated_dash_theme);
                     } else {
-                        \Theme::set($activated_front_theme);
+                        Theme::set($activated_front_theme);
                     }
                 }
             }
             $this->configSet();
             $this->jobRuns();
         } else {
-            \Theme::set('default');
+            Theme::set('default');
         }
 
         app()->setLocale($locale);
@@ -86,9 +86,7 @@ class AppServiceProvider extends ServiceProvider
             MemoryLimit::new(),
         ]);
 
-        Blade::directive('formatNumber', function ($expression) {
-            return "<?php echo rtrim(rtrim(number_format((float) $expression, 2), '0'), '.'); ?>";
-        });
+        $this->bootBladeDirectives();
 
     }
 
@@ -117,27 +115,30 @@ class AppServiceProvider extends ServiceProvider
             $siteConfig->set('broadcasting.connections.pusher.secret', setting('pusher_app_secret', ''));
             $siteConfig->set('broadcasting.connections.pusher.app_id', setting('pusher_app_id', ''));
             $siteConfig->set('broadcasting.connections.pusher.cluster', setting('pusher_app_cluster', 'mt1'));
-            $siteConfig->set('broadcasting.connections.pusher.options.host', 'api-'.setting('pusher_app_cluster',
-                'mt1').'.pusher.com');
+            $siteConfig->set('broadcasting.connections.pusher.options.host', 'api-' . setting('pusher_app_cluster',
+                'mt1') . '.pusher.com');
 
             $siteConfig = $this->app['config'];
             $siteConfig->set('services.recaptcha.key', $settings->recaptcha_sitekey);
             $siteConfig->set('services.recaptcha.secret', $settings->recaptcha_secretkey);
 
+            $siteConfig->set('newsletter.lists.subscribers.id', setting('mailchimp_list_id', ''));
+            $siteConfig->set('newsletter.driver_arguments.api_key', setting('mailchimp_api_key', ''));
+
             Config::set([
                 'mail.mailers' => [
                     (env('MAIL_SMTP') ?? 'smtp') => [
-                        'transport' => env('MAIL_DRIVER') ?? 'smtp',
-                        'host' => $settings->smtp_host ?? env('MAIL_HOST'),
-                        'port' => (int) $settings->smtp_port ?? (int) env('MAIL_PORT'),
+                        'transport'  => env('MAIL_DRIVER') ?? 'smtp',
+                        'host'       => $settings->smtp_host ?? env('MAIL_HOST'),
+                        'port'       => (int) $settings->smtp_port ?? (int) env('MAIL_PORT'),
                         'encryption' => $settings->smtp_encryption ?? env('MAIL_ENCRYPTION'),
-                        'username' => $settings->smtp_username ?? env('MAIL_USERNAME'),
-                        'password' => $settings->smtp_password ?? env('MAIL_PASSWORD'),
+                        'username'   => $settings->smtp_username ?? env('MAIL_USERNAME'),
+                        'password'   => $settings->smtp_password ?? env('MAIL_PASSWORD'),
                     ],
-                    'timeout' => null,
-                    'local_domain' => env('MAIL_EHLO_DOMAIN'),
-                    'auth_mode' => null,
-                    'verify_peer' => false,
+                    'timeout'          => null,
+                    'local_domain'     => env('MAIL_EHLO_DOMAIN'),
+                    'auth_mode'        => null,
+                    'verify_peer'      => false,
                     'verify_peer_name' => false,
                 ],
             ]);
@@ -156,7 +157,29 @@ class AppServiceProvider extends ServiceProvider
     public function forceSchemeHttps(): void
     {
         if ($this->app->environment('production')) {
-            \URL::forceScheme('https');
+            URL::forceScheme('https');
         }
+    }
+
+    private function bootBladeDirectives(): void
+    {
+        Blade::directive('formatNumber', function ($expression) {
+            return "<?php echo rtrim(rtrim(number_format((float) $expression, 2), '0'), '.'); ?>";
+        });
+
+        Blade::directive('pushOnceFor', static function ($expression) {
+            [$name, $suffix] = str($expression)->substr(1, -1)
+                ->trim()
+                ->replace('-', '_')
+                ->explode(':');
+
+            $key = '__pushonce_' . $name . '_' . $suffix;
+
+            return "<?php if(! isset(\$__env->{$key})): \$__env->{$key} = 1; \$__env->startPush('{$name}'); ?>";
+        });
+
+        Blade::directive('endPushOnceFor', static function () {
+            return '<?php $__env->stopPush(); endif; ?>';
+        });
     }
 }

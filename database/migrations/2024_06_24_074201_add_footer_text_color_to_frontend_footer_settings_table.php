@@ -22,7 +22,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('frontend_footer_settings', function (Blueprint $table) {
-			$table->dropColumn('footer_text_color');
+            $table->dropColumn('footer_text_color');
         });
     }
 };

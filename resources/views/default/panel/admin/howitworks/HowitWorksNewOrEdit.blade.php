@@ -25,10 +25,20 @@
             name="title"
             label="{{ __('Title') }}"
             type="textarea"
-            rows="10"
+            rows="5"
             size="lg"
             required
         >{{ isset($howitWorks) ? $howitWorks->title : null }}</x-forms.input>
+
+        <x-forms.input
+            id="description"
+            name="description"
+            label="{{ __('Description') }}"
+            type="textarea"
+            rows="10"
+            size="lg"
+            required
+        >{{ isset($howitWorks) ? $howitWorks->description : null }}</x-forms.input>
 
         <x-forms.input
             id="bg_color"

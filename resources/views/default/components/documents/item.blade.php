@@ -56,7 +56,7 @@
             @if ($entry->generator->type == 'image')
                 <img
                     class="lqd-docs-item-img size-9 rounded-full object-cover object-center group-[&[data-view-mode=grid]]:mb-2 group-[&[data-view-mode=grid]]:aspect-video group-[&[data-view-mode=grid]]:h-auto group-[&[data-view-mode=grid]]:w-full group-[&[data-view-mode=grid]]:rounded-md"
-                    src="{{ custom_theme_url($entry->output) }}"
+                    src="{{ ThumbImage(custom_theme_url($entry->output)) }}"
                     alt="{{ __($entry->generator->title) }}"
                     loading="lazy"
                 />
@@ -80,7 +80,7 @@
                         {{ str()->limit(strip_tags($entry->generator->type === 'image' ? $entry->title : $entry->title . ' : ' . $entry->output), $trim) }}
                     @elseif($entry->generator->type == 'audio')
                         {!! str()->limit($entry->title . ' : ' . $entry->output, $trim) !!}
-                    @elseif ($entry->generator->type == 'voiceover')
+                    @elseif ($entry->generator->type == 'voiceover' || $entry->generator->type == 'isolator')
                         {{ str()->limit($entry->title, $trim) }}
                     @endif
                 </p>

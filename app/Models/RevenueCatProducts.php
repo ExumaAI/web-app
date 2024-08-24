@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class RevenueCatProducts extends Model
 {
     use HasFactory;
+
     protected $table = 'revenuecat_products';
 
     /// Return the gateway product of this revenuecat product defined as foreign key
@@ -21,5 +22,4 @@ class RevenueCatProducts extends Model
     {
         return $this->belongsTo(PaymentPlans::class, 'plan_id', 'id');
     }
-
 }

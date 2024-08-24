@@ -6,9 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::table('activity', function (Blueprint $table) {
@@ -18,14 +15,18 @@ return new class extends Migration
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::table('activity', function (Blueprint $table) {
-            $table->dropColumn('activity_title');
-            $table->dropColumn('activity_type');
+            if (Schema::hasColumn('activity', 'activity_title')) {
+                $table->dropColumn('activity_title');
+            }
+        });
+
+        Schema::table('activity', function (Blueprint $table) {
+            if (Schema::hasColumn('activity', 'activity_type')) {
+                $table->dropColumn('activity_type');
+            }
         });
     }
 };

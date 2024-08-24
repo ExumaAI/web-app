@@ -14,7 +14,7 @@
             name="menu_title"
             size="lg"
             required
-            value="{{ $item != null ? $item->menu_title : null }}"
+            value="{{ $item != null ? $item->menu_title : '' }}"
         />
 
         <x-forms.input
@@ -23,13 +23,13 @@
             name="subtitle_one"
             size="lg"
             required
-            value="{{ $item != null ? $item->subtitle_one : null }}"
+            value="{{ $item != null ? $item->subtitle_one : '' }}"
         />
 
         <x-forms.input
             id="subtitle_two"
             name="subtitle_two"
-            value="{{ $item != null ? $item->subtitle_two : null }}"
+            value="{{ $item != null ? $item->subtitle_two : '' }}"
             required
             size="lg"
             label="{{ __('Subtitle Two') }}"
@@ -40,7 +40,7 @@
             label="{{ __('Icon') }}"
             name="icon"
             size="lg"
-            value="{{ $item != null ? $item->icon : null }}"
+            value="{!! $item != null ? ($item->icon  ? : '') : '' !!}"
         />
 
         <x-forms.input
@@ -49,7 +49,7 @@
             name="title"
             size="lg"
             required
-            value="{{ $item != null ? $item->title : null }}"
+            value="{{ $item != null ? $item->title : '' }}"
         />
 
         <x-forms.input
@@ -59,7 +59,7 @@
             label="{{ __('Text') }}"
             rows="10"
             required
-        >{{ $item != null ? $item->text : null }}</x-forms.input>
+        >{{ $item != null ? $item->text : '' }}</x-forms.input>
 
         <x-forms.input
             id="image"
@@ -73,7 +73,7 @@
         <x-forms.input
             id="image_title"
             name="image_title"
-            value="{{ $item != null ? $item->image_title : null }}"
+            value="{{ $item != null ? $item->image_title : '' }}"
             required
             size="lg"
             label="{{ __('Image Title') }}"
@@ -82,7 +82,7 @@
         <x-forms.input
             id="image_subtitle"
             name="image_subtitle"
-            value="{{ $item != null ? $item->image_subtitle : null }}"
+            value="{{ $item != null ? $item->image_subtitle : 'null' }}"
             required
             size="lg"
             label="{{ __('Image Subtitle') }}"

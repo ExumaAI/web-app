@@ -7,7 +7,7 @@ namespace App\Enums\Contracts;
 /**
  * @mixin \IntBackedEnum
  *
- * @property int    $value
+ * @property int $value
  * @property string $name
  */
 interface WithIntBackedEnum

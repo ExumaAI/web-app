@@ -4,14 +4,14 @@ return [
     'currencies_with_right_symbols' => [
         '﷼',
         '₨',
-        '₪', 
+        '₪',
         '₨',
         'Ft',
         'TL',
         'ман',
         'лв',
         '₮',
-        'lei', 
+        'lei',
         'zł',
         'руб',
         // add new currencies symbols needed to be on the right side
@@ -19,6 +19,6 @@ return [
     ],
     'needs_code_with_symbol' => [
         'AUD',
-         // add new currencies codes needed to be with the symbol
+        // add new currencies codes needed to be with the symbol
     ],
 ];

@@ -11,8 +11,7 @@ class MarketPlaceController extends Controller
 {
     public function __construct(
         public ExtensionRepositoryInterface $extensionRepository
-    ) {
-    }
+    ) {}
 
     public function index()
     {
@@ -69,15 +68,15 @@ class MarketPlaceController extends Controller
     public function extensionActivate(Request $request, string $token)
     {
 
-        cache()->forget('check_license_domain_'.$request->getHost());
+        cache()->forget('check_license_domain_' . $request->getHost());
 
         $data = Helper::decodePaymentToken($token);
 
         $item = $this->extensionRepository->find($data['slug']);
 
         return view('panel.admin.marketplace.activate', [
-            'item' => $item,
-            'token' => $token,
+            'item'    => $item,
+            'token'   => $token,
             'success' => $request->get('redirect_status') == 'succeeded',
         ]);
     }

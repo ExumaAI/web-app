@@ -3,22 +3,25 @@
 namespace App\Jobs;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Stripe\Exception\ApiErrorException;
-use Stripe\Stripe;
-// use App\Models\Subscriptions;
-use Laravel\Cashier\Subscription as Subscriptions;
 use Illuminate\Support\Facades\Log;
+// use App\Models\Subscriptions;
+use Stripe\Exception\ApiErrorException;
 
 class CancelAwaitingPaymentSubscriptions implements ShouldQueue
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    use Dispatchable;
+    use InteractsWithQueue;
+    use Queueable;
+    use SerializesModels;
+
     protected $subscription;
+
     protected $stripe;
+
     /**
      * Create a new job instance.
      */
@@ -42,6 +45,6 @@ class CancelAwaitingPaymentSubscriptions implements ShouldQueue
         } catch (ApiErrorException $ex) {
             $this->subscription->update(['stripe_status' => 'cancelled']);
             Log::error("CancelAwaitingPaymentSubscriptions Job\n" . $ex->getMessage());
-        }        
+        }
     }
 }

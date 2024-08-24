@@ -11,11 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('ads', function (Blueprint $table) {
+        Schema::create('ads', static function (Blueprint $table) {
             $table->id();
             $table->string('type');
-            $table->longText('code'); 
-            $table->boolean('status')->default(false); 
+            $table->longText('code');
+            $table->boolean('status')->default(false);
             $table->timestamps();
         });
     }

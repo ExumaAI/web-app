@@ -3,54 +3,58 @@
 namespace App\Services\Chatbot;
 
 use App\Helpers\Classes\Helper;
+use Exception;
 
 /**
  * Class LinkCrawler
  *
  * A simple web crawler for extracting content and links from a given website.
+ *
  * @since 1.3
  */
 class LinkCrawler
 {
     /**
-     * @var string The base URL of the website to crawl.
+     * @var string the base URL of the website to crawl
      */
     private $baseUrl;
 
     /**
-     * @var array An array to store crawled links.
+     * @var array an array to store crawled links
      */
     private $links = [];
 
     /**
-     * @var int The maximum number of links to crawl.
+     * @var int the maximum number of links to crawl
      */
     private $maxLinks = 30;
 
     /**
-     * @var array An array of invalid paths to skip during crawling.
+     * @var array an array of invalid paths to skip during crawling
      */
     private $invalidPaths = ['/cdn-cgi/'];
 
     /**
-     * @var array An array to store contents of crawled pages.
+     * @var array an array to store contents of crawled pages
      */
     private $contents = [];
 
     /**
      * MagicAI_LinkCrawler constructor.
      *
-     * @param string $url The base URL of the website to crawl.
+     * @param  string  $url  the base URL of the website to crawl
      */
-    public function __construct($url) {
+    public function __construct($url)
+    {
         $this->baseUrl = $url;
     }
 
     /**
      * Initiate crawling process.
      */
-    public function crawl( $is_single = false ) {
-        if ( $is_single ) {
+    public function crawl($is_single = false)
+    {
+        if ($is_single) {
             $this->crawlSinglePage($this->baseUrl);
         } else {
             $this->crawlPage($this->baseUrl);
@@ -60,9 +64,10 @@ class LinkCrawler
     /**
      * Recursively crawl a page and its links.
      *
-     * @param string $url The URL of the page to crawl.
+     * @param  string  $url  the URL of the page to crawl
      */
-    private function crawlPage($url) {
+    private function crawlPage($url)
+    {
         $html = file_get_contents($url);
 
         $text = $this->stripTagsExceptContent($html);
@@ -74,7 +79,7 @@ class LinkCrawler
         foreach ($matches[1] as $link) {
             $absoluteLink = $this->makeAbsoluteUrl($link);
 
-            if ($absoluteLink && !in_array($absoluteLink, $this->links) && $this->isSameDomain($absoluteLink, $this->baseUrl) && !$this->hasInvalidPath($absoluteLink) && !$this->isImage($absoluteLink)) {
+            if ($absoluteLink && ! in_array($absoluteLink, $this->links) && $this->isSameDomain($absoluteLink, $this->baseUrl) && ! $this->hasInvalidPath($absoluteLink) && ! $this->isImage($absoluteLink)) {
                 $this->links[] = $absoluteLink;
                 if (count($this->links) >= $this->maxLinks) {
                     return;
@@ -82,7 +87,7 @@ class LinkCrawler
 
                 try {
                     $this->crawlPage($absoluteLink);
-                }catch (\Exception $e) {
+                } catch (Exception $e) {
                     continue;
                 }
             }
@@ -92,9 +97,10 @@ class LinkCrawler
     /**
      * Recursively crawl a page
      *
-     * @param string $url The URL of the page to crawl.
+     * @param  string  $url  the URL of the page to crawl
      */
-    private function crawlSinglePage($url) {
+    private function crawlSinglePage($url)
+    {
         $html = file_get_contents($url);
 
         $text = $this->stripTagsExceptContent($html);
@@ -105,10 +111,12 @@ class LinkCrawler
     /**
      * Make a relative URL absolute.
      *
-     * @param string $url The relative URL.
-     * @return string|null The absolute URL, or null if unable to make absolute.
+     * @param  string  $url  the relative URL
+     *
+     * @return string|null the absolute URL, or null if unable to make absolute
      */
-    private function makeAbsoluteUrl($url) {
+    private function makeAbsoluteUrl($url)
+    {
         if (strpos($url, 'http') === 0 || strpos($url, 'https') === 0) {
             return $url;
         }
@@ -116,56 +124,68 @@ class LinkCrawler
         if (strpos($url, '/') === 0) {
             return parse_url($this->baseUrl, PHP_URL_SCHEME) . '://' . parse_url($this->baseUrl, PHP_URL_HOST) . $url;
         }
+
         return null;
     }
 
     /**
      * Check if two URLs are of the same domain.
      *
-     * @param string $url1 First URL.
-     * @param string $url2 Second URL.
-     * @return bool True if URLs are of the same domain, false otherwise.
+     * @param  string  $url1  first URL
+     * @param  string  $url2  second URL
+     *
+     * @return bool true if URLs are of the same domain, false otherwise
      */
-    private function isSameDomain($url1, $url2) {
+    private function isSameDomain($url1, $url2)
+    {
         $domain1 = parse_url($url1, PHP_URL_HOST);
         $domain2 = parse_url($url2, PHP_URL_HOST);
+
         return $domain1 === $domain2;
     }
 
     /**
      * Check if a URL contains any of the invalid paths.
      *
-     * @param string $url The URL to check.
-     * @return bool True if URL contains invalid paths, false otherwise.
+     * @param  string  $url  the URL to check
+     *
+     * @return bool true if URL contains invalid paths, false otherwise
      */
-    private function hasInvalidPath($url) {
+    private function hasInvalidPath($url)
+    {
         foreach ($this->invalidPaths as $invalidPath) {
             if (strpos($url, $invalidPath) !== false) {
                 return true;
             }
         }
+
         return false;
     }
 
     /**
      * Check if a URL points to an image.
      *
-     * @param string $url The URL to check.
-     * @return bool True if URL points to an image, false otherwise.
+     * @param  string  $url  the URL to check
+     *
+     * @return bool true if URL points to an image, false otherwise
      */
-    private function isImage($url) {
+    private function isImage($url)
+    {
         $imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'apng', 'avif', 'svg', 'webp', 'ico', 'tiff'];
         $extension = pathinfo($url, PATHINFO_EXTENSION);
+
         return in_array(strtolower($extension), $imageExtensions);
     }
 
     /**
      * Strip HTML tags from content, except for specified elements.
      *
-     * @param string $html The HTML content to strip tags from.
-     * @return string The stripped text content.
+     * @param  string  $html  the HTML content to strip tags from
+     *
+     * @return string the stripped text content
      */
-    private function stripTagsExceptContent($html) {
+    private function stripTagsExceptContent($html)
+    {
         $html = preg_replace('/<header\b[^>]*>.*?<\/header>/is', '', $html);
         $html = preg_replace('/<footer\b[^>]*>.*?<\/footer>/is', '', $html);
 
@@ -180,18 +200,20 @@ class LinkCrawler
     /**
      * Get the contents of crawled pages.
      *
-     * @return array The contents of crawled pages.
+     * @return array the contents of crawled pages
      */
-    public function getContents() {
+    public function getContents()
+    {
         return $this->contents;
     }
 
     /**
      * Get the crawled links.
      *
-     * @return array The crawled links.
+     * @return array the crawled links
      */
-    public function getLinks() {
+    public function getLinks()
+    {
         return $this->links;
     }
 }

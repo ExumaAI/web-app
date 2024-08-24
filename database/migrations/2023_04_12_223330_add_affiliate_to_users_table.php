@@ -6,9 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
@@ -20,17 +17,20 @@ return new class extends Migration
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn('affiliate_code');
-            $table->dropColumn('affiliate_bank_account');
-            $table->dropColumn('affiliate_earnings');
-            $table->dropForeign(['affiliate_id']);
-            $table->dropColumn('affiliate_id');
+
+            if (! isDBDriverSQLite()) {
+                $table->dropForeign(['affiliate_id']);
+            }
+
+            $table->dropColumn([
+                'affiliate_code',
+                'affiliate_bank_account',
+                'affiliate_earnings',
+                'affiliate_id',
+            ]);
         });
     }
 };

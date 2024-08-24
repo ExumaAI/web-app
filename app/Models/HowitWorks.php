@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Mews\Purifier\Casts\CleanHtml;
 
@@ -15,5 +14,4 @@ class HowitWorks extends Model
     protected $casts = [
         'title' => CleanHtml::class,
     ];
-
 }

@@ -9,7 +9,11 @@
         enctype="multipart/form-data"
     >
         <div class="row">
-            <h3 class="mb-[25px] text-[20px]">{{ __('Features Section') }}</h3>
+            <x-form-step
+                step="1"
+                label="{{ __('Features Section') }}"
+            >
+            </x-form-step>
 
             <div class="col-md-12">
                 <div class="mb-3">
@@ -70,10 +74,30 @@
                 </div>
             </div>
 
-        </div>
+            <div class="col-md-12">
+                <div class="mb-3">
+                    <label class="form-label">{{ __('Marquee Items') }}</label>
+                    <input
+                        class="form-control"
+                        id="marquee_items"
+                        type="text"
+                        name="marquee_items"
+                        value="{{ $fSectSettings->marquee_items }}"
+                    >
+                    <x-alert class="mt-2">
+                        <p>
+                            {{ __('Please use comma seperated like; Generator,Chatbot,Assistant') }}
+                        </p>
+                    </x-alert>
+                </div>
 
-        <div class="row">
-            <h3 class="mb-[25px] text-[20px]">{{ __('Generators Section') }}</h3>
+            </div>
+
+            <x-form-step
+                step="2"
+                label="{{ __('Generators Section') }}"
+            >
+            </x-form-step>
             <div class="col-md-12">
                 <div class="mb-3">
                     <label class="form-label">{{ __('Generators Active') }}</label>
@@ -94,9 +118,43 @@
                             {{ __('Passive') }}</option>
                     </select>
                 </div>
+                <div class="mb-3">
+                    <label class="form-label">{{ __('Generators subtitle') }}</label>
+                    <input
+                            class="form-control"
+                            id="generators_subtitle"
+                            type="text"
+                            name="generators_subtitle"
+                            value="{{ $fSectSettings->generators_subtitle }}"
+                    >
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">{{ __('Generators title') }}</label>
+                    <input
+                            class="form-control"
+                            id="generators_title"
+                            type="text"
+                            name="generators_title"
+                            value="{{ $fSectSettings->generators_title }}"
+                    >
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">{{ __('Generators description') }}</label>
+                    <input
+                            class="form-control"
+                            id="generators_description"
+                            type="text"
+                            name="generators_description"
+                            value="{{ $fSectSettings->generators_description }}"
+                    >
+                </div>
             </div>
 
-            <h3 class="mb-[25px] text-[20px]">{{ __('For Who Section') }}</h3>
+            <x-form-step
+                step="3"
+                label="{{ __('For Who Section') }}"
+            >
+            </x-form-step>
             <div class="col-md-12">
                 <div class="mb-3">
                     <label class="form-label">{{ __('For Who Section Active') }}</label>
@@ -119,10 +177,20 @@
                 </div>
             </div>
 
-        </div>
+            @if(setting('front_theme') == 'modern')
+                @include('default.panel.admin.frontend.sections.banner_bottom_texts')
+                @include('default.panel.admin.frontend.sections.advanced_features_section')
+                @include('default.panel.admin.frontend.sections.comparison_section_items')
+                @include('default.panel.admin.frontend.sections.features_marquees')
+                @include('default.panel.admin.frontend.sections.plan_footer_text')
+                @include('default.panel.admin.frontend.sections.footer_items')
+            @endif
 
-        <div class="row">
-            <h3 class="mb-[25px] text-[20px]">{{ __('Custom Templates Section') }}</h3>
+            <x-form-step
+                step="{{ setting('front_theme') == 'modern' ? '9' : '4' }}"
+                label="{{ __('Custom Templates Section') }}"
+            >
+            </x-form-step>
 
             <div class="col-md-12">
                 <div class="mb-3">
@@ -221,10 +289,12 @@
                     >
                 </div>
             </div>
-        </div>
 
-        <div class="row">
-            <h3 class="mb-[25px] text-[20px]">{{ __('Tools Section') }}</h3>
+            <x-form-step
+                step="{{ setting('front_theme') == 'modern' ? '10' : '5' }}"
+                label="{{ __('Tools Section') }}"
+            >
+            </x-form-step>
 
             <div class="col-md-12">
                 <div class="mb-3">
@@ -285,10 +355,11 @@
                 </div>
             </div>
 
-        </div>
-
-        <div class="row">
-            <h3 class="mb-[25px] text-[20px]">{{ __('How It Works Section') }}</h3>
+            <x-form-step
+                step="{{ setting('front_theme') == 'modern' ? '11' : '6' }}"
+                label="{{ __('How It Works Section') }}"
+            >
+            </x-form-step>
 
             <div class="col-md-12">
                 <div class="mb-3">
@@ -377,10 +448,11 @@
                 </div>
             </div>
 
-        </div>
-
-        <div class="row">
-            <h3 class="mb-[25px] text-[20px]">{{ __('Testimonials Section') }}</h3>
+            <x-form-step
+                step="{{ setting('front_theme') == 'modern' ? '12' : '7' }}"
+                label="{{ __('Testimonials Section') }}"
+            >
+            </x-form-step>
 
             <div class="col-md-12">
                 <div class="mb-3">
@@ -456,10 +528,11 @@
                 </div>
             </div>
 
-        </div>
-
-        <div class="row">
-            <h3 class="mb-[25px] text-[20px]">{{ __('Pricing Section') }}</h3>
+            <x-form-step
+                step="{{ setting('front_theme') == 'modern' ? '13' : '8' }}"
+                label="{{ __('Pricing Section') }}"
+            >
+            </x-form-step>
 
             <div class="col-md-12">
                 <div class="mb-3">
@@ -533,10 +606,11 @@
                 </div>
             </div>
 
-        </div>
-
-        <div class="row">
-            <h3 class="mb-[25px] text-[20px]">{{ __('FAQ Section') }}</h3>
+            <x-form-step
+                    step="{{ setting('front_theme') == 'modern' ? '14' : '9' }}"
+                label="{{ __('FAQ Section') }}"
+            >
+            </x-form-step>
 
             <div class="col-md-12">
                 <div class="mb-3">
@@ -612,10 +686,11 @@
                 </div>
             </div>
 
-        </div>
-
-        <div class="row">
-            <h3 class="mb-[25px] text-[20px]">{{ __('Blog Section') }}</h3>
+            <x-form-step
+                    step="{{ setting('front_theme') == 'modern' ? '15' : '10' }}"
+                label="{{ __('Blog Section') }}"
+            >
+            </x-form-step>
 
             <div class="col-md-12">
                 <div class="mb-3">
@@ -694,6 +769,7 @@
             </div>
 
             <h5 class="mb-[25px] text-[16px]">{{ __('Blog Archive Options') }}</h5>
+
             <div class="col-md-12">
                 <div class="mb-3">
                     <label class="form-label">{{ __('Blog Title') }}</label>
@@ -747,8 +823,9 @@
                     >
                 </div>
             </div>
-
         </div>
+
+
 
         <button
             class="btn btn-primary w-full"
@@ -761,5 +838,5 @@
 @endsection
 
 @push('script')
-    <script src="{{ custom_theme_url('/assets/js/panel/settings.js') }}"></script>
+    <script src="{{ custom_theme_url('/assets/js/panel/settings.js?v='. time()) }}"></script>
 @endpush

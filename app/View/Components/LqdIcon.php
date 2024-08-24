@@ -12,11 +12,11 @@ class LqdIcon extends Component
      * Create a new component instance.
      */
     public function __construct(
-		public string $size = 'md',
-		public string $bg = '',
-		public bool $activeBadge = false,
-		public bool $activeBadgeCondition = false,
-	){}
+        public string $size = 'md',
+        public string $bg = '',
+        public bool $activeBadge = false,
+        public bool $activeBadgeCondition = false,
+    ) {}
 
     /**
      * Get the view / contents that represent the component.

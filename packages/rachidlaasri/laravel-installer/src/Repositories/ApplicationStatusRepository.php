@@ -21,6 +21,7 @@ class ApplicationStatusRepository implements ApplicationStatusRepositoryInterfac
 
         return 'panel.admin.finance.gateways.particles.license';
     }
+
     public function financeLicense(): bool
     {
         return $this->licenseType() === 'Extended License';
@@ -35,15 +36,15 @@ class ApplicationStatusRepository implements ApplicationStatusRepositoryInterfac
 
     public function check(string $licenseKey, bool $installed = false): bool
     {
-        $response = Http::get($this->baseLicenseUrl.DIRECTORY_SEPARATOR.$licenseKey);
+        $response = Http::get($this->baseLicenseUrl . DIRECTORY_SEPARATOR . $licenseKey);
 
         if ($response->ok() && $response->json('success')) {
             $portal = $this->portal() ?: [];
 
             $data = array_merge($portal, [
-                'liquid_license_type' => $response->json('licenseType'),
+                'liquid_license_type'       => $response->json('licenseType'),
                 'liquid_license_domain_key' => $licenseKey,
-                'installed' => $installed,
+                'installed'                 => $installed,
             ]);
 
             return $this->save($data);
@@ -63,7 +64,6 @@ class ApplicationStatusRepository implements ApplicationStatusRepositoryInterfac
         return null;
     }
 
-
     public function getVariable(string $key)
     {
         $portal = $this->portal();
@@ -80,7 +80,6 @@ class ApplicationStatusRepository implements ApplicationStatusRepositoryInterfac
     {
         $data = $this->portal();
 
-
         if (is_null($data)) {
             return;
         }
@@ -95,7 +94,7 @@ class ApplicationStatusRepository implements ApplicationStatusRepositoryInterfac
             && Schema::hasColumn('settings_two', 'liquid_license_domain_key')
         ) {
             SettingTwo::query()->first()->update([
-                'liquid_license_type' => $data['liquid_license_type'],
+                'liquid_license_type'       => $data['liquid_license_type'],
                 'liquid_license_domain_key' => $data['liquid_license_domain_key'],
             ]);
         }
@@ -105,7 +104,7 @@ class ApplicationStatusRepository implements ApplicationStatusRepositoryInterfac
     {
         if ($request->exists(['liquid_license_status', 'liquid_license_domain_key', 'liquid_license_domain_key'])) {
             $data = [
-                'liquid_license_key' => $request->input('liquid_license_key'), // 'liquid_license_key' => $request->input('liquid_license_key'),
+                'liquid_license_key'        => $request->input('liquid_license_key'), // 'liquid_license_key' => $request->input('liquid_license_key'),
                 'liquid_license_domain_key' => $request->input('liquid_license_domain_key'),
             ];
 

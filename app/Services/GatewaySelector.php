@@ -2,10 +2,10 @@
 
 namespace App\Services;
 
+use Exception;
 
-class GatewaySelector 
+class GatewaySelector
 {
-
     public static function selectGateway($gateway, $error = 'Something went wrong..')
     {
         $service = config("services.{$gateway}.class");
@@ -14,7 +14,6 @@ class GatewaySelector
             return resolve($service);
         }
 
-        throw new \Exception($error);
+        throw new Exception($error);
     }
-
 }

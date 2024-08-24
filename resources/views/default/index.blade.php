@@ -23,5 +23,5 @@
 
     @includeWhen($fSectSettings->blog_active == 1, 'landing-page.blog.section')
 
-    @includeWhen($fSectSettings->gdpr_status == 1, 'landing-page.gdpr')
+    @includeWhen($setting->gdpr_status == 1, 'landing-page.gdpr')
 @endsection

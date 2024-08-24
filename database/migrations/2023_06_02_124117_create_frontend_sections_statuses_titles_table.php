@@ -18,18 +18,15 @@ return new class extends Migration
             $table->string('features_title')->default('The future of AI.');
             $table->text('features_description')->nullable();
 
-
             $table->boolean('generators_active')->default(1);
 
             $table->boolean('who_is_for_active')->default(1);
-
 
             $table->boolean('custom_templates_active')->default(1);
             $table->string('custom_templates_subtitle_one')->default('Custom');
             $table->string('custom_templates_subtitle_two')->default('Prompts');
             $table->string('custom_templates_title')->default('Custom Templates.');
             $table->text('custom_templates_description')->nullable();
-
 
             $table->boolean('tools_active')->default(1);
             $table->string('tools_title')->default('Magic Tools.');
@@ -38,12 +35,10 @@ return new class extends Migration
             $table->boolean('how_it_works_active')->default(1);
             $table->string('how_it_works_title')->default('So, how does it work?');
 
-
             $table->boolean('testimonials_active')->default(1);
             $table->string('testimonials_title')->default('Trusted by millions.');
             $table->string('testimonials_subtitle_one')->default('Testimonials');
             $table->string('testimonials_subtitle_two')->default('Trustpilot');
-
 
             $table->boolean('pricing_active')->default(1);
             $table->string('pricing_title')->default('Flexible Pricing.');
@@ -55,7 +50,6 @@ return new class extends Migration
             $table->string('faq_subtitle')->default('Our support team will get assistance from AI-powered suggestions, making it quicker than ever to handle support requests.');
             $table->string('faq_text_one')->default('FAQ');
             $table->string('faq_text_two')->default('Help Center');
-
 
             $table->timestamps();
         });

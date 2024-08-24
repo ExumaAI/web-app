@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Dashboard;
 
 use App\Actions\CreateActivity;
+use App\Console\Commands\FluxProQueueCheck;
 use App\Helpers\Classes\Helper;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Finance\PaymentProcessController;
@@ -29,6 +30,7 @@ use App\Models\UserOrder;
 use App\Models\Voice\ElevenlabVoice;
 use App\Services\GatewaySelector;
 use enshrined\svgSanitize\Sanitizer;
+use Exception;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -38,9 +40,38 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
 use Laravel\Cashier\Payment;
+use Throwable;
 
 class UserController extends Controller
 {
+    public function checkStatus(Request $request)
+    {
+        $data = UserOpenai::query()
+            ->where('status', 'IN_QUEUE')
+            ->where('response', 'FL')
+            ->get();
+
+        if ($data->isEmpty()) {
+            return response()->json([]);
+        }
+
+        FluxProQueueCheck::updateFluxProImages();
+
+        return [
+            'data' => UserOpenai::query()
+                ->whereIn('id', $data->pluck('id')->toArray())
+                ->where('status', '<>','IN_QUEUE')
+                ->get()
+                ->map(function ($item) {
+                    $item->setAttribute('imgId', 'img-' .$item->response.'-'.$item->id);
+                    $item->setAttribute('payloadId', 'img-' .$item->response.'-'.$item->id.'-payload');
+                    $item->setAttribute('img', ThumbImage($item->output));
+                    return $item;
+                }),
+
+        ];
+    }
+
     public function redirect(Request $request)
     {
         $route = 'dashboard.user.index';
@@ -84,12 +115,12 @@ class UserController extends Controller
             return $team;
         }
 
-        $allow_seats = $user->type == 'admin' ? 100 : $user?->relationPlan?->plan_allow_seat;
+        $allow_seats = $user->isAdmin() ? 100 : $user?->relationPlan?->plan_allow_seat;
 
         return Team::query()->firstOrCreate([
             'user_id' => auth()->id(),
         ], [
-            'name' => $user->fullName(),
+            'name'        => $user->fullName(),
             'allow_seats' => $allow_seats ?: 0,
         ]);
     }
@@ -142,7 +173,7 @@ class UserController extends Controller
         if ($request->template_id != 'undefined') {
             $template = OpenAIGenerator::where('id', $request->template_id)->where('user_id', $userId)->firstOrFail();
         } else {
-            $template = new OpenAIGenerator();
+            $template = new OpenAIGenerator;
         }
 
         // Set basic template attributes
@@ -154,7 +185,7 @@ class UserController extends Controller
         $template->filters = __('My Templates');
         $template->premium = 0;
         $template->active = 1;
-        $template->slug = Str::slug($request->title).'-'.Str::random(6);
+        $template->slug = Str::slug($request->title) . '-' . Str::random(6);
         $template->type = 'text';
         $template->custom_template = 1;
         $template->user_id = $userId;
@@ -167,10 +198,10 @@ class UserController extends Controller
             foreach ($inputs as $input) {
                 // Save input data as arrays
                 $inputArray = [
-                    'name' => Str::slug($input['inputName']),
-                    'question' => $input['inputName'],
+                    'name'        => Str::slug($input['inputName']),
+                    'question'    => $input['inputName'],
                     'description' => $input['inputDescription'],
-                    'type' => $inputType,
+                    'type'        => $inputType,
                 ];
                 // If input type is select, include select list values
                 if ($inputType === 'select') {
@@ -187,7 +218,7 @@ class UserController extends Controller
         $template->save();
 
         if (OpenaiGeneratorFilter::where('name', __('My Templates'))->first() == null) {
-            $newFilter = new OpenaiGeneratorFilter();
+            $newFilter = new OpenaiGeneratorFilter;
             $newFilter->name = __('My Templates');
             $newFilter->save();
         }
@@ -236,7 +267,7 @@ class UserController extends Controller
             $favorite->delete();
             $action = 'unfavorite';
         } else {
-            $favorite = new UserDocsFavorite();
+            $favorite = new UserDocsFavorite;
             $favorite->user_id = Auth::id();
             $favorite->user_openai_id = $request->id;
             $favorite->save();
@@ -254,7 +285,7 @@ class UserController extends Controller
             $favorite->delete();
             $action = 'unfavorite';
         } else {
-            $favorite = new UserFavorite();
+            $favorite = new UserFavorite;
             $favorite->user_id = Auth::id();
             $favorite->openai_id = $request->id;
             $favorite->save();
@@ -267,6 +298,10 @@ class UserController extends Controller
     public function openAIGenerator(Request $request, $slug)
     {
         $openai = OpenAIGenerator::whereSlug($slug)->firstOrFail();
+
+        if ($slug == 'ai_image_generator') {
+//            FluxProQueueCheck::updateFluxProImages();
+        }
 
         $userOpenai = $this->openai($request, null)
             ->where('openai_id', $openai->id)
@@ -285,6 +320,8 @@ class UserController extends Controller
             compact('openai', 'userOpenai', 'elevenlabs')
         );
     }
+
+
 
     public function openAIGeneratorWorkbook($slug)
     {
@@ -338,7 +375,7 @@ class UserController extends Controller
 
             try {
                 $isPaid = GatewaySelector::selectGateway($gateway)::getSubscriptionStatus();
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $isPaid = false;
             }
 
@@ -415,7 +452,7 @@ class UserController extends Controller
     public static function sanitizeSVG($uploadedSVG)
     {
 
-        $sanitizer = new Sanitizer();
+        $sanitizer = new Sanitizer;
         $content = file_get_contents($uploadedSVG);
         $cleanedData = $sanitizer->sanitize($content);
         $added = file_put_contents($uploadedSVG, $cleanedData);
@@ -434,13 +471,13 @@ class UserController extends Controller
     public function userSettingsSave(Request $request)
     {
         $request->validate([
-            'name' => 'required|string|max:255',
+            'name'    => 'required|string|max:255',
             'surname' => 'required|string|max:255',
-            'phone' => 'nullable|string|max:15',
+            'phone'   => 'nullable|string|max:15',
             'country' => 'nullable',
-            'state' => 'nullable|string|max:255',
-            'city' => 'nullable|string|max:255',
-            'postal' => 'nullable|string|max:255',
+            'state'   => 'nullable|string|max:255',
+            'city'    => 'nullable|string|max:255',
+            'postal'  => 'nullable|string|max:255',
             'address' => 'nullable|string|max:255',
         ]);
 
@@ -471,7 +508,7 @@ class UserController extends Controller
                 $image = self::sanitizeSVG($request->file('avatar'));
             }
 
-            $image_name = Str::random(4).'-'.Str::slug($user->fullName()).'-avatar.'.$image->getClientOriginalExtension();
+            $image_name = Str::random(4) . '-' . Str::slug($user->fullName()) . '-avatar.' . $image->getClientOriginalExtension();
 
             //Image extension check
             $imageTypes = ['jpg', 'jpeg', 'png', 'svg', 'webp'];
@@ -485,7 +522,7 @@ class UserController extends Controller
 
             $image->move($path, $image_name);
 
-            $user->avatar = $path.$image_name;
+            $user->avatar = $path . $image_name;
         }
 
         CreateActivity::for($user, 'Updated', 'Profile Information');
@@ -496,11 +533,11 @@ class UserController extends Controller
     {
         $request->validate([
 
-            'phone' => 'nullable|string|max:15',
+            'phone'   => 'nullable|string|max:15',
             'country' => 'nullable',
-            'state' => 'nullable|string|max:255',
-            'city' => 'nullable|string|max:255',
-            'postal' => 'nullable|string|max:255',
+            'state'   => 'nullable|string|max:255',
+            'city'    => 'nullable|string|max:255',
+            'postal'  => 'nullable|string|max:255',
             'address' => 'nullable|string|max:255',
         ]);
 
@@ -704,7 +741,7 @@ class UserController extends Controller
             'newFolderName' => 'required|string|max:255',
         ]);
 
-        $newFolder = new Folders();
+        $newFolder = new Folders;
         $newFolder->name = $request->newFolderName;
         $newFolder->created_by = auth()->user()->id;
         $newFolder->save();
@@ -761,7 +798,7 @@ class UserController extends Controller
             }
             $basefilename = basename($workbook->output);
             Storage::disk('thumbs')->delete($basefilename);
-        } catch (\Throwable $th) {
+        } catch (Throwable $th) {
             //throw $th;
         }
 
@@ -830,7 +867,7 @@ class UserController extends Controller
 
         if ($request->has('search')) {
             $searchTerm = $request->input('search');
-            $query->where('name', 'like', '%'.$searchTerm.'%');
+            $query->where('name', 'like', '%' . $searchTerm . '%');
         }
 
         if ($request->has('startDate') && $request->input('startDate')) {
@@ -881,7 +918,7 @@ class UserController extends Controller
         if ($totalEarnings - $totalWithdrawal >= $request->amount) {
             $user->affiliate_bank_account = $request->affiliate_bank_account;
             $user->save();
-            $withdrawalReq = new UserAffiliate();
+            $withdrawalReq = new UserAffiliate;
             $withdrawalReq->user_id = Auth::id();
             $withdrawalReq->amount = $request->amount;
             $withdrawalReq->save();
@@ -923,17 +960,17 @@ class UserController extends Controller
         $overviewData = [
             [
                 'title' => 'Image Documents',
-                'slug' => 'image_documents',
+                'slug'  => 'image_documents',
                 'count' => 0,
             ],
             [
                 'title' => 'Code Documents',
-                'slug' => 'code_documents',
+                'slug'  => 'code_documents',
                 'count' => 0,
             ],
             [
                 'title' => 'Other Documents',
-                'slug' => 'other_documents',
+                'slug'  => 'other_documents',
                 'count' => 0,
             ],
         ];
@@ -980,7 +1017,7 @@ class UserController extends Controller
             if ($oldRequest) {
                 return response()->json(['message' => __('You have already requested to delete your account')], 409);
             }
-            $deletionRequest = new AccountDeletionReqs();
+            $deletionRequest = new AccountDeletionReqs;
             $deletionRequest->user_id = $user->id;
             $deletionRequest->save();
 

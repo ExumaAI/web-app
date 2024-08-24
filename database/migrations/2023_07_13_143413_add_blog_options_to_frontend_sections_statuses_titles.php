@@ -30,15 +30,17 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('frontend_sections_statuses_titles', function (Blueprint $table) {
-            $table->dropColumn('blog_active');
-            $table->dropColumn('blog_title');
-            $table->dropColumn('blog_subtitle');
-            $table->dropColumn('blog_posts_per_page');
-            $table->dropColumn('blog_button_text');
-            $table->dropColumn('blog_a_title');
-            $table->dropColumn('blog_a_subtitle');
-            $table->dropColumn('blog_a_description');
-            $table->dropColumn('blog_a_posts_per_page');
+            $table->dropColumn([
+                'blog_active',
+                'blog_title',
+                'blog_subtitle',
+                'blog_posts_per_page',
+                'blog_button_text',
+                'blog_a_title',
+                'blog_a_subtitle',
+                'blog_a_description',
+                'blog_a_posts_per_page',
+            ]);
         });
     }
 };

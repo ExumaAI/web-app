@@ -5,6 +5,7 @@ namespace App\Listeners;
 use App\Events\PaystackWebhookEvent;
 use App\Models\WebhookHistory;
 use Carbon\Carbon;
+use Exception;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -46,12 +47,12 @@ class PaystackWebhookListener
     {
         try {
             $payload = $event->payload;
-            $method = 'handle'.Str::studly(str_replace('.', '_', $payload['event']));
+            $method = 'handle' . Str::studly(str_replace('.', '_', $payload['event']));
             if (method_exists($this, $method)) {
                 $response = $this->{$method}($payload);
             }
-        } catch (\Exception $ex) {
-            Log::error("PaystackWebhookListener::handle()\n".$ex->getMessage());
+        } catch (Exception $ex) {
+            Log::error("PaystackWebhookListener::handle()\n" . $ex->getMessage());
         }
     }
 
@@ -61,29 +62,21 @@ class PaystackWebhookListener
     public function failed(PaystackWebhookEvent $event, Throwable $exception): void
     {
         $space = '*****';
-        $msg = '\n'.$space.'\n'.$space;
-        $msg = $msg.json_encode($event->payload);
-        $msg = $msg.'\n'.$space.'\n';
-        $msg = $msg.'\n'.$exception.'\n';
-        $msg = $msg.'\n'.$space.'\n'.$space;
+        $msg = '\n' . $space . '\n' . $space;
+        $msg = $msg . json_encode($event->payload);
+        $msg = $msg . '\n' . $space . '\n';
+        $msg = $msg . '\n' . $exception . '\n';
+        $msg = $msg . '\n' . $space . '\n' . $space;
 
         Log::error($msg);
     }
 
-    protected function successMethod(array $parameters = [])
-    {
+    protected function successMethod(array $parameters = []) {}
 
-    }
-
-    protected function missingMethod(array $parameters = [])
-    {
-
-    }
+    protected function missingMethod(array $parameters = []) {}
 
     public function handleChargeSuccess($payload) //A successful charge was made
-    {
-
-    }
+    {}
 
     public function handlesubScriptionDisable($payload) //A subscription desabled
     {
@@ -103,7 +96,7 @@ class PaystackWebhookListener
         $authorization = $subscriptionData['authorization'];
         $authorizationCode = $authorization['authorization_code'];
         // Save to Webhook History
-        $newData = new WebhookHistory();
+        $newData = new WebhookHistory;
         $newData->gatewaycode = 'paystack';
         $newData->webhook_id = $authorizationCode;
         $newData->event_type = 'subscription.disable';

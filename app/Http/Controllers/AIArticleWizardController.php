@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\BedrockEngine;
 use App\Helpers\Classes\Helper;
 use App\Models\ArticleWizard;
 use App\Models\OpenAIGenerator;
 use App\Models\Setting;
 use App\Models\SettingTwo;
 use App\Models\UserOpenai;
+use App\Services\Bedrock\BedrockRuntimeService;
 use Exception;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\ClientException;
@@ -16,28 +18,32 @@ use Illuminate\Http\File;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use OpenAI\Laravel\Facades\OpenAI;
 
 class AIArticleWizardController extends Controller
 {
+    protected BedrockRuntimeService $bedrockService;
+
     protected $client;
 
     protected $settings;
 
     protected $settings_two;
 
-    const STABLEDIFFUSION = 'stablediffusion';
+    public const STABLEDIFFUSION = 'stablediffusion';
 
-    const STORAGE_S3 = 's3';
+    public const STORAGE_S3 = 's3';
 
-    const STORAGE_LOCAL = 'public';
+    public const STORAGE_LOCAL = 'public';
 
-    const CLOUDFLARE_R2 = 'r2';
+    public const CLOUDFLARE_R2 = 'r2';
 
-    public function __construct()
+    public function __construct(BedrockRuntimeService $bedrockService)
     {
+        $this->bedrockService = $bedrockService;
         $this->middleware(function (Request $request, $next) {
             Helper::setOpenAiKey();
 
@@ -91,7 +97,7 @@ class AIArticleWizardController extends Controller
 
             ArticleWizard::where('user_id', $user_id)->delete();
 
-            $wizard = new ArticleWizard();
+            $wizard = new ArticleWizard;
             $wizard->user_id = $user_id;
             $wizard->current_step = 0;
             $wizard->keywords = '';
@@ -208,11 +214,12 @@ class AIArticleWizardController extends Controller
 
             return response()->json($data, 419);
         }
+
         try {
             $completion = OpenAI::chat()->create([
-                'model' => $this->settings->openai_default_model,
+                'model'    => $this->settings->openai_default_model,
                 'messages' => [[
-                    'role' => 'user',
+                    'role'    => 'user',
                     'content' => "Generate $request->count keywords(simple words or 2 words, not phrase, not person name) about '$request->topic'. Must resut as array json data. in '$request->language' language. Result format is [keyword1, keyword2, ..., keywordn].  Must not write ```json",
                 ]],
             ]);
@@ -241,15 +248,16 @@ class AIArticleWizardController extends Controller
 
             return response()->json($data, 419);
         }
+
         try {
-            $prompt = "Generate $request->count titles(Maximum title length is $request->length. Must not be 'title1', 'title2', 'title3', 'title4', 'title5') about Keywords: '".$request->keywords."'. in '$request->language' language. Resut must be array json data. This is result format: [title1, title2, ..., titlen]. Maximum title length is $request->length  Must not write ```json";
+            $prompt = "Generate $request->count titles(Maximum title length is $request->length. Must not be 'title1', 'title2', 'title3', 'title4', 'title5') about Keywords: '" . $request->keywords . "'. in '$request->language' language. Resut must be array json data. This is result format: [title1, title2, ..., titlen]. Maximum title length is $request->length  Must not write ```json";
             if ($request->topic != '') {
-                $prompt = "Generate $request->count titles(Maximum title length is $request->length., Must not be 'title1', 'title2', 'title3', 'title4', 'title5') about Topic: '".$request->topic."'. in '$request->language' language. Resut must be array json data. This is result format: [title1, title2, ..., titlen]. Maximum title length is $request->length  Must not write ```json";
+                $prompt = "Generate $request->count titles(Maximum title length is $request->length., Must not be 'title1', 'title2', 'title3', 'title4', 'title5') about Topic: '" . $request->topic . "'. in '$request->language' language. Resut must be array json data. This is result format: [title1, title2, ..., titlen]. Maximum title length is $request->length  Must not write ```json";
             }
             $completion = OpenAI::chat()->create([
-                'model' => $this->settings->openai_default_model,
+                'model'    => $this->settings->openai_default_model,
                 'messages' => [[
-                    'role' => 'user',
+                    'role'    => 'user',
                     'content' => $prompt,
                 ]],
             ]);
@@ -282,12 +290,12 @@ class AIArticleWizardController extends Controller
         try {
             $prompt = "The keywords of article are $request->keywords.  Generate different outlines( Each outline must has only $request->subcount subtitles(Without number for order, subtitles are not keywords)) $request->count times. The depth is 1. in '$request->language' language. Must not write any description. Result must be json data, Every subtitle is sentence or phrase string. This is result format: [[subtitle1(string), subtitle2(string), subtitle3(string), ... , subtitle-$request->subcount(string)], [subtitle1(string), subtitle2(string), subtitle3(string), ... , subtitle-$request->subcount(string)], ... ,[subtitle1(string), subtitle2(string), subtitle3(string), ..., subtitle-$request->subcount (string)].  Must not write ```json";
             if ($request->topic != '') {
-                $prompt = "The subject of article is $request->topic. Generate different outlines( Each outline must has only $request->subcount subtitles(Without number for order, subtitles are not keywords)) $request->count times. The depth is 1".". in '$request->language' language. Must not write any description. Result must be json data, Every subtitle is sentence or phrase string. This is result format: [[subtitle1(string), subtitle2(string), subtitle3(string), ... , subtitle-$request->subcount(string)], [subtitle1(string), subtitle2(string), subtitle3(string), ... , subtitle-$request->subcount(string)], ... ,[subtitle1(string), subtitle2(string), subtitle3(string), ..., subtitle-$request->subcount (string)]].  Must not write ```json";
+                $prompt = "The subject of article is $request->topic. Generate different outlines( Each outline must has only $request->subcount subtitles(Without number for order, subtitles are not keywords)) $request->count times. The depth is 1" . ". in '$request->language' language. Must not write any description. Result must be json data, Every subtitle is sentence or phrase string. This is result format: [[subtitle1(string), subtitle2(string), subtitle3(string), ... , subtitle-$request->subcount(string)], [subtitle1(string), subtitle2(string), subtitle3(string), ... , subtitle-$request->subcount(string)], ... ,[subtitle1(string), subtitle2(string), subtitle3(string), ..., subtitle-$request->subcount (string)]].  Must not write ```json";
             }
             $completion = OpenAI::chat()->create([
-                'model' => $this->settings->openai_default_model,
+                'model'    => $this->settings->openai_default_model,
                 'messages' => [[
-                    'role' => 'user',
+                    'role'    => 'user',
                     'content' => $prompt,
                 ]],
             ]);
@@ -330,17 +338,17 @@ class AIArticleWizardController extends Controller
             header('Cache-Control: no-cache');
             // ob_end_flush();
             $result = OpenAI::chat()->createStreamed([
-                'model' => $this->settings->openai_default_model,
+                'model'    => $this->settings->openai_default_model,
                 'messages' => [[
-                    'role' => 'user',
-                    'content' => "Write Article(Maximum  $length words). in $wizard-> language. Generate article (Must not contain title, Must Mark outline with <h3> tag) about $title with following outline ".implode(',', $outlines).'Must mark outline with <h3> tag.  Must not write ```json',
+                    'role'    => 'user',
+                    'content' => "Write Article(Maximum  $length words). in $wizard-> language. Generate article (Must not contain title, Must Mark outline with <h3> tag) about $title with following outline " . implode(',', $outlines) . 'Must mark outline with <h3> tag.  Must not write ```json',
                 ]],
                 'stream' => true,
             ]);
 
             foreach ($result as $response) {
                 echo "event: data\n";
-                echo 'data: '.json_encode(['message' => $response->choices[0]->delta->content])."\n\n";
+                echo 'data: ' . json_encode(['message' => $response->choices[0]->delta->content]) . "\n\n";
                 flush();
             }
 
@@ -364,6 +372,7 @@ class AIArticleWizardController extends Controller
 
             return response()->json($data, 419);
         }
+
         try {
             $wizard = ArticleWizard::find($request->id);
 
@@ -382,7 +391,7 @@ class AIArticleWizardController extends Controller
         } catch (ClientException $e) {
             if ($e->getResponse()->getStatusCode() === 401) {
                 // Unauthorized error
-                if (Auth::user()->type == 'admin') {
+                if (Auth::user()->isAdmin()) {
                     return response()->json([
                         'message' => __('It seems your Unsplash API key is missing or invalid. Please go to your settings and add a valid Unsplash API key.'),
                     ], 401);
@@ -404,21 +413,27 @@ class AIArticleWizardController extends Controller
         switch (setting('default_aw_image_engine', 'unsplash')) {
             case 'unsplash':
                 $this->getImagesFromUnsplash($prompt, $count, $size, $paths);
+
                 break;
             case 'pexels':
                 $this->getImagesFromPexels($prompt, $count, $size, $paths);
+
                 break;
             case 'pixabay':
                 $this->getImagesFromPixabay($prompt, $count, $size, $paths);
+
                 break;
             case 'openai':
                 $this->getImagesDalle($prompt, $count, $size, $paths);
+
                 break;
             case 'sd':
                 $this->getImagesFromStableDiffusion($prompt, $count, $size, $paths);
+
                 break;
             default:
                 $this->getImagesFromUnsplash($prompt, $count, $size, $paths);
+
                 break;
         }
     }
@@ -428,7 +443,7 @@ class AIArticleWizardController extends Controller
         $user = Auth::user();
         $settings = $this->settings_two;
         $image_storage = $this->settings_two->ai_image_storage;
-        $client = new Client();
+        $client = new Client;
         $apiKey = $settings->unsplash_api_key;
         $url = "https://api.unsplash.com/search/photos?query=$prompt&count=$count&client_id=$apiKey&orientation=landscape";
         $response = $client->request('GET', $url, [
@@ -444,10 +459,10 @@ class AIArticleWizardController extends Controller
             foreach ($images as $index => $image) {
                 $image_url = $image->urls->$size;
                 $imageContent = file_get_contents($image_url);
-                $nameOfImage = Str::random(12).'.png';
+                $nameOfImage = Str::random(12) . '.png';
 
                 Storage::disk('public')->put($nameOfImage, $imageContent);
-                $path = 'uploads/'.$nameOfImage;
+                $path = 'uploads/' . $nameOfImage;
 
                 if ($image_storage == self::STORAGE_S3) {
                     try {
@@ -455,8 +470,8 @@ class AIArticleWizardController extends Controller
                         $aws_path = Storage::disk('s3')->put('', $uploadedFile);
                         unlink($path);
                         $path = Storage::disk('s3')->url($aws_path);
-                    } catch (\Exception $e) {
-                        return response()->json(['status' => 'error', 'message' => 'AWS Error - '.$e->getMessage()]);
+                    } catch (Exception $e) {
+                        return response()->json(['status' => 'error', 'message' => 'AWS Error - ' . $e->getMessage()]);
                     }
                 } else {
                     $path = "/$path";
@@ -472,7 +487,7 @@ class AIArticleWizardController extends Controller
             }
         } else {
             return response()->json([
-                'status' => 'error',
+                'status'  => 'error',
                 'message' => __('Failed to download images.'),
             ], 500);
         }
@@ -484,26 +499,32 @@ class AIArticleWizardController extends Controller
         switch ($size) {
             case 'thumb':
                 $size = 'tiny';
+
                 break;
             case 'small':
                 $size = 'small';
+
                 break;
             case 'small_s3':
                 $size = 'medium';
+
                 break;
             case 'full':
                 $size = 'large';
+
                 break;
             case 'raw':
                 $size = 'original';
+
                 break;
             default:
                 $size = 'medium';
+
                 break;
         }
         $settings = $this->settings_two;
         $image_storage = $this->settings_two->ai_image_storage;
-        $client = new Client();
+        $client = new Client;
         $apiKey = setting('pexels_api_key');
         $url = "https://api.pexels.com/v1/search?query=$prompt&per_page=$count";
         $response = $client->request('GET', $url, [
@@ -519,10 +540,10 @@ class AIArticleWizardController extends Controller
 
                 $image_url = $image->src->$size;
                 $imageContent = file_get_contents($image_url);
-                $nameOfImage = Str::random(12).'.png';
+                $nameOfImage = Str::random(12) . '.png';
 
                 Storage::disk('public')->put($nameOfImage, $imageContent);
-                $path = 'uploads/'.$nameOfImage;
+                $path = 'uploads/' . $nameOfImage;
 
                 if ($image_storage == self::STORAGE_S3) {
                     try {
@@ -530,8 +551,8 @@ class AIArticleWizardController extends Controller
                         $aws_path = Storage::disk('s3')->put('', $uploadedFile);
                         unlink($path);
                         $path = Storage::disk('s3')->url($aws_path);
-                    } catch (\Exception $e) {
-                        return response()->json(['status' => 'error', 'message' => 'AWS Error - '.$e->getMessage()]);
+                    } catch (Exception $e) {
+                        return response()->json(['status' => 'error', 'message' => 'AWS Error - ' . $e->getMessage()]);
                     }
                 } else {
                     $path = "/$path";
@@ -546,7 +567,7 @@ class AIArticleWizardController extends Controller
             }
         } else {
             return response()->json([
-                'status' => 'error',
+                'status'  => 'error',
                 'message' => __('Failed to download images.'),
             ], 500);
         }
@@ -557,7 +578,7 @@ class AIArticleWizardController extends Controller
         $user = Auth::user();
         $settings = $this->settings_two;
         $image_storage = $this->settings_two->ai_image_storage;
-        $client = new Client();
+        $client = new Client;
         $apiKey = setting('pixabay_api_key');
         $url = "https://pixabay.com/api/?key=$apiKey&q=$prompt&image_type=photo&per_page=$count";
         $response = $client->request('GET', $url, [
@@ -572,10 +593,10 @@ class AIArticleWizardController extends Controller
             foreach ($images as $index => $image) {
                 $image_url = $image->webformatURL;
                 $imageContent = file_get_contents($image_url);
-                $nameOfImage = Str::random(12).'.png';
+                $nameOfImage = Str::random(12) . '.png';
 
                 Storage::disk('public')->put($nameOfImage, $imageContent);
-                $path = 'uploads/'.$nameOfImage;
+                $path = 'uploads/' . $nameOfImage;
 
                 if ($image_storage == self::STORAGE_S3) {
                     try {
@@ -583,8 +604,8 @@ class AIArticleWizardController extends Controller
                         $aws_path = Storage::disk('s3')->put('', $uploadedFile);
                         unlink($path);
                         $path = Storage::disk('s3')->url($aws_path);
-                    } catch (\Exception $e) {
-                        return response()->json(['status' => 'error', 'message' => 'AWS Error - '.$e->getMessage()]);
+                    } catch (Exception $e) {
+                        return response()->json(['status' => 'error', 'message' => 'AWS Error - ' . $e->getMessage()]);
                     }
                 } else {
                     $path = "/$path";
@@ -599,7 +620,7 @@ class AIArticleWizardController extends Controller
             }
         } else {
             return response()->json([
-                'status' => 'error',
+                'status'  => 'error',
                 'message' => __('Failed to download images.'),
             ], 500);
         }
@@ -628,6 +649,7 @@ class AIArticleWizardController extends Controller
             // Failed to acquire lock, another process is already running
             return response()->json(['message' => 'Image generation in progress. Please try again later.'], 409);
         }
+
         try {
             // check daily limit
             $chkLmt = Helper::checkImageDailyLimit();
@@ -643,21 +665,27 @@ class AIArticleWizardController extends Controller
             switch ($size) {
                 case 'thumb':
                     $size = $model == 'dall-e-3' ? '1024x1024' : '256x256';
+
                     break;
                 case 'small':
                     $size = $model == 'dall-e-3' ? '1024x1792' : '512x512';
+
                     break;
                 case 'medium':
                     $size = $model == 'dall-e-3' ? '1792x1024' : '1024x1024';
+
                     break;
                 case 'large':
                     $size = $model == 'dall-e-3' ? '1792x1024' : '1024x1024';
+
                     break;
                 case 'full':
                     $size = $model == 'dall-e-3' ? '1792x1024' : '1024x1024';
+
                     break;
                 default:
                     $size = $model == 'dall-e-3' ? '1024x1024' : '256x256';
+
                     break;
             }
             for ($i = 0; $i < $count; $i++) {
@@ -666,19 +694,19 @@ class AIArticleWizardController extends Controller
                 }
                 $quality = 'standard';
                 $response = OpenAI::images()->create([
-                    'model' => $model,
-                    'prompt' => $prompt,
-                    'size' => $size,
+                    'model'           => $model,
+                    'prompt'          => $prompt,
+                    'size'            => $size,
                     'response_format' => 'b64_json',
-                    'quality' => 'standard',
-                    'n' => 1,
+                    'quality'         => 'standard',
+                    'n'               => 1,
                 ]);
                 $image_url = $response['data'][0]['b64_json'];
                 $contents = base64_decode($image_url);
 
-                $nameOfImage = Str::random(12).'.png';
+                $nameOfImage = Str::random(12) . '.png';
                 Storage::disk('public')->put($nameOfImage, $contents);
-                $path = 'uploads/'.$nameOfImage;
+                $path = 'uploads/' . $nameOfImage;
 
                 if ($image_storage == self::STORAGE_S3) {
                     try {
@@ -686,8 +714,8 @@ class AIArticleWizardController extends Controller
                         $aws_path = Storage::disk('s3')->put('', $uploadedFile);
                         unlink($path);
                         $path = Storage::disk('s3')->url($aws_path);
-                    } catch (\Exception $e) {
-                        return response()->json(['status' => 'error', 'message' => 'AWS Error - '.$e->getMessage()]);
+                    } catch (Exception $e) {
+                        return response()->json(['status' => 'error', 'message' => 'AWS Error - ' . $e->getMessage()]);
                     }
                 } elseif ($image_storage == self::CLOUDFLARE_R2) {
                     Storage::disk('r2')->put($nameOfImage, $contents);
@@ -718,177 +746,200 @@ class AIArticleWizardController extends Controller
         switch ($size) {
             case 'thumb':
                 $size = '640x1536';
+
                 break;
             case 'small':
                 $size = '768x1344';
+
                 break;
             case 'medium':
                 $size = '832x1216';
+
                 break;
             case 'large':
                 $size = '896x1152';
+
                 break;
             case 'full':
                 $size = '1024x1024';
+
                 break;
             case 'raw':
                 $size = '1152x896';
+
                 break;
             default:
                 $size = '1024x1024';
+
                 break;
         }
 
         $stablediffusionKeys = explode(',', $settings->stable_diffusion_api_key);
         $stablediffusionKey = $stablediffusionKeys[array_rand($stablediffusionKeys)];
         for ($i = 0; $i < $count; $i++) {
+
             if ($prompt == null) {
                 return response()->json(['status' => 'error', 'message' => 'You must provide a prompt']);
-            }
-            if ($stablediffusionKey == '') {
-                return response()->json(['status' => 'error', 'message' => 'You must provide a StableDiffusion API Key.']);
             }
 
             $width = intval(explode('x', $size)[0]);
             $height = intval(explode('x', $size)[1]);
 
-            // Stablediffusion engine
-            $engine = $this->settings_two->stablediffusion_default_model;
-
-            $sd3Payload = [];
-            if ($engine == 'sd3' || $engine == 'sd3-turbo') {
-                $client = new Client([
-                    'base_uri' => 'https://api.stability.ai/v2beta/stable-image/generate/',
-                    'headers' => [
-                        'content-type' => 'multipart/form-data',
-                        'Authorization' => 'Bearer '.$stablediffusionKey,
-                        'accept' => 'application/json',
-                    ],
-                ]);
-            } else {
-                $engine = 'stable-diffusion-xl-beta-v2-2-2';
-                $client = new Client([
-                    'base_uri' => 'https://api.stability.ai/v1/generation/',
-                    'headers' => [
-                        'content-type' => 'application/json',
-                        'Authorization' => 'Bearer '.$stablediffusionKey,
-                        'accept' => 'application/json',
-                    ],
-                ]);
-            }
-
-            // Content Type
-            $content_type = 'json';
-
-            $payload = [
-                'cfg_scale' => 7,
-                'clip_guidance_preset' => 'NONE',
-                'samples' => 1,
-                'steps' => 50,
-            ];
-
-            $stable_url = 'text-to-image';
-            // $payload['width'] = $width;
-            // $payload['height'] = $height;
-            $sd3Payload = [
-                [
-                    'name' => 'prompt',
-                    'contents' => $prompt,
-                ],
-                [
-                    'name' => 'file',
-                    'contents' => 'no',
-                ],
-                [
-                    'name' => 'output_format',
-                    'contents' => 'png',
-                ],
-            ];
-            $prompt = [
-                [
-                    'text' => $prompt,
-                    'weight' => 1,
-                ],
-            ];
-            $payload['text_prompts'] = $prompt;
-            try {
-                if ($engine == 'sd3' || $engine == 'sd3-turbo') {
-                    $response = $client->post("$engine", [
-                        'headers' => [
-                            'accept' => 'application/json',
-                        ],
-                        'multipart' => $sd3Payload,
-                    ]);
-                } else {
-                    $response = $client->post("$engine/$stable_url", [
-                        $content_type => $payload,
-                    ]);
-                }
-
-            } catch (RequestException $e) {
-                dd($e);
-                if ($e->hasResponse()) {
-                    $response = $e->getResponse();
-                    $statusCode = $response->getStatusCode();
-                    // Custom handling for specific status codes here...
-
-                    if ($statusCode == '404') {
-                        // Handle a not found error
-                    } elseif ($statusCode == '500') {
-                        // Handle a server error
-                    }
-
-                    $errorMessage = $response->getBody()->getContents();
-
-                    return response()->json(['status' => 'error', 'message' => json_decode($errorMessage)->message]);
-                    // Log the error message or handle it as required
-                }
-
-                return response()->json(['status' => 'error', 'message' => $e->getMessage()]);
-            }
-
-            $body = $response->getBody();
-
-            if ($response->getStatusCode() == 200) {
-                $nameOfImage = Str::random(12).'.png';
-
-                if ($engine == 'sd3' || $engine == 'sd3-turbo') {
-                    $contents = base64_decode(json_decode($body)->image);
-                } else {
-                    $contents = base64_decode(json_decode($body)->artifacts[0]->base64);
-                }
-
-                Storage::disk('public')->put($nameOfImage, $contents);
-                $path = 'uploads/'.$nameOfImage;
-                if ($image_storage == self::STORAGE_S3) {
-                    try {
-                        $uploadedFile = new File($path);
-                        $aws_path = Storage::disk('s3')->put('', $uploadedFile);
-                        unlink($path);
-                        $path = Storage::disk('s3')->url($aws_path);
-                    } catch (\Exception $e) {
-                        return response()->json(['status' => 'error', 'message' => 'AWS Error - '.$e->getMessage()]);
-                    }
-                } elseif ($image_storage == self::CLOUDFLARE_R2) {
-                    Storage::disk('r2')->put($nameOfImage, $contents);
-                    unlink($path);
-                    $path = Storage::disk('r2')->url($nameOfImage);
-                } else {
-                    $path = "/$path";
-                }
+            if ($settings->stablediffusion_default_model === BedrockEngine::BEDROCK->value) {
+                $path = $this->bedrockService->invokeStableDiffusion(
+                    $prompt, random_int(1, 1000000), $width, $height);
 
                 array_push($paths, $path);
-                userCreditDecreaseForImage($user, 1, $engine);
+                userCreditDecreaseForImage($user, 1);
+
             } else {
-                $message = '';
-                if ($body->status == 'error') {
-                    $message = $body->message;
-                } else {
-                    $message = 'Failed, Try Again';
+
+                if ($stablediffusionKey == '') {
+                    return response()->json(['status' => 'error', 'message' => 'You must provide a StableDiffusion API Key.']);
                 }
 
-                return response()->json(['status' => 'error', 'message' => $message]);
+                // Stablediffusion engine
+                $engine = $this->settings_two->stablediffusion_default_model;
+
+                $sd3Payload = [];
+                $v2betaModels = ['sd3', 'sd3-turbo', 'sd3-medium', 'sd3-large', 'sd3-large-turbo'];
+
+                if (in_array($engine, $v2betaModels)) {
+                    $client = new Client([
+                        'base_uri' => 'https://api.stability.ai/v2beta/stable-image/generate/',
+                        'headers'  => [
+                            'content-type'  => 'multipart/form-data',
+                            'Authorization' => 'Bearer ' . $stablediffusionKey,
+                            'accept'        => 'application/json',
+                        ],
+                    ]);
+                } else {
+                    $engine = 'stable-diffusion-xl-beta-v2-2-2';
+                    $client = new Client([
+                        'base_uri' => 'https://api.stability.ai/v1/generation/',
+                        'headers'  => [
+                            'content-type'  => 'application/json',
+                            'Authorization' => 'Bearer ' . $stablediffusionKey,
+                            'accept'        => 'application/json',
+                        ],
+                    ]);
+                }
+
+                // Content Type
+                $content_type = 'json';
+
+                $payload = [
+                    'cfg_scale'            => 7,
+                    'clip_guidance_preset' => 'NONE',
+                    'samples'              => 1,
+                    'steps'                => 50,
+                ];
+
+                $stable_url = 'text-to-image';
+                // $payload['width'] = $width;
+                // $payload['height'] = $height;
+                $sd3Payload = [
+                    [
+                        'name'     => 'prompt',
+                        'contents' => $prompt,
+                    ],
+                    [
+                        'name'     => 'file',
+                        'contents' => 'no',
+                    ],
+                    [
+                        'name'     => 'output_format',
+                        'contents' => 'png',
+                    ],
+                ];
+                $prompt = [
+                    [
+                        'text'   => $prompt,
+                        'weight' => 1,
+                    ],
+                ];
+                $payload['text_prompts'] = $prompt;
+
+                try {
+                    if ($engine == 'sd3' || $engine == 'sd3-turbo') {
+                        $response = $client->post("$engine", [
+                            'headers' => [
+                                'accept' => 'application/json',
+                            ],
+                            'multipart' => $sd3Payload,
+                        ]);
+                    } else {
+                        $response = $client->post("$engine/$stable_url", [
+                            $content_type => $payload,
+                        ]);
+                    }
+
+                } catch (RequestException $e) {
+
+                    if ($e->hasResponse()) {
+                        $response = $e->getResponse();
+                        $statusCode = $response->getStatusCode();
+                        // Custom handling for specific status codes here...
+
+                        if ($statusCode == '404') {
+                            // Handle a not found error
+                        } elseif ($statusCode == '500') {
+                            // Handle a server error
+                        }
+
+                        $errorMessage = $response->getBody()->getContents();
+
+                        return response()->json(['status' => 'error', 'message' => json_decode($errorMessage)->message]);
+                        // Log the error message or handle it as required
+                    }
+
+                    return response()->json(['status' => 'error', 'message' => $e->getMessage()]);
+                }
+
+                $body = $response->getBody();
+
+                if ($response->getStatusCode() == 200) {
+                    $nameOfImage = Str::random(12) . '.png';
+
+                    if ($engine == 'sd3' || $engine == 'sd3-turbo') {
+                        $contents = base64_decode(json_decode($body)->image);
+                    } else {
+                        $contents = base64_decode(json_decode($body)->artifacts[0]->base64);
+                    }
+
+                    Storage::disk('public')->put($nameOfImage, $contents);
+                    $path = 'uploads/' . $nameOfImage;
+                    if ($image_storage == self::STORAGE_S3) {
+                        try {
+                            $uploadedFile = new File($path);
+                            $aws_path = Storage::disk('s3')->put('', $uploadedFile);
+                            unlink($path);
+                            $path = Storage::disk('s3')->url($aws_path);
+                        } catch (Exception $e) {
+                            return response()->json(['status' => 'error', 'message' => 'AWS Error - ' . $e->getMessage()]);
+                        }
+                    } elseif ($image_storage == self::CLOUDFLARE_R2) {
+                        Storage::disk('r2')->put($nameOfImage, $contents);
+                        unlink($path);
+                        $path = Storage::disk('r2')->url($nameOfImage);
+                    } else {
+                        $path = "/$path";
+                    }
+
+                    array_push($paths, $path);
+                    userCreditDecreaseForImage($user, 1, $engine);
+                } else {
+                    $message = '';
+                    if ($body->status == 'error') {
+                        $message = $body->message;
+                    } else {
+                        $message = 'Failed, Try Again';
+                    }
+
+                    return response()->json(['status' => 'error', 'message' => $message]);
+                }
             }
+
         }
     }
 
@@ -896,6 +947,7 @@ class AIArticleWizardController extends Controller
     public function updateArticle(Request $request)
     {
         $user = Auth::user();
+
         try {
             $data = $request->getContent();
             $decodedData = json_decode($data);
@@ -968,9 +1020,9 @@ class AIArticleWizardController extends Controller
 
                 $post = OpenAIGenerator::where('slug', 'ai_article_wizard_generator')->first();
 
-                $entry = new UserOpenai();
+                $entry = new UserOpenai;
                 $entry->title = $wizard->title;
-                $entry->slug = str()->random(7).str($user->fullName())->slug().'-workbook';
+                $entry->slug = str()->random(7) . str($user->fullName())->slug() . '-workbook';
                 $entry->user_id = Auth::id();
                 $entry->openai_id = $post->id;
                 $entry->input = "Write Article in $wizard-> language. Generate article about $wizard->title with must following outline $request->outline.  Please write only article.";

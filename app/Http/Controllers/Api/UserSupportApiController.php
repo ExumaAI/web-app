@@ -5,21 +5,16 @@ namespace App\Http\Controllers\Api;
 use App\Actions\CreateActivity;
 use App\Actions\TicketAction;
 use App\Http\Controllers\Controller;
-use App\Http\Controllers\PaymentController;
+use App\Models\User;
+use App\Models\UserSupport;
+use App\Models\UserSupportMessage;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
-use Nette\Utils\Image;
-use App\Models\Setting;
-use App\Models\User;
-use App\Models\UserSupport;
-use App\Models\UserSupportMessage;
 
-
-class UserSupportApiController extends Controller {
-
-
+class UserSupportApiController extends Controller
+{
     /**
      * Gets all support requests
      *
@@ -30,34 +25,39 @@ class UserSupportApiController extends Controller {
      *      summary="Gets all support requests",
      *      description="Gets all support requests",
      *      security={{ "passport": {} }},
+     *
      *      @OA\Response(
      *          response=200,
      *          description="Successful operation",
+     *
      *          @OA\JsonContent(
      *              type="object",
      *          ),
      *      ),
+     *
      *      @OA\Response(
      *          response=401,
      *          description="Unauthenticated",
      *      ),
      * )
-    */
-    public function supportRequests(Request $request) {
+     */
+    public function supportRequests(Request $request)
+    {
 
         $perPage = $request->input('per_page', 10);
 
         $user = Auth::user();
-        if ($user->type == 'admin')
+
+        if ($user->isAdmin())
+        {
             // admin will check from oldest hence asc and for mobile display only waiting for answer requests
-            $items = UserSupport::where([['status', '>=', "Wai"]])->orderBy('updated_at', 'asc')->paginate($perPage);
-        else
-            // user will check from latest hence desc
+            $items = UserSupport::where([['status', '>=', 'Wai']])->orderBy('updated_at', 'asc')->paginate($perPage);
+        } else { // user will check from latest hence desc
             $items = UserSupport::where([['user_id', '=', $user->id]])->orderBy('updated_at', 'desc')->paginate($perPage);
+        }
 
         return response()->json($items, 200);
     }
-
 
     /**
      * Gets all messages of a support request
@@ -69,20 +69,25 @@ class UserSupportApiController extends Controller {
      *      summary="Gets all messages of a support request",
      *      description="Gets all messages of a support request. Use ticket ids like QZDNGSIFPH not integers.",
      *      security={{ "passport": {} }},
+     *
      *      @OA\Parameter(
      *          name="ticket_id",
      *          in="path",
      *          description="Ticket ID",
      *          required=true,
+     *
      *          @OA\Schema(type="string", example="QZDNGSIFPH"),
      *      ),
+     *
      *      @OA\Response(
      *          response=200,
      *          description="Successful operation",
+     *
      *          @OA\JsonContent(
      *              type="object",
      *          ),
      *      ),
+     *
      *      @OA\Response(
      *          response=401,
      *          description="Unauthenticated",
@@ -100,24 +105,26 @@ class UserSupportApiController extends Controller {
      *          description="Precondition Failed",
      *      ),
      * )
-    */
-    public function ticket(Request $request, String $ticket_id) {
+     */
+    public function ticket(Request $request, string $ticket_id)
+    {
 
-        if($ticket_id == null) return response()->json(['error' => __('Ticket ID missing.')], 412);
+        if ($ticket_id == null) {
+            return response()->json(['error' => __('Ticket ID missing.')], 412);
+        }
 
         $ticket = UserSupport::where('ticket_id', $ticket_id)->firstOrFail();
 
-        if(Auth::user()->type != 'admin' && $ticket->user_id != Auth::id()){
+        if(!Auth::user()->isAdmin() && $ticket->user_id != Auth::id()){
             return response()->json(['error' => __('Unauthorized request.')], 403);
         }
 
         $perPage = $request->input('per_page', 10);
 
-        $messages = UserSupportMessage::where([["user_support_id", "=", $ticket->id]])->orderBy('updated_at', 'desc')->paginate($perPage);
+        $messages = UserSupportMessage::where([['user_support_id', '=', $ticket->id]])->orderBy('updated_at', 'desc')->paginate($perPage);
 
         return response()->json($messages, 200);
     }
-
 
     /**
      * Gets latest message of a support request
@@ -129,20 +136,25 @@ class UserSupportApiController extends Controller {
      *      summary="Gets latest message of a support request",
      *      description="Gets latest message of a support request. Use ticket ids like QZDNGSIFPH not integers.",
      *      security={{ "passport": {} }},
+     *
      *      @OA\Parameter(
      *          name="ticket_id",
      *          in="path",
      *          description="Ticket ID",
      *          required=true,
+     *
      *          @OA\Schema(type="string", example="QZDNGSIFPH"),
      *      ),
+     *
      *      @OA\Response(
      *          response=200,
      *          description="Successful operation",
+     *
      *          @OA\JsonContent(
      *              type="object",
      *          ),
      *      ),
+     *
      *      @OA\Response(
      *          response=401,
      *          description="Unauthenticated",
@@ -160,24 +172,26 @@ class UserSupportApiController extends Controller {
      *          description="Precondition Failed",
      *      ),
      * )
-    */
-    public function ticketLastMessage(Request $request, String $ticket_id) {
+     */
+    public function ticketLastMessage(Request $request, string $ticket_id)
+    {
 
-        if($ticket_id == null) return response()->json(['error' => __('Ticket ID missing.')], 412);
+        if ($ticket_id == null) {
+            return response()->json(['error' => __('Ticket ID missing.')], 412);
+        }
 
         $ticket = UserSupport::where('ticket_id', $ticket_id)->firstOrFail();
 
-        if(Auth::user()->type != 'admin' && $ticket->user_id != Auth::id()){
+
+        if(!Auth::user()->isAdmin() && $ticket->user_id != Auth::id()){
+
             return response()->json(['error' => __('Unauthorized request.')], 403);
         }
 
-        $messages = UserSupportMessage::where([["user_support_id", "=", $ticket->id]])->orderBy('created_at', 'desc')->first();
+        $messages = UserSupportMessage::where([['user_support_id', '=', $ticket->id]])->orderBy('created_at', 'desc')->first();
 
         return response()->json($messages, 200);
     }
-
-
-
 
     /**
      * Create new support request
@@ -189,13 +203,17 @@ class UserSupportApiController extends Controller {
      *      summary="Create new support request",
      *      description="Create new support request",
      *      security={{ "passport": {} }},
+     *
      *      @OA\RequestBody(
      *         required=true,
      *         description="Request support ticket data",
+     *
      *         @OA\MediaType(
      *             mediaType="multipart/form-data",
+     *
      *             @OA\Schema(
      *                 type="object",
+     *
      *                 @OA\Property(
      *                     property="priority",
      *                     description="Priority",
@@ -221,13 +239,16 @@ class UserSupportApiController extends Controller {
      *             ),
      *         ),
      *      ),
+     *
      *      @OA\Response(
      *          response=200,
      *          description="Successful operation",
+     *
      *          @OA\JsonContent(
      *              type="object",
      *          ),
      *      ),
+     *
      *      @OA\Response(
      *          response=401,
      *          description="Unauthenticated",
@@ -237,23 +258,23 @@ class UserSupportApiController extends Controller {
      *          description="Precondition Failed",
      *      ),
      * )
-    */
+     */
     public function newTicket(Request $request): JsonResponse
     {
 
-        if($request->priority === null) {
+        if ($request->priority === null) {
             return response()->json(['error' => __('Priority missing.')], 412);
         }
 
-        if($request->category === null) {
+        if ($request->category === null) {
             return response()->json(['error' => __('Category missing.')], 412);
         }
 
-        if($request->subject === null) {
+        if ($request->subject === null) {
             return response()->json(['error' => __('Subject missing.')], 412);
         }
 
-        if($request->message === null) {
+        if ($request->message === null) {
             return response()->json(['error' => __('Message missing.')], 412);
         }
 
@@ -263,9 +284,9 @@ class UserSupportApiController extends Controller {
 
         $support = $user->supportRequests()->create([
             'ticket_id' => Str::upper(Str::random(10)),
-            'priority' => $request->priority,
-            'category' => $request->category,
-            'subject' => $request->subject,
+            'priority'  => $request->priority,
+            'category'  => $request->category,
+            'subject'   => $request->subject,
         ]);
 
         $support->messages()->create([
@@ -277,7 +298,6 @@ class UserSupportApiController extends Controller {
         return response()->json(['message' => 'Ticket submitted'], 200);
     }
 
-
     /**
      * Send message to support request
      *
@@ -288,13 +308,17 @@ class UserSupportApiController extends Controller {
      *      summary="Send message to support request",
      *      description="Send message to support request",
      *      security={{ "passport": {} }},
+     *
      *      @OA\RequestBody(
      *         required=true,
      *         description="Request message data",
+     *
      *         @OA\MediaType(
      *             mediaType="multipart/form-data",
+     *
      *             @OA\Schema(
      *                 type="object",
+     *
      *                 @OA\Property(
      *                     property="ticket_id",
      *                     description="Ticket ID",
@@ -309,13 +333,16 @@ class UserSupportApiController extends Controller {
      *             ),
      *         ),
      *      ),
+     *
      *      @OA\Response(
      *          response=200,
      *          description="Successful operation",
+     *
      *          @OA\JsonContent(
      *              type="object",
      *          ),
      *      ),
+     *
      *      @OA\Response(
      *          response=401,
      *          description="Unauthenticated",
@@ -325,7 +352,7 @@ class UserSupportApiController extends Controller {
      *          description="Precondition Failed",
      *      ),
      * )
-    */
+     */
     public function sendMessage(Request $request)
     {
 
@@ -341,15 +368,13 @@ class UserSupportApiController extends Controller {
         }
 
         TicketAction::ticket($request->input('ticket_id'))
-                    ->fromAdminIfTrue($user->isAdmin())
-                    ->answer($request->input('message'))
-                    ->send();
+            ->fromAdminIfTrue($user->isAdmin())
+            ->answer($request->input('message'))
+            ->send();
 
         return response()->json(['message' => 'Message sent'], 200);
 
     }
-
-
 
     /**
      * Gets information of the user which sent the request
@@ -361,20 +386,25 @@ class UserSupportApiController extends Controller {
      *      summary="Gets information of the user which sent the request",
      *      description="Gets information of the user which sent the request. Use ticket ids like QZDNGSIFPH not integers.",
      *      security={{ "passport": {} }},
+     *
      *      @OA\Parameter(
      *          name="ticket_id",
      *          in="path",
      *          description="Ticket ID",
      *          required=true,
+     *
      *          @OA\Schema(type="string", example="QZDNGSIFPH"),
      *      ),
+     *
      *      @OA\Response(
      *          response=200,
      *          description="Successful operation",
+     *
      *          @OA\JsonContent(
      *              type="object",
      *          ),
      *      ),
+     *
      *      @OA\Response(
      *          response=401,
      *          description="Unauthenticated",
@@ -392,12 +422,15 @@ class UserSupportApiController extends Controller {
      *          description="Precondition Failed",
      *      ),
      * )
-    */
-    public function ticketUser(Request $request, String $ticket_id) {
+     */
+    public function ticketUser(Request $request, string $ticket_id)
+    {
 
-        if($ticket_id == null) return response()->json(['error' => __('Ticket ID missing.')], 412);
+        if ($ticket_id == null) {
+            return response()->json(['error' => __('Ticket ID missing.')], 412);
+        }
 
-        if(Auth::user()->type != 'admin'){
+        if(!Auth::user()->isAdmin()){
             return response()->json(['error' => __('Unauthorized request.')], 403);
         }
 
@@ -405,12 +438,8 @@ class UserSupportApiController extends Controller {
 
         $userId = $ticket->user_id;
 
-        $userData = User::where([["id", "=", $userId]])->firstOrFail();
+        $userData = User::where([['id', '=', $userId]])->firstOrFail();
 
         return response()->json($userData, 200);
     }
-
-
-
-
 }

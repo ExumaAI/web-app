@@ -23,7 +23,7 @@ class TeamMember extends Model
     ];
 
     protected $casts = [
-        'joined_at' => 'datetime'
+        'joined_at' => 'datetime',
     ];
 
     public function user(): BelongsTo

@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('settings_two', function(Blueprint $table) {
+        Schema::table('settings_two', function (Blueprint $table) {
             $table->text('unsplash_api_key')->nullable();
         });
     }

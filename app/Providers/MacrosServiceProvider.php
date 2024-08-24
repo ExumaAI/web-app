@@ -21,18 +21,18 @@ class MacrosServiceProvider extends ServiceProvider
     {
         ResponseFactory::macro(
             'success',
-            fn(string $message, array $data = []) => $this->json([
-                'status' => 'success',
+            fn (string $message, array $data = []) => $this->json([
+                'status'  => 'success',
                 'message' => $message,
-                'data' => $data
+                'data'    => $data,
             ])
         );
 
         ResponseFactory::macro(
             'error',
-            function(string $message, ?int $statusCode = 422) {
+            function (string $message, ?int $statusCode = 422) {
                 return $this->json([
-                    'status' => 'error',
+                    'status'  => 'error',
                     'message' => $message,
                 ], $statusCode);
             });

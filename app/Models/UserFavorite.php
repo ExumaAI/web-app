@@ -8,5 +8,6 @@ use Illuminate\Database\Eloquent\Model;
 class UserFavorite extends Model
 {
     use HasFactory;
+
     public $timestamps = false;
 }

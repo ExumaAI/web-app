@@ -41,7 +41,7 @@ class ChatPdfController extends Controller
     {
         $pdf = $request->file('pdf');
         $pdf_content = file_get_contents($pdf->getRealPath());
-        $fileName = Str::random(12).'.pdf';
+        $fileName = Str::random(12) . '.pdf';
         Storage::disk('public')->put('temp.pdf', $pdf_content);
         Storage::disk('public')->put($fileName, $pdf_content);
 
@@ -54,8 +54,8 @@ class ChatPdfController extends Controller
                 $aws_path = Storage::disk('s3')->put('', $uploadedFile);
                 unlink(substr("/uploads/$fileName", 1));
                 $resPath = Storage::disk('s3')->url($aws_path);
-            } catch (\Exception $e) {
-                return response()->json(['status' => 'error', 'message' => 'AWS Error - '.$e->getMessage()]);
+            } catch (Exception $e) {
+                return response()->json(['status' => 'error', 'message' => 'AWS Error - ' . $e->getMessage()]);
             }
         }
 
@@ -64,7 +64,7 @@ class ChatPdfController extends Controller
         PdfData::where('chat_id', $chat_id)->delete();
 
         // $text = Pdf::getText('uploads/temp.pdf');
-        $parser = new \Smalot\PdfParser\Parser();
+        $parser = new \Smalot\PdfParser\Parser;
         $text = $parser->parseFile('uploads/temp.pdf')->getText();
 
         $page = $text;
@@ -88,7 +88,7 @@ class ChatPdfController extends Controller
 
                     if (strlen(substr($page, 2000 * $i, strlen($page) - 2000 * $i)) > 10) {
 
-                        $chatpdf = new PdfData();
+                        $chatpdf = new PdfData;
 
                         $chatpdf->chat_id = $chat_id;
                         $chatpdf->content = substr($page, 2000 * $i, strlen($page) - 2000 * $i);
@@ -108,7 +108,7 @@ class ChatPdfController extends Controller
                         'input' => $subtxt,
                     ]);
                     if (strlen(substr($page, 2000 * $i, 4000)) > 10) {
-                        $chatpdf = new PdfData();
+                        $chatpdf = new PdfData;
 
                         $chatpdf->chat_id = $chat_id;
                         $chatpdf->content = substr($page, 2000 * $i, 4000);
@@ -134,7 +134,7 @@ class ChatPdfController extends Controller
             $count = 3;
         }
 
-        $vectorService = new VectorService();
+        $vectorService = new VectorService;
 
         return response()->json(['extra_prompt' => $vectorService->getMostSimilarText($request->prompt, $request->chat_id, $count)]);
     }

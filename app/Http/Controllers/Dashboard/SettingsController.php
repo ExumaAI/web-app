@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers\Dashboard;
 
+use App\Enums\AIEngine;
 use App\Helpers\Classes\Helper;
 use App\Http\Controllers\Controller;
+use App\Models\AiModel;
 use App\Models\Extension;
 use App\Models\OpenAIGenerator;
 use App\Models\PrivacyTerms;
@@ -11,6 +13,7 @@ use App\Models\Setting;
 use App\Models\SettingTwo;
 use App\Models\User;
 use App\Services\Common\MenuService;
+use Exception;
 use GuzzleHttp\Client;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
@@ -47,7 +50,7 @@ class SettingsController extends Controller
                     $meta_title->content = $request->meta_title;
                     $meta_title->save();
                 } else {
-                    $new_meta_title = new PrivacyTerms();
+                    $new_meta_title = new PrivacyTerms;
                     $new_meta_title->type = 'meta_title';
                     $new_meta_title->lang = $metaTitleLocal;
                     $new_meta_title->content = $request->meta_title;
@@ -63,7 +66,7 @@ class SettingsController extends Controller
                     $meta_description->content = $request->meta_description;
                     $meta_description->save();
                 } else {
-                    $new_meta_description = new PrivacyTerms();
+                    $new_meta_description = new PrivacyTerms;
                     $new_meta_description->type = 'meta_desc';
                     $new_meta_description->lang = $metaDescLocal;
                     $new_meta_description->content = $request->meta_description;
@@ -71,21 +74,21 @@ class SettingsController extends Controller
                 }
             }
 
-			$inputs = [];
-			$fields = [
-				'chat_setting_for_customer',
-				'default_ai_engine',
-				'default_aw_image_engine',
-				'photo_studio'
-			];
-			foreach ($fields as $field) {
-				if ($request->has($field)) {
-					$inputs[$field] = $request->$field;
-				}
-			}
-			if (!empty($inputs)) {
-				setting($inputs)->save();
-			}
+            $inputs = [];
+            $fields = [
+                'chat_setting_for_customer',
+                'default_ai_engine',
+                'default_aw_image_engine',
+                'photo_studio',
+            ];
+            foreach ($fields as $field) {
+                if ($request->has($field)) {
+                    $inputs[$field] = $request->$field;
+                }
+            }
+            if (! empty($inputs)) {
+                setting($inputs)->save();
+            }
 
             $settings->site_name = $request->site_name;
             $settings->site_url = $request->site_url;
@@ -130,18 +133,19 @@ class SettingsController extends Controller
             $settings->recaptcha_secretkey = $request->recaptcha_secretkey;
             $settings->save();
 
-			setting(
-				[
-					'notification_active' => $request->notification_active,
-					'pusher_app_id' => $request->pusher_app_id,
-					'pusher_app_key' => $request->pusher_app_key,
-					'pusher_app_secret' => $request->pusher_app_secret,
-					'pusher_app_cluster' => $request->pusher_app_cluster,
-					'user_prompt_library' => $request->user_prompt_library,
-					'user_ai_image_prompt_library' => $request->user_ai_image_prompt_library,
-					'user_ai_writer_custom_templates' => $request->user_ai_writer_custom_templates
-				]
-			)->save();
+            setting(
+                [
+                    'notification_active'             => $request->notification_active,
+                    'pusher_app_id'                   => $request->pusher_app_id,
+                    'pusher_app_key'                  => $request->pusher_app_key,
+                    'pusher_app_secret'               => $request->pusher_app_secret,
+                    'pusher_app_cluster'              => $request->pusher_app_cluster,
+                    'user_prompt_library'             => $request->user_prompt_library,
+                    'user_ai_image_prompt_library'    => $request->user_ai_image_prompt_library,
+                    'ai_voice_isolator'               => $request->ai_voice_isolator,
+                    'user_ai_writer_custom_templates' => $request->user_ai_writer_custom_templates,
+                ]
+            )->save();
 
             $this->toggleOpenaiTemplateStatus($settings);
 
@@ -154,20 +158,20 @@ class SettingsController extends Controller
             $settings_two->save();
 
             $logo_types = [
-                'logo' => '',
-                'logo_dark' => 'dark',
-                'logo_sticky' => 'sticky',
-                'logo_dashboard' => 'dashboard',
+                'logo'                => '',
+                'logo_dark'           => 'dark',
+                'logo_sticky'         => 'sticky',
+                'logo_dashboard'      => 'dashboard',
                 'logo_dashboard_dark' => 'dashboard-dark',
-                'logo_collapsed' => 'collapsed',
+                'logo_collapsed'      => 'collapsed',
                 'logo_collapsed_dark' => 'collapsed-dark',
                 // retina
-                'logo_2x' => '2x',
-                'logo_dark_2x' => 'dark-2x',
-                'logo_sticky_2x' => 'sticky-2x',
-                'logo_dashboard_2x' => 'dashboard-2x',
+                'logo_2x'                => '2x',
+                'logo_dark_2x'           => 'dark-2x',
+                'logo_sticky_2x'         => 'sticky-2x',
+                'logo_dashboard_2x'      => 'dashboard-2x',
                 'logo_dashboard_dark_2x' => 'dashboard-dark-2x',
-                'logo_collapsed_2x' => 'collapsed-2x',
+                'logo_collapsed_2x'      => 'collapsed-2x',
                 'logo_collapsed_dark_2x' => 'collapsed-dark-2x',
             ];
 
@@ -176,7 +180,7 @@ class SettingsController extends Controller
                 if ($request->hasFile($logo)) {
                     $path = 'upload/images/logo/';
                     $image = $request->file($logo);
-                    $image_name = Str::random(4).'-'.$logo_prefix.'-'.Str::slug($settings->site_name).'-logo.'.$image->getClientOriginalExtension();
+                    $image_name = Str::random(4) . '-' . $logo_prefix . '-' . Str::slug($settings->site_name) . '-logo.' . $image->getClientOriginalExtension();
 
                     //Resim uzantı kontrolü
                     $imageTypes = ['jpg', 'jpeg', 'png', 'svg', 'webp'];
@@ -190,7 +194,7 @@ class SettingsController extends Controller
 
                     $image->move($path, $image_name);
 
-                    $settings->{$logo.'_path'} = $path.$image_name;
+                    $settings->{$logo . '_path'} = $path . $image_name;
                     $settings->{$logo} = $image_name;
                     $settings->save();
                 }
@@ -200,7 +204,7 @@ class SettingsController extends Controller
             if ($request->hasFile('favicon')) {
                 $path = 'upload/images/favicon/';
                 $image = $request->file('favicon');
-                $image_name = Str::random(4).'-'.Str::slug($settings->site_name).'-favicon.'.$image->getClientOriginalExtension();
+                $image_name = Str::random(4) . '-' . Str::slug($settings->site_name) . '-favicon.' . $image->getClientOriginalExtension();
 
                 //Resim uzantı kontrolü
                 $imageTypes = ['jpg', 'jpeg', 'png', 'svg', 'webp'];
@@ -214,30 +218,32 @@ class SettingsController extends Controller
 
                 $image->move($path, $image_name);
 
-                $settings->favicon_path = $path.$image_name;
+                $settings->favicon_path = $path . $image_name;
                 $settings->favicon = $image_name;
                 $settings->save();
             }
 
             app(MenuService::class)->regenerate();
         }
+
+        return response()->json([], 200);
     }
 
     public function toggleOpenaiTemplateStatus($settings)
     {
         $templates = [
             'ai_article_wizard_generator' => $settings->feature_ai_article_wizard,
-            'ai_writer' => $settings->feature_ai_writer,
-            'ai_rewriter' => $settings->feature_ai_rewriter,
-            'ai_chat_image' => $settings->feature_ai_chat_image,
-            'ai_image_generator' => $settings->feature_ai_image,
-            'ai_code_generator' => $settings->feature_ai_code,
-            'ai_speech_to_text' => $settings->feature_ai_speech_to_text,
-            'ai_voiceover' => $settings->feature_ai_voiceover,
-            'ai_vision' => $settings->feature_ai_vision,
-            'ai_pdf' => $settings->feature_ai_pdf,
-            'ai_youtube' => $settings->feature_ai_youtube,
-            'ai_rss' => $settings->feature_ai_rss,
+            'ai_writer'                   => $settings->feature_ai_writer,
+            'ai_rewriter'                 => $settings->feature_ai_rewriter,
+            'ai_chat_image'               => $settings->feature_ai_chat_image,
+            'ai_image_generator'          => $settings->feature_ai_image,
+            'ai_code_generator'           => $settings->feature_ai_code,
+            'ai_speech_to_text'           => $settings->feature_ai_speech_to_text,
+            'ai_voiceover'                => $settings->feature_ai_voiceover,
+            'ai_vision'                   => $settings->feature_ai_vision,
+            'ai_pdf'                      => $settings->feature_ai_pdf,
+            'ai_youtube'                  => $settings->feature_ai_youtube,
+            'ai_rss'                      => $settings->feature_ai_rss,
         ];
 
         foreach ($templates as $key => $status) {
@@ -245,11 +251,39 @@ class SettingsController extends Controller
         }
     }
 
+    public function falAi(Request $request)
+    {
+        if (Helper::appIsDemo()) {
+            return to_route('dashboard.user.index')->with([
+                'status'  => 'error',
+                'message' => trans('This feature is disabled in demo mode.'),
+            ]);
+        }
+
+        $ai_models = AiModel::query()
+            ->where('ai_engine', AIEngine::FAL_AI->value)
+            ->get();
+
+        return view('panel.admin.settings.fal-ai-setting', compact('ai_models'));
+    }
+
+    public function falAiSave(Request $request)
+    {
+        $data = $request->validate([
+            'fal_ai_api_secret'        => 'required|string',
+            'fal_ai_default_model'     => 'required|string',
+        ]);
+
+        setting($data)->save();
+
+        return response()->json([], 200);
+    }
+
     public function anthropic(Request $request)
     {
         if (Helper::appIsDemo()) {
             return to_route('dashboard.user.index')->with([
-                'status' => 'error',
+                'status'  => 'error',
                 'message' => trans('This feature is disabled in demo mode.'),
             ]);
         }
@@ -261,7 +295,7 @@ class SettingsController extends Controller
     {
         if (Helper::appIsDemo()) {
             return to_route('dashboard.user.index')->with([
-                'status' => 'error',
+                'status'  => 'error',
                 'message' => trans('This feature is disabled in demo mode.'),
             ]);
         }
@@ -273,34 +307,34 @@ class SettingsController extends Controller
         $randomToken = Arr::random($explodeToken);
 
         $request = Http::withHeaders([
-            'x-api-key' => $randomToken,
-            'Content-Type' => 'application/json',
-            'Accept' => 'application/json',
+            'x-api-key'         => $randomToken,
+            'Content-Type'      => 'application/json',
+            'Accept'            => 'application/json',
             'anthropic-version' => '2023-06-01',
         ])->post('https://api.anthropic.com/v1/messages', [
-            'model' => setting('anthropic_default_model'),
+            'model'      => setting('anthropic_default_model'),
             'max_tokens' => (int) setting('anthropic_max_output_length'),
-            'messages' => [
+            'messages'   => [
                 [
-                    'role' => 'user',
+                    'role'    => 'user',
                     'content' => 'Hello, how are you?',
                 ],
             ],
         ]);
 
         if ($request->ok()) {
-            echo ' <br>'.$randomToken.' - SUCCESS <br>';
+            echo ' <br>' . $randomToken . ' - SUCCESS <br>';
         } else {
-            echo $request->json('error.message').' - '.$randomToken.' -FAILED <br>';
+            echo $request->json('error.message') . ' - ' . $randomToken . ' -FAILED <br>';
         }
     }
 
     public function anthropicSave(Request $request)
     {
         $data = $request->validate([
-            'anthropic_api_secret' => 'required|string',
-            'anthropic_default_model' => 'required|string',
-            'anthropic_max_input_length' => 'required|string',
+            'anthropic_api_secret'        => 'required|string',
+            'anthropic_default_model'     => 'required|string',
+            'anthropic_max_input_length'  => 'required|string',
             'anthropic_max_output_length' => 'required|string',
         ]);
 
@@ -313,7 +347,7 @@ class SettingsController extends Controller
     {
         if (Helper::appIsDemo()) {
             return to_route('dashboard.user.index')->with([
-                'status' => 'error',
+                'status'  => 'error',
                 'message' => trans('This feature is disabled in demo mode.'),
             ]);
         }
@@ -325,14 +359,14 @@ class SettingsController extends Controller
     {
         if (Helper::appIsDemo()) {
             return to_route('dashboard.user.index')->with([
-                'status' => 'error',
+                'status'  => 'error',
                 'message' => trans('This feature is disabled in demo mode.'),
             ]);
         }
 
         $newhistory = [
             [
-                'role' => 'user',
+                'role'  => 'user',
                 'parts' => [
                     [
                         'text' => 'who are u.',
@@ -347,18 +381,18 @@ class SettingsController extends Controller
             ->setHistory($newhistory)
             ->generateContent();
         if ($response->ok()) {
-            echo ' <br>'.$randomToken.' - SUCCESS <br>';
+            echo ' <br>' . $randomToken . ' - SUCCESS <br>';
         } else {
-            echo $response->json('error.message').' -FAILED <br>';
+            echo $response->json('error.message') . ' -FAILED <br>';
         }
     }
 
     public function geminiSave(Request $request)
     {
         $data = $request->validate([
-            'gemini_api_secret' => 'required|string',
-            'gemini_default_model' => 'required|string',
-            'gemini_max_input_length' => 'required|string',
+            'gemini_api_secret'        => 'required|string',
+            'gemini_default_model'     => 'required|string',
+            'gemini_max_input_length'  => 'required|string',
             'gemini_max_output_length' => 'required|string',
         ]);
         setting($data)->save();
@@ -370,7 +404,7 @@ class SettingsController extends Controller
     {
         if (Helper::appIsDemo()) {
             return to_route('dashboard.user.index')->with([
-                'status' => 'error',
+                'status'  => 'error',
                 'message' => trans('This feature is disabled in demo mode.'),
             ]);
         }
@@ -390,7 +424,7 @@ class SettingsController extends Controller
 
     public function unsplashapiTest()
     {
-        $client = new Client();
+        $client = new Client;
         $settings = SettingTwo::first();
         if ($settings->unsplash_api_key == '') {
             echo 'You must provide Unsplash API Key.';
@@ -400,13 +434,13 @@ class SettingsController extends Controller
 
         $apiKey = $settings->unsplash_api_key;
 
-        $client = new Client();
+        $client = new Client;
 
         try {
             $response = $client->get("https://api.unsplash.com/search/photos?query=Google&count=1&client_id=$apiKey");
-            echo ' <br>'.$apiKey.' - SUCCESS <br>';
-        } catch (\Exception $e) {
-            echo $e->getMessage().' - '.$apiKey.' -FAILED <br>';
+            echo ' <br>' . $apiKey . ' - SUCCESS <br>';
+        } catch (Exception $e) {
+            echo $e->getMessage() . ' - ' . $apiKey . ' -FAILED <br>';
         }
     }
 
@@ -417,6 +451,7 @@ class SettingsController extends Controller
             $settings->unsplash_api_key = $request->unsplash_api_key;
             $settings->save();
         }
+
         return response()->json([], 200);
     }
 
@@ -427,7 +462,7 @@ class SettingsController extends Controller
 
     public function pexelsapiTest()
     {
-        $client = new Client();
+        $client = new Client;
         $api = setting('pexels_api_key');
         if ($api == '') {
             echo 'You must provide Pexels API Key.';
@@ -437,7 +472,7 @@ class SettingsController extends Controller
 
         $apiKey = $api;
 
-        $client = new Client();
+        $client = new Client;
 
         try {
             $response = $client->get('https://api.pexels.com/v1/search?query=Google&per_page=1', [
@@ -445,9 +480,9 @@ class SettingsController extends Controller
                     'Authorization' => $apiKey,
                 ],
             ]);
-            echo ' <br>'.$apiKey.' - SUCCESS <br>';
-        } catch (\Exception $e) {
-            echo $e->getMessage().' - '.$apiKey.' -FAILED <br>';
+            echo ' <br>' . $apiKey . ' - SUCCESS <br>';
+        } catch (Exception $e) {
+            echo $e->getMessage() . ' - ' . $apiKey . ' -FAILED <br>';
         }
     }
 
@@ -467,7 +502,7 @@ class SettingsController extends Controller
 
     public function pixabayapiTest()
     {
-        $client = new Client();
+        $client = new Client;
         $api = setting('pixabay_api_key');
         if ($api == '') {
             echo 'You must provide Pixabay API Key.';
@@ -476,12 +511,13 @@ class SettingsController extends Controller
         }
 
         $apiKey = $api;
-        $client = new Client();
+        $client = new Client;
+
         try {
             $response = $client->get("https://pixabay.com/api/?key=$apiKey&q=Google");
-            echo ' <br>'.$apiKey.' - SUCCESS <br>';
-        } catch (\Exception $e) {
-            echo $e->getMessage().' - '.$apiKey.' -FAILED <br>';
+            echo ' <br>' . $apiKey . ' - SUCCESS <br>';
+        } catch (Exception $e) {
+            echo $e->getMessage() . ' - ' . $apiKey . ' -FAILED <br>';
         }
     }
 
@@ -506,16 +542,16 @@ class SettingsController extends Controller
             $settings->serper_api_key = $request->serper_api_key;
             $settings->save();
 
-            if ($request->hasAny(['serper_seo_tool_improve','serper_seo_aw_anlyze', 'seo_ai_tool','serper_seo_aw_improve', 'serper_seo_aw_sq', 'serper_seo_aw_keyword', 'serper_seo_blog_title_desc', 'serper_seo_site_meta'])) {
+            if ($request->hasAny(['serper_seo_tool_improve', 'serper_seo_aw_anlyze', 'seo_ai_tool', 'serper_seo_aw_improve', 'serper_seo_aw_sq', 'serper_seo_aw_keyword', 'serper_seo_blog_title_desc', 'serper_seo_site_meta'])) {
                 setting([
-                    'serper_seo_aw_sq' => $request->serper_seo_aw_sq,
-                    'serper_seo_aw_keyword' => $request->serper_seo_aw_keyword,
+                    'serper_seo_aw_sq'           => $request->serper_seo_aw_sq,
+                    'serper_seo_aw_keyword'      => $request->serper_seo_aw_keyword,
                     'serper_seo_blog_title_desc' => $request->serper_seo_blog_title_desc,
-                    'serper_seo_site_meta' => $request->serper_seo_site_meta,
-					'serper_seo_aw_anlyze' => $request->serper_seo_aw_anlyze,
-					'serper_seo_aw_improve' => $request->serper_seo_aw_improve,
-					'seo_ai_tool' => $request->seo_ai_tool,
-					'serper_seo_tool_improve' => $request->serper_seo_tool_improve,
+                    'serper_seo_site_meta'       => $request->serper_seo_site_meta,
+                    'serper_seo_aw_anlyze'       => $request->serper_seo_aw_anlyze,
+                    'serper_seo_aw_improve'      => $request->serper_seo_aw_improve,
+                    'seo_ai_tool'                => $request->seo_ai_tool,
+                    'serper_seo_tool_improve'    => $request->serper_seo_tool_improve,
                 ])->save();
             }
         }
@@ -532,7 +568,7 @@ class SettingsController extends Controller
     {
         if (Helper::appIsNotDemo()) {
             setting([
-                'clipdrop_api_key' => $request->clipdrop_api_key
+                'clipdrop_api_key' => $request->clipdrop_api_key,
             ])->save();
         }
 
@@ -548,10 +584,10 @@ class SettingsController extends Controller
 
                 return;
             }
-            $client = new Client();
+            $client = new Client;
             $response = $client->post('https://google.serper.dev/search', [
                 'headers' => [
-                    'X-API-KEY' => $settings->serper_api_key,
+                    'X-API-KEY'    => $settings->serper_api_key,
                     'Content-Type' => 'application/json',
                 ],
                 'json' => [
@@ -559,9 +595,9 @@ class SettingsController extends Controller
                 ],
             ]);
             $responseData = json_decode($response->getBody(), true);
-            echo ' <br>'.$settings->serper_api_key.' - SUCCESS <br><hr> Example about "Coffee": <br>'.$responseData['organic'][0]['snippet'].'<br>';
-        } catch (\Exception $e) {
-            echo $e->getMessage().' - '.$settings->serper_api_key.' -FAILED <br>';
+            echo ' <br>' . $settings->serper_api_key . ' - SUCCESS <br><hr> Example about "Coffee": <br>' . $responseData['organic'][0]['snippet'] . '<br>';
+        } catch (Exception $e) {
+            echo $e->getMessage() . ' - ' . $settings->serper_api_key . ' -FAILED <br>';
         }
     }
 
@@ -569,12 +605,12 @@ class SettingsController extends Controller
     {
         if (Helper::appIsDemo()) {
             return to_route('dashboard.user.index')->with([
-                'status' => 'error',
+                'status'  => 'error',
                 'message' => trans('This feature is disabled in demo mode.'),
             ]);
         }
 
-        $client = new Client();
+        $client = new Client;
         $settings = Setting::first();
         if ($settings?->user_api_option) {
             $apiKeys = explode(',', auth()->user()?->api_keys);
@@ -585,9 +621,9 @@ class SettingsController extends Controller
 
             $client = new Client([
                 'base_uri' => 'https://api.openai.com/v1/',
-                'headers' => [
-                    'Authorization' => 'Bearer '.$apiKey,
-                    'Content-Type' => 'application/json',
+                'headers'  => [
+                    'Authorization' => 'Bearer ' . $apiKey,
+                    'Content-Type'  => 'application/json',
                 ],
             ]);
 
@@ -595,23 +631,23 @@ class SettingsController extends Controller
 
                 $response = $client->post('chat/completions', [
                     'json' => [
-                        'model' => 'gpt-3.5-turbo',
-                        'messages' => [['role' => 'user', 'content' => 'Say this is a test!']],
+                        'model'       => 'gpt-3.5-turbo',
+                        'messages'    => [['role' => 'user', 'content' => 'Say this is a test!']],
                         'temperature' => 0.7,
                     ],
                 ]);
 
-                echo ' <br>'.$apiKey.' - SUCCESS <br>';
-            } catch (\Exception $e) {
+                echo ' <br>' . $apiKey . ' - SUCCESS <br>';
+            } catch (Exception $e) {
                 // API çağrısı başarısız oldu veya hata aldınız.
-                echo $e->getMessage().' - '.$apiKey.' -FAILED <br>';
+                echo $e->getMessage() . ' - ' . $apiKey . ' -FAILED <br>';
             }
         }
     }
 
     public function stablediffusionTest()
     {
-        $client = new Client();
+        $client = new Client;
         $settings = SettingTwo::first();
         if ($settings->stable_diffusion_api_key == '') {
             echo 'You must provide Stable Difussion API key.';
@@ -625,7 +661,7 @@ class SettingsController extends Controller
 
             $client = new Client([
                 'base_uri' => 'https://stablediffusionapi.com',
-                'headers' => [
+                'headers'  => [
                     'Content-Type' => 'application/json',
                 ],
             ]);
@@ -635,29 +671,29 @@ class SettingsController extends Controller
                 // print_r($client); exit;
                 $response = $client->post('/api/v3/text2img', [
                     'json' => [
-                        'key' => $apiKey,
-                        'prompt' => $prompt,
-                        'negative_prompt' => null,
-                        'width' => 512,
-                        'height' => 512,
-                        'samples' => 1,
+                        'key'                 => $apiKey,
+                        'prompt'              => $prompt,
+                        'negative_prompt'     => null,
+                        'width'               => 512,
+                        'height'              => 512,
+                        'samples'             => 1,
                         'num_inference_steps' => '20',
-                        'seed' => null,
-                        'guidance_scale' => 7.5,
-                        'safety_checker' => 'yes',
-                        'multi_lingual' => 'no',
-                        'panorama' => 'no',
-                        'self_attention' => 'no',
-                        'upscale' => 'no',
-                        'embeddings_model' => null,
-                        'webhook' => null,
-                        'track_id' => null,
+                        'seed'                => null,
+                        'guidance_scale'      => 7.5,
+                        'safety_checker'      => 'yes',
+                        'multi_lingual'       => 'no',
+                        'panorama'            => 'no',
+                        'self_attention'      => 'no',
+                        'upscale'             => 'no',
+                        'embeddings_model'    => null,
+                        'webhook'             => null,
+                        'track_id'            => null,
                     ],
                 ]);
-                echo ' <br>'.$apiKey.' - SUCCESS <br>';
-            } catch (\Exception $e) {
+                echo ' <br>' . $apiKey . ' - SUCCESS <br>';
+            } catch (Exception $e) {
                 // API çağrısı başarısız oldu veya hata aldınız.
-                echo $e->getMessage().' - '.$apiKey.' -FAILED <br>';
+                echo $e->getMessage() . ' - ' . $apiKey . ' -FAILED <br>';
             }
         }
     }
@@ -679,9 +715,10 @@ class SettingsController extends Controller
             $settings->save();
             $settings_two->save();
             setting([
-                'hide_creativity_option' => $request->hide_creativity_option,
+                'hide_creativity_option'    => $request->hide_creativity_option,
                 'hide_tone_of_voice_option' => $request->hide_tone_of_voice_option,
                 'hide_output_length_option' => $request->hide_output_length_option,
+                'dalle_hidden'              => $request->dalle_hidden,
             ])->save();
         }
 
@@ -708,9 +745,16 @@ class SettingsController extends Controller
             $settings->stable_diffusion_api_key = $request->stable_diffusion_api_key;
             $settings->stablediffusion_default_language = $request->stablediffusion_default_language;
             $settings->stablediffusion_default_model = $request->stablediffusion_default_model;
+
+            if ($request->has('stablediffusion_bedrock_model')) {
+                $settings->stablediffusion_bedrock_model = $request->stablediffusion_bedrock_model;
+            }
+
             $settings->save();
 
-            setting(['stable_hidden' => $request->stable_hidden])->save();
+            setting([
+                'stable_hidden' => $request->stable_hidden,
+            ])->save();
         }
 
         return response()->json([], 200);
@@ -752,12 +796,29 @@ class SettingsController extends Controller
         return view('panel.admin.settings.synthesia');
     }
 
+    public function pebblely()
+    {
+        return view('panel.admin.settings.pebblely');
+    }
+
     public function synthesiaSave(Request $request)
     {
         $settings = Setting::first();
 
         if (Helper::appIsNotDemo()) {
             $settings->synthesia_secret_key = $request->synthesia_secret_key;
+            $settings->save();
+        }
+
+        return response()->json([], 200);
+    }
+
+    public function pebblelySave(Request $request)
+    {
+        $settings = Setting::first();
+
+        if (Helper::appIsNotDemo()) {
+            $settings->pebblely_key = $request->pebblely_key;
             $settings->save();
         }
 
@@ -781,8 +842,8 @@ class SettingsController extends Controller
             if ($request->hasAny(['feature_tts_azure', 'azure_api_key', 'azure_region'])) {
                 setting([
                     'feature_tts_azure' => $request->get('feature_tts_azure'),
-                    'azure_api_key' => $request->get('azure_api_key'),
-                    'azure_region' => $request->get('azure_region'),
+                    'azure_api_key'     => $request->get('azure_api_key'),
+                    'azure_region'      => $request->get('azure_region'),
                 ])->save();
             }
 
@@ -892,7 +953,7 @@ class SettingsController extends Controller
 
             return 'Test email sent!';
 
-        } catch (\Exception $exception) {
+        } catch (Exception $exception) {
             return $exception->getMessage();
         }
     }
@@ -938,7 +999,7 @@ class SettingsController extends Controller
                     $terms->content = $request->terms_content;
                     $terms->save();
                 } else {
-                    $newTerms = new PrivacyTerms();
+                    $newTerms = new PrivacyTerms;
                     $newTerms->type = 'terms';
                     $newTerms->lang = $termsLocal;
                     $newTerms->content = $request->terms_content;
@@ -954,7 +1015,7 @@ class SettingsController extends Controller
                     $privacy->content = $request->privacy_content;
                     $privacy->save();
                 } else {
-                    $newPrivacy = new PrivacyTerms();
+                    $newPrivacy = new PrivacyTerms;
                     $newPrivacy->type = 'privacy';
                     $newPrivacy->lang = $privacyLocal;
                     $newPrivacy->content = $request->privacy_content;
@@ -981,16 +1042,16 @@ class SettingsController extends Controller
 
             $settings = Setting::first();
             $content = [
-                'type' => $type,
-                'lang' => $language,
+                'type'    => $type,
+                'lang'    => $language,
                 'content' => $type == 'terms' ? $settings->terms_content : $settings->privacy_content,
             ];
 
         } else {
             $privacy_terms = PrivacyTerms::where('type', $type)->where('lang', $language)->first();
             $content = [
-                'type' => $privacy_terms?->type ?? $type,
-                'lang' => $privacy_terms?->lang,
+                'type'    => $privacy_terms?->type ?? $type,
+                'lang'    => $privacy_terms?->lang,
                 'content' => $privacy_terms?->content,
             ];
         }
@@ -1008,16 +1069,16 @@ class SettingsController extends Controller
 
             $settings = Setting::first();
             $content = [
-                'type' => $type,
-                'lang' => $language,
+                'type'    => $type,
+                'lang'    => $language,
                 'content' => $type == 'meta_title' ? $settings->meta_title : $settings->meta_description,
             ];
 
         } else {
             $meta = PrivacyTerms::where('type', $type)->where('lang', $language)->first();
             $content = [
-                'type' => $meta?->type ?? $type,
-                'lang' => $meta?->lang,
+                'type'    => $meta?->type ?? $type,
+                'lang'    => $meta?->lang,
                 'content' => $meta?->content,
             ];
         }

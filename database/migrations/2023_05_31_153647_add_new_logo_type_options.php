@@ -6,9 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::table('settings', function (Blueprint $table) {
@@ -35,32 +32,31 @@ return new class extends Migration
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::table('settings', function (Blueprint $table) {
-            $table->dropColumn('logo_dark');
-            $table->dropColumn('logo_dashboard');
-            $table->dropColumn('logo_dashboard_dark');
-            $table->dropColumn('logo_collapsed_dark');
-            $table->dropColumn('logo_2x');
-            $table->dropColumn('logo_dark_2x');
-            $table->dropColumn('logo_dashboard_2x');
-            $table->dropColumn('logo_dashboard_dark_2x');
-            $table->dropColumn('logo_collapsed_2x');
-            $table->dropColumn('logo_collapsed_dark_2x');
-            $table->dropColumn('logo_dark_path');
-            $table->dropColumn('logo_dashboard_path');
-            $table->dropColumn('logo_dashboard_dark_path');
-            $table->dropColumn('logo_collapsed_dark_path');
-            $table->dropColumn('logo_2x_path');
-            $table->dropColumn('logo_dark_2x_path');
-            $table->dropColumn('logo_dashboard_2x_path');
-            $table->dropColumn('logo_dashboard_dark_2x_path');
-            $table->dropColumn('logo_collapsed_2x_path');
-            $table->dropColumn('logo_collapsed_dark_2x_path');
+            $table->dropColumn([
+                'logo_dark',
+                'logo_dashboard',
+                'logo_dashboard_dark',
+                'logo_collapsed_dark',
+                'logo_2x',
+                'logo_dark_2x',
+                'logo_dashboard_2x',
+                'logo_dashboard_dark_2x',
+                'logo_collapsed_2x',
+                'logo_collapsed_dark_2x',
+                'logo_dark_path',
+                'logo_dashboard_path',
+                'logo_dashboard_dark_path',
+                'logo_collapsed_dark_path',
+                'logo_2x_path',
+                'logo_dark_2x_path',
+                'logo_dashboard_2x_path',
+                'logo_dashboard_dark_2x_path',
+                'logo_collapsed_2x_path',
+                'logo_collapsed_dark_2x_path',
+            ]);
         });
     }
 };

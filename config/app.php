@@ -1,7 +1,5 @@
 <?php
 
-use App\Providers\MacrosServiceProvider;
-use App\Providers\ViewServiceProvider;
 use Illuminate\Support\Facades\Facade;
 
 return [
@@ -37,8 +35,8 @@ return [
     |
     */
 
-    'env' => env('APP_ENV', 'production'),
-	'debug_hash' => '$2a$12$tg2XA6fFcLeOZH.cHM2cSuAp7227WqHCN7vwcTj4HzpeUOghBgb2W',
+    'env'        => env('APP_ENV', 'production'),
+    'debug_hash' => '$2a$12$tg2XA6fFcLeOZH.cHM2cSuAp7227WqHCN7vwcTj4HzpeUOghBgb2W',
     /*
     |--------------------------------------------------------------------------
     | Application Debug Mode
@@ -206,6 +204,7 @@ return [
         App\Providers\RouteServiceProvider::class,
         App\Providers\ViewServiceProvider::class,
         App\Providers\MacrosServiceProvider::class,
+        App\Providers\AwsServiceProvider::class,
 
         /**
          * Laravel Json Localization Manager
@@ -230,7 +229,7 @@ return [
 
     'aliases' => Facade::defaultAliases()->merge([
         // 'ExampleClass' => App\Example\ExampleClass::class,
-        'PDF' => Barryvdh\DomPDF\Facade::class,
+        'PDF'   => Barryvdh\DomPDF\Facade::class,
         'Theme' => Igaster\LaravelTheme\Facades\Theme::class,
     ])->toArray(),
 

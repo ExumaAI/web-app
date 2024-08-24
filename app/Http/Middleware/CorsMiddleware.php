@@ -4,14 +4,10 @@ declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
-use App\Models\Chatbot\Domain;
 use App\Support\Chatbot\ChatbotHelper;
 use Closure;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
+use Exception;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Str;
 
 class CorsMiddleware
 {
@@ -89,6 +85,7 @@ class CorsMiddleware
 
         return $this->streamedResponseWithCorsHeaders($next);
     }
+
     private function responseWithCorsHeaders($next)
     {
         /** @var Response $response */
@@ -96,6 +93,7 @@ class CorsMiddleware
 
         return $response->withHeaders($this->getCorsHeaders());
     }
+
     private function streamedResponseWithCorsHeaders($next)
     {
         /** @var Response $response */
@@ -114,10 +112,9 @@ class CorsMiddleware
         return $response;
     }
 
-
     private function checkToken(bool $fromInput = false): bool
     {
-        if ($fromInput)  {
+        if ($fromInput) {
             $this->request()->headers->set('Authorization', 'Bearer ' . $this->request()->input('token'));
         }
 
@@ -157,7 +154,7 @@ class CorsMiddleware
             $this->setTokenData($data);
 
             return true;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return false;
         }
     }
@@ -191,5 +188,4 @@ class CorsMiddleware
         return $request->isMethod('GET') &&
             str()->startsWith($request->getRequestUri(), '/chatbot-api/chatbot-send');
     }
-
 }

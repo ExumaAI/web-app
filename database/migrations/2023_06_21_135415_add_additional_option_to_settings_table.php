@@ -6,9 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::table('settings', function (Blueprint $table) {
@@ -18,15 +15,14 @@ return new class extends Migration
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::table('settings', function (Blueprint $table) {
-            $table->dropColumn('feature_ai_voiceover');
-            $table->dropColumn('gcs_file');
-            $table->dropColumn('gcs_name');
+            $table->dropColumn([
+                'feature_ai_voiceover',
+                'gcs_file',
+                'gcs_name',
+            ]);
         });
     }
 };

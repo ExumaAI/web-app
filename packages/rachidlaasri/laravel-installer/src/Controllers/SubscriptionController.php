@@ -14,9 +14,7 @@ use Illuminate\Routing\Controller;
 
 class SubscriptionController extends Controller
 {
-    public function __construct(public ExtensionRepository $extensionRepository)
-    {
-    }
+    public function __construct(public ExtensionRepository $extensionRepository) {}
 
     public function index(): Factory|Application|View|\Illuminate\View\View|\Illuminate\Contracts\Foundation\Application
     {
@@ -24,11 +22,11 @@ class SubscriptionController extends Controller
 
         $payment = data_get($subscription, 'payment');
 
-        $data =  data_get($subscription, 'data');
+        $data = data_get($subscription, 'data');
 
         return view('vendor.installer.subscription', [
             'payment' => $payment,
-            'data' => $data,
+            'data'    => $data,
         ]);
     }
 
@@ -39,7 +37,7 @@ class SubscriptionController extends Controller
             app(ExtensionService::class)->uninstall($slug);
 
             $themes = [
-                'sleek','creative','classic', 'dark'
+                'sleek', 'creative', 'classic', 'dark',
             ];
 
             if (in_array($slug, $themes)) {

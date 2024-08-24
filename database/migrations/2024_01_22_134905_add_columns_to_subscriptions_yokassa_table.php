@@ -26,11 +26,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('subscriptions_yokassa', function (Blueprint $table) {
-            $table->dropColumn('tax_rate');
-            $table->dropColumn('tax_value');
-            $table->dropColumn('coupon');
-            $table->dropColumn('total_amount');
-            $table->dropColumn('auto_renewal');
+            $table->dropColumn(['tax_rate', 'tax_value', 'coupon', 'total_amount', 'auto_renewal']);
         });
     }
 };

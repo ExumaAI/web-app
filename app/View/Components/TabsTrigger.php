@@ -12,13 +12,12 @@ class TabsTrigger extends Component
      * Create a new component instance.
      */
     public function __construct(
-		public string $label = 'AI Text Generator',
-		public string $style = '1',
-		public string $target = '#',
-		public string $badge = '',
-		public bool $active = false
-	)
-    {
+        public string $label = 'AI Text Generator',
+        public string $style = '1',
+        public string $target = '#',
+        public string $badge = '',
+        public bool $active = false
+    ) {
         //
     }
 

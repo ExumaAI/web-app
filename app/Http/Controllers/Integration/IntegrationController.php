@@ -32,15 +32,15 @@ class IntegrationController extends Controller
 
         $userItem = UserIntegration::query()
             ->firstOrCreate([
-                'user_id' => Auth::id(),
+                'user_id'        => Auth::id(),
                 'integration_id' => $integration->getAttribute('id'),
             ], [
                 'credentials' => $class::form(),
             ]);
 
         return view('panel.user.integration.edit', [
-            'item' => $integration,
-            'userItem' => $userItem,
+            'item'        => $integration,
+            'userItem'    => $userItem,
             'credentials' => $userItem->credentials ?: $class::form(),
         ]);
     }
@@ -49,7 +49,7 @@ class IntegrationController extends Controller
     {
         if (Helper::appIsDemo()) {
             return back()->with([
-                'type' => 'error',
+                'type'    => 'error',
                 'message' => trans('This feature is disabled in demo mode.'),
             ]);
         }
@@ -88,7 +88,7 @@ class IntegrationController extends Controller
 
         if ($service->login() === false) {
             return back()->with([
-                'type' => 'error',
+                'type'    => 'error',
                 'message' => trans('Invalid credentials. Please check your credentials and try again.'),
             ]);
         }
@@ -98,13 +98,13 @@ class IntegrationController extends Controller
         $images = $service->images();
 
         return view('panel.user.integration.documents_workbook', [
-            'workbook' => $userOpenai,
-            'openai' => $openai,
+            'workbook'        => $userOpenai,
+            'openai'          => $openai,
             'userIntegration' => $userIntegration,
-            'title' => trans('Share to ').$integration->getAttribute('app'),
-            'categories' => $categories,
-            'tags' => $tags,
-            'images' => $images,
+            'title'           => trans('Share to ') . $integration->getAttribute('app'),
+            'categories'      => $categories,
+            'tags'            => $tags,
+            'images'          => $images,
         ]);
     }
 
@@ -112,13 +112,13 @@ class IntegrationController extends Controller
     {
         if (Helper::appIsDemo()) {
             return back()->with([
-                'type' => 'info',
+                'type'    => 'info',
                 'message' => trans('This feature is disabled in demo mode.'),
             ]);
         }
 
         $request->validate([
-            'title' => 'required|string',
+            'title'         => 'required|string',
             'workbook_text' => 'required|string',
         ]);
 
@@ -132,7 +132,7 @@ class IntegrationController extends Controller
 
         if ($service->login() === false) {
             return back()->with([
-                'type' => 'error',
+                'type'    => 'error',
                 'message' => trans('Invalid credentials. Please check your credentials and try again.'),
             ]);
         }
@@ -146,14 +146,14 @@ class IntegrationController extends Controller
         }
 
         $service->create([
-            'title' => $request->get('title'),
-            'content' => $request->get('workbook_text'),
-            'status' => $request->get('status'),
+            'title'          => $request->get('title'),
+            'content'        => $request->get('workbook_text'),
+            'status'         => $request->get('status'),
             'comment_status' => $request->get('comment_status'),
-            'categories' => $request->get('categories'),
-            'tags' => $request->get('tags'),
+            'categories'     => $request->get('categories'),
+            'tags'           => $request->get('tags'),
             'featured_media' => $request->get('featured_media'),
-            'date_gmt' => $gmtDateTime ?? null,
+            'date_gmt'       => $gmtDateTime ?? null,
         ]);
 
         return redirect()->back()->with('success', trans('Document created successfully'));
@@ -163,14 +163,14 @@ class IntegrationController extends Controller
     {
         if (Helper::appIsDemo()) {
             return back()->with([
-                'type' => 'info',
+                'type'    => 'info',
                 'message' => trans('This feature is disabled in demo mode.'),
             ]);
         }
 
         $class = $userIntegration->integration->getFormClassName();
 
-        if (!class_exists($class)) {
+        if (! class_exists($class)) {
             abort(404);
         }
 
@@ -178,7 +178,7 @@ class IntegrationController extends Controller
 
         if ($service->login() === false) {
             return back()->with([
-                'type' => 'error',
+                'type'    => 'error',
                 'message' => trans('Invalid credentials. Please check your credentials and try again.'),
             ]);
         }
@@ -193,7 +193,7 @@ class IntegrationController extends Controller
 
                 $tempFilePath = realpath(public_path($cleanedPath));
             } else {
-                $client = new Client();
+                $client = new Client;
                 $response = $client->get($imagePath);
 
                 $fileName = basename($imagePath);
@@ -204,7 +204,7 @@ class IntegrationController extends Controller
             }
 
             $response = $service->addImage([
-                'file' => fopen($tempFilePath, 'r'),
+                'file'  => fopen($tempFilePath, 'r'),
                 'title' => basename($imagePath),
             ]);
 
@@ -215,12 +215,12 @@ class IntegrationController extends Controller
             }
         } catch (\GuzzleHttp\Exception\GuzzleException $e) {
             return back()->with([
-                'type' => 'error',
+                'type'    => 'error',
                 'message' => 'Guzzle error: ' . $e->getMessage(),
             ]);
         } catch (Exception $e) {
             return back()->with([
-                'type' => 'error',
+                'type'    => 'error',
                 'message' => $e->getMessage(),
             ]);
         }

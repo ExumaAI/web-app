@@ -6,9 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::table('settings', function (Blueprint $table) {
@@ -19,16 +16,15 @@ return new class extends Migration
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::table('settings', function (Blueprint $table) {
-            $table->dropColumn('frontend_code_before_head');
-            $table->dropColumn('frontend_code_before_body');
-            $table->dropColumn('dashboard_code_before_head');
-            $table->dropColumn('dashboard_code_before_body');
+            $table->dropColumn([
+                'frontend_code_before_head',
+                'frontend_code_before_body',
+                'dashboard_code_before_head',
+                'dashboard_code_before_body',
+            ]);
         });
     }
 };

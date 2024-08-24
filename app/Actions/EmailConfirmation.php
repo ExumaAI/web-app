@@ -36,8 +36,8 @@ final class EmailConfirmation
 
         $this->user->update([
             'email_confirmation_code' => null,
-            'email_confirmed' => true,
-            'status' => true,
+            'email_confirmed'         => true,
+            'status'                  => true,
         ]);
 
         $this->unlock();

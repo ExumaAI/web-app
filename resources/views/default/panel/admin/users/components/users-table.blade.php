@@ -14,7 +14,7 @@
                     class="table-sort"
                     data-sort="sort-group"
                 >
-                    {{ __('Group') }}
+                    {{ __('Role') }}
                 </button>
             </th>
             <th>
@@ -74,7 +74,7 @@
                         {{ $user->fullName() }}
                     </td>
                     <td class="sort-group">
-                        {{ $user->type }}
+                        {{ $user->type->label() }}
                     </td>
                     <td class="sort-remaining-words">
                         {{ $user->remaining_words }}

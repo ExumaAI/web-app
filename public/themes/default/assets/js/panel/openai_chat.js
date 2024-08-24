@@ -452,6 +452,7 @@ function updateChatButtons() {
 		const chat_brand_voice = document.getElementById('chat_brand_voice');
 		const brand_voice_prod = document.getElementById('brand_voice_prod');
 		const chatbot_front_model = document.getElementById('chatbot_front_model');
+		const assistant = document.getElementById('assistant');
 
 		let controller = null; // Store the AbortController instance
 		let scrollLocked = true;
@@ -730,6 +731,7 @@ function updateChatButtons() {
 					formData.append('chat_brand_voice', chat_brand_voice?.value || '');
 					formData.append('brand_voice_prod', brand_voice_prod?.value || '');
 					formData.append('chatbot_front_model', chatbot_front_model?.value || '');
+					formData.append('assistant', assistant.value || '');
 
 					var receivedMessageId = false;
 					fetchEventSource('/dashboard/user/generator/generate-stream', {

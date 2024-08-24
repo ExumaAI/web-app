@@ -20,17 +20,16 @@ enum Introduction: string implements Contracts\WithStringBackedEnum
     case AI_PDF = 'ai_pdf';
     case AI_CODE = 'ai_code';
 
-
     public function label(): string
     {
         return match ($this) {
-            self::INITIALIZE => __('Introduction'),
+            self::INITIALIZE     => __('Introduction'),
             self::AFFILIATE_SEND => __('Affiliate'),
-            self::SELECT_PLAN => __('Select Plan'),
-            self::AI_WRITER => __('AI Writer'),
-            self::AI_IMAGE => __('AI Image'),
-            self::AI_PDF => __('AI File Chat'),
-            self::AI_CODE => __('AI Code'),
+            self::SELECT_PLAN    => __('Select Plan'),
+            self::AI_WRITER      => __('AI Writer'),
+            self::AI_IMAGE       => __('AI Image'),
+            self::AI_PDF         => __('AI File Chat'),
+            self::AI_CODE        => __('AI Code'),
         };
     }
 }

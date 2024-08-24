@@ -72,12 +72,11 @@
 
 		background-color: var(--tblr-body-bg);
 	}
-
 	// End BC
 
 	:root {
 		--scrollbar-width: 5px;
-		--scrollbar-track: 0 0% 95%;
+		--scrollbar-track: 0 0% 100%;
 		--scrollbar-thumb: 0 0% 53%;
 		--scrollbar-thumb-hover: 0 0% 33%;
 
@@ -185,6 +184,12 @@
 		--switcher-ball-active: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23ffffff'/%3e%3c/svg%3e");
 
 		font-size: 16px;
+	}
+
+	:root:has(body.theme-dark) {
+		--scrollbar-track: 0 0% 10%;
+		--scrollbar-thumb: 0 0% 50%;
+		--scrollbar-thumb-hover: 0 0% 33%;
 	}
 
 	.theme-dark {

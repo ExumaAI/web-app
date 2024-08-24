@@ -9,8 +9,6 @@ use App\Http\Requests\Chatbot\ChatbotSettingRequest;
 use App\Models\Chatbot\Chatbot;
 use App\Models\Chatbot\ChatbotData;
 use App\Models\Chatbot\ChatbotDataVector;
-use App\Models\Chatbot\Domain;
-use App\Models\Setting;
 use App\Models\SettingTwo;
 use Illuminate\Contracts\View\View;
 
@@ -19,32 +17,31 @@ class ChatbotController extends Controller
     public function setting()
     {
         return view('panel.admin.chatbot.setting', [
-            'title' => trans('Floating Chat Settings'),
-            'method' => 'post',
-            'action' => route('dashboard.admin.chatbot.setting'),
+            'title'       => trans('Floating Chat Settings'),
+            'method'      => 'post',
+            'action'      => route('dashboard.admin.chatbot.setting'),
             'chatbotData' => Chatbot::query()->get(),
-            'chatbot' => Chatbot::query()->find(Helper::settingTwo('chatbot_template')),
+            'chatbot'     => Chatbot::query()->find(Helper::settingTwo('chatbot_template')),
         ]);
     }
 
     public function externalChatSettings(): View
     {
         return view('panel.admin.chatbot.external-settings', [
-            'title' => trans('External Chat Settings'),
-            'method' => 'post',
-            'action' => route('dashboard.admin.chatbot.external_settings'),
+            'title'       => trans('External Chat Settings'),
+            'method'      => 'post',
+            'action'      => route('dashboard.admin.chatbot.external_settings'),
             'chatbotData' => Chatbot::query()->get(),
-            'chatbot' => Chatbot::query()->find(Helper::settingTwo('chatbot_template')),
+            'chatbot'     => Chatbot::query()->find(Helper::settingTwo('chatbot_template')),
         ]);
     }
 
     public function putSetting(ChatbotSettingRequest $request)
     {
-        if (Helper::appIsDemo())
-        {
+        if (Helper::appIsDemo()) {
             return back()->with([
-                'type' => 'error',
-                'message' => trans('This feature is disabled in demo mode.')
+                'type'    => 'error',
+                'message' => trans('This feature is disabled in demo mode.'),
             ]);
         }
 
@@ -57,20 +54,19 @@ class ChatbotController extends Controller
         $setting->chatbot_show_timestamp = (bool) $request->chatbot_show_timestamp;
         $setting->save();
 
-        if ($request->chatbot_template && $request->first_message && $request->instructions)
-        {
+        if ($request->chatbot_template && $request->first_message && $request->instructions) {
             $template = Chatbot::query()->find($request->chatbot_template);
 
             $template->update([
-                'user_id' => auth()->id(),
+                'user_id'       => auth()->id(),
                 'first_message' => $request->first_message,
-                'instructions' => $request->instructions,
+                'instructions'  => $request->instructions,
             ]);
         }
 
         return back()->with([
-            'type' => 'success',
-            'message' => trans('Chatbot settings updated successfully')
+            'type'    => 'success',
+            'message' => trans('Chatbot settings updated successfully'),
         ]);
     }
 
@@ -78,27 +74,31 @@ class ChatbotController extends Controller
     {
         return view('panel.admin.chatbot.index', [
             'title' => trans('Chatbot Training'),
-            'items' => Chatbot::query()->paginate(10)
+            'items' => Chatbot::query()->paginate(10),
         ]);
     }
 
     public function create()
     {
-		$default_engine = setting('default_ai_engine', 'openai');
-		switch ($default_engine) {
-			case 'openai':
-				$default_model = Helper::setting('openai_default_model');
-				break;
-			case 'anthropic':
-				$default_model = setting('anthropic_default_model', 'claude-3-opus-20240229');
-				break;
-			case 'gemini':
-				$default_model = setting('gemini_default_model', 'gemini-pro');
-				break;
-			default:
-				$default_model = Helper::setting('openai_default_model');
-				break;
-		}
+        $default_engine = setting('default_ai_engine', 'openai');
+        switch ($default_engine) {
+            case 'openai':
+                $default_model = Helper::setting('openai_default_model');
+
+                break;
+            case 'anthropic':
+                $default_model = setting('anthropic_default_model', 'claude-3-opus-20240229');
+
+                break;
+            case 'gemini':
+                $default_model = setting('gemini_default_model', 'gemini-pro');
+
+                break;
+            default:
+                $default_model = Helper::setting('openai_default_model');
+
+                break;
+        }
 
         $item = Chatbot::query()->create([
             'title' => 'Untitled chatbot',
@@ -112,8 +112,8 @@ class ChatbotController extends Controller
     {
         if (Helper::appIsDemo()) {
             return back()->with([
-                'type' => 'error',
-                'message' => trans('This feature is disabled in demo mode.')
+                'type'    => 'error',
+                'message' => trans('This feature is disabled in demo mode.'),
             ]);
         }
 
@@ -131,9 +131,9 @@ class ChatbotController extends Controller
     public function show(Chatbot $chatbot)
     {
         return view('panel.admin.chatbot.training', [
-            'title' => trans('Chatbot Training'),
-            'item' => $chatbot,
-            'data' => $chatbot->data()->get(),
+            'title'  => trans('Chatbot Training'),
+            'item'   => $chatbot,
+            'data'   => $chatbot->data()->get(),
             'action' => route('dashboard.admin.chatbot.update', $chatbot),
         ]);
     }
@@ -141,10 +141,10 @@ class ChatbotController extends Controller
     public function edit(Chatbot $chatbot)
     {
         return view('panel.admin.chatbot.form', [
-            'title' => trans('Edit Chatbot'),
+            'title'  => trans('Edit Chatbot'),
             'method' => 'put',
             'action' => route('dashboard.admin.chatbot.update', $chatbot),
-            'item' => $chatbot
+            'item'   => $chatbot,
         ]);
     }
 
@@ -153,14 +153,14 @@ class ChatbotController extends Controller
         if (Helper::appIsDemo()) {
             if ($request->ajax()) {
                 return response()->json([
-                    'status' => 'error',
-                    'message' => trans('This feature is disabled in demo mode.')
+                    'status'  => 'error',
+                    'message' => trans('This feature is disabled in demo mode.'),
                 ]);
             }
 
             return back()->with([
-                'type' => 'error',
-                'message' => trans('This feature is disabled in demo mode.')
+                'type'    => 'error',
+                'message' => trans('This feature is disabled in demo mode.'),
             ]);
         }
 
@@ -175,12 +175,12 @@ class ChatbotController extends Controller
         if ($request->ajax()) {
             return response()->json([
                 'message' => trans('Chatbot Updated Successfully'),
-                'status' => 'success'
+                'status'  => 'success',
             ]);
         }
 
         return back()->with([
-            'type' => 'success',
+            'type'    => 'success',
             'message' => trans('Chatbot Updated Successfully'),
         ]);
 
@@ -190,8 +190,8 @@ class ChatbotController extends Controller
     {
         if (Helper::appIsDemo()) {
             return response()->json([
-                'status' => 'error',
-                'message' => trans('This feature is disabled in demo mode.')
+                'status'  => 'error',
+                'message' => trans('This feature is disabled in demo mode.'),
             ]);
         }
 
@@ -204,9 +204,9 @@ class ChatbotController extends Controller
         $chatbot->delete();
 
         return response()->json([
-            'message' => trans('Chatbot Deleted Successfully'),
-            'reload' => true,
-            'setTimeOut' => 1000
+            'message'    => trans('Chatbot Deleted Successfully'),
+            'reload'     => true,
+            'setTimeOut' => 1000,
         ]);
     }
 }

@@ -1,4 +1,5 @@
 <x-price-table
+    planId="{{ $plan->id }}"
     currency="{{ $currency }}"
     featured="{{ $plan->is_featured == 1 }}"
     title="{!! $plan->name !!}"
@@ -11,4 +12,5 @@
     totalWords="{{ $plan->total_words }}"
     totalImages="{{ $plan->total_images }}"
     trialDays="{{ $plan->trial_days }}"
+    :openAiItems="$plan->open_ai_items"
 />

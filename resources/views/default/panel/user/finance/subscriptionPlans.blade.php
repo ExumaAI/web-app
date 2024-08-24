@@ -760,7 +760,7 @@
                                                     data-set-anchor="true"
                                                 >
                                                     <ul>
-                                                        @foreach ($openAiList->groupBy('filters') as $key => $openAi)
+                                                        @foreach (App\Models\OpenAIGenerator::query()->get()->groupBy('filters') as $key => $openAi)
                                                             <li class="mb-3 mt-5 first:mt-0">
                                                                 <h5 class="text-base">
                                                                     {{ ucfirst($key) }}

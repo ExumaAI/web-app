@@ -3,7 +3,6 @@
 namespace App\Services\Ai;
 
 use App\Helpers\Classes\Helper;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 
 class Anthropic
@@ -23,11 +22,11 @@ class Anthropic
         $system = (bool) $this->system;
 
         $body = Helper::arrayMerge($system, [
-            'model' => setting('anthropic_default_model'),
+            'model'      => setting('anthropic_default_model'),
             'max_tokens' => (int) setting('anthropic_max_output_length', 1024),
-            'messages' => $this->messages,
-            'stream' => $this->isStream()
-        ],[
+            'messages'   => $this->messages,
+            'stream'     => $this->isStream(),
+        ], [
             'system' => $this->system,
         ]);
 
@@ -38,10 +37,10 @@ class Anthropic
     public function client(): \Illuminate\Http\Client\PendingRequest
     {
         return Http::withHeaders([
-            'x-api-key' => $this->getKey(),
-            'Accept' => 'application/json',
-            'Content-Type' => 'application/json',
-            'anthropic-version' => '2023-06-01'
+            'x-api-key'         => $this->getKey(),
+            'Accept'            => 'application/json',
+            'Content-Type'      => 'application/json',
+            'anthropic-version' => '2023-06-01',
         ]);
     }
 

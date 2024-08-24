@@ -11,12 +11,12 @@ class DeFiNewsService
 
     public function get()
     {
-        $cacheKey = 'defi-news'.md5($this->token);
+        $cacheKey = 'defi-news' . md5($this->token);
 
         return Cache::remember($cacheKey, 15, function () {
 
             $http = Http::withHeaders([
-                'Authorization' => 'Bearer '.$this->token,
+                'Authorization' => 'Bearer ' . $this->token,
             ])->get('https://terminal.thetie.io/v1/trending_news');
 
             if ($http->failed()) {

@@ -101,10 +101,19 @@ function frontendSectionSettingsSave() {
     formData.append('features_active', $("#features_active").val());
     formData.append('features_title', $("#features_title").val());
 	formData.append('features_subtitle', $("#features_subtitle").val());
+	formData.append('marquee_items', $("#marquee_items").val());
     formData.append('features_description', $("#features_description").val());
 
 
     formData.append('generators_active', $("#generators_active").val());
+    formData.append('generators_subtitle', $("#generators_subtitle").val());
+    formData.append('generators_title', $("#generators_title").val());
+    formData.append('generators_description', $("#generators_description").val());
+
+    formData.append('advanced_features_section_title', $("#advanced_features_section_title").val());
+    formData.append('advanced_features_section_description', $("#advanced_features_section_description").val());
+
+    formData.append('plan_footer_text', $("#plan_footer_text").val());
 
     formData.append('who_is_for_active', $("#who_is_for_active").val());
 
@@ -159,6 +168,47 @@ function frontendSectionSettingsSave() {
     formData.append('blog_a_subtitle', $("#blog_a_subtitle").val());
     formData.append('blog_a_description', $("#blog_a_description").val());
     formData.append('blog_a_posts_per_page', $("#blog_a_posts_per_page").val());
+
+
+	var advancedFeaturesSection = document.querySelectorAll("[id^='advanced_features_title_']");
+    advancedFeaturesSection.forEach(function (element, index) {
+        var key = element.id.split('_').pop();
+        formData.append('advanced_features_title_' + key, document.getElementById('advanced_features_title_' + key).value);
+        formData.append('advanced_features_description_' + key, document.getElementById('advanced_features_description_' + key).value);
+
+        var imageInput = document.getElementById('advanced_features_image_' + key);
+        if (imageInput.files.length > 0) {
+            formData.append('advanced_features_image_' + key, imageInput.files[0]);
+        }
+    });
+
+	var comparison_section_items = document.querySelectorAll("[id^='comparison_section_item_label_']");
+    comparison_section_items.forEach(function (element, index) {
+        var key = element.id.split('_').pop();
+        formData.append('comparison_section_item_label_' + key, document.getElementById('comparison_section_item_label_' + key).value);
+        formData.append('comparison_section_item_others_' + key, document.getElementById('comparison_section_item_others_' + key).checked);
+        formData.append('comparison_section_item_ours_' + key, document.getElementById('comparison_section_item_ours_' + key).checked);
+    });
+
+	var features_marquee = document.querySelectorAll("[id^='features_marquee_']");
+
+    features_marquee.forEach(function (element, index) {
+        var key = element.id.split('_').pop();
+        formData.append('features_marquee_' + key, document.getElementById('features_marquee_' + key).value);
+    });
+	var footer_items = document.querySelectorAll("[id^='footer_item_']");
+
+    footer_items.forEach(function (element, index) {
+        var key = element.id.split('_').pop();
+        formData.append('footer_item_' + key, document.getElementById('footer_item_' + key).value);
+    });
+
+	var banner_bottom_texts = document.querySelectorAll("[id^='banner_bottom_text_']");
+
+    banner_bottom_texts.forEach(function (element, index) {
+        var key = element.id.split('_').pop();
+        formData.append('banner_bottom_text_' + key, document.getElementById('banner_bottom_text_' + key).value);
+    });
 
 
     $.ajax({
@@ -398,6 +448,7 @@ function generalSettingsSave() {
     formData.append('feature_ai_voice_clone', $("#feature_ai_voice_clone").is(":checked") ? 1 : 0)
     formData.append('user_prompt_library', $("#user_prompt_library").is(":checked") ? 1 : 0)
     formData.append('user_ai_image_prompt_library', $("#user_ai_image_prompt_library").is(":checked") ? 1 : 0)
+	formData.append('ai_voice_isolator', $("#ai_voice_isolator").is(":checked") ? 1 : 0)
     formData.append('user_ai_writer_custom_templates', $("#user_ai_writer_custom_templates").is(":checked") ? 1 : 0)
     formData.append('chat_setting_for_customer', $("#chat_setting_for_customer").is(":checked") ? 1 : 0)
     formData.append('photo_studio', $("#photo_studio").is(":checked") ? 1 : 0)
@@ -557,6 +608,7 @@ function openaiSettingsSave() {
 	formData.append('hide_creativity_option', $("#hide_creativity_option").is(":checked") ? 1 : 0);
 	formData.append('hide_tone_of_voice_option', $("#hide_tone_of_voice_option").is(":checked") ? 1 : 0);
 	formData.append('hide_output_length_option', $("#hide_output_length_option").is(":checked") ? 1 : 0);
+    formData.append('dalle_hidden', $("#dalle_hidden").is(":checked") ? 1 : 0);
 
     $.ajax({
         type: "post",
@@ -590,6 +642,7 @@ function anthropicSettingsSave() {
     var formData = new FormData();
     formData.append('anthropic_api_secret', $("#anthropic_api_secret").val());
     formData.append('anthropic_default_model', $("#anthropic_default_model").val());
+    formData.append('anthropic_bedrock_model', $("#anthropic_bedrock_model").val());
     formData.append('anthropic_max_input_length', $("#anthropic_max_input_length").val());
     formData.append('anthropic_max_output_length', $("#anthropic_max_output_length").val());
 
@@ -657,11 +710,12 @@ function stablediffusionSettingsSave() {
     document.getElementById("settings_button").disabled = true;
     document.getElementById("settings_button").innerHTML = magicai_localize.please_wait;
 
-    var formData = new FormData();stable_hidden
+    var formData = new FormData();
     formData.append('stable_diffusion_api_key', $("#stable_diffusion_api_key").val());
     formData.append('stable_hidden', $("#stable_hidden").is(":checked") ? 1 : 0);
     formData.append('stablediffusion_default_language', $("#stablediffusion_default_language").val());
     formData.append('stablediffusion_default_model', $("#stablediffusion_default_model").val());
+    formData.append('stablediffusion_bedrock_model', $("#stablediffusion_bedrock_model").val());
 
     $.ajax({
         type: "post",
@@ -700,6 +754,38 @@ function unsplashSettingsSave() {
     $.ajax({
         type: "post",
         url: "/dashboard/admin/settings/unsplashapi-save",
+        data: formData,
+        contentType: false,
+        processData: false,
+        success: function (data) {
+            toastr.success(magicai_localize?.settings_saved ||'Settings saved succesfully')
+            document.getElementById("settings_button").disabled = false;
+            document.getElementById("settings_button").innerHTML = "Save";
+        },
+        error: function (data) {
+            var err = data.responseJSON.errors;
+            $.each(err, function (index, value) {
+                toastr.error(value);
+            });
+            document.getElementById("settings_button").disabled = false;
+            document.getElementById("settings_button").innerHTML = "Save";
+        }
+    });
+    return false;
+}
+
+function pebblelySettingsSave() {
+    "use strict";
+
+    document.getElementById("settings_button").disabled = true;
+    document.getElementById("settings_button").innerHTML = magicai_localize.please_wait;
+
+    var formData = new FormData();
+    formData.append('pebblely_key', $("#pebblely_key").val());
+
+    $.ajax({
+        type: "post",
+        url: "/dashboard/admin/settings/pebblely-save",
         data: formData,
         contentType: false,
         processData: false,

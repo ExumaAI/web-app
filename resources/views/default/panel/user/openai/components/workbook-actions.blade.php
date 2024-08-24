@@ -34,7 +34,7 @@
             >
                 <x-tabler-download class="size-5" />
             </a>
-        @elseif ($type === 'voiceover')
+        @elseif ($type === 'voiceover' || $type === 'isolator')
             <a
                 class="size-7 inline-flex items-center justify-center rounded-sm transition-colors hover:bg-foreground/5"
                 href="/uploads/{{ $output }}"

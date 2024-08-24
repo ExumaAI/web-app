@@ -12,11 +12,11 @@ class Table extends Component
      * Create a new component instance.
      */
     public function __construct(
-		public string $variant = '',
-		public string $head = '',
-		public string $body = '',
-		public string $foot = '',
-	){}
+        public string $variant = '',
+        public string $head = '',
+        public string $body = '',
+        public string $foot = '',
+    ) {}
 
     /**
      * Get the view / contents that represent the component.

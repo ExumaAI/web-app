@@ -73,7 +73,7 @@
                 {{ $actions }}
             @else
                 <div class="flex items-center max-xl:gap-2 max-lg:hidden xl:gap-3">
-                    @if (Auth::user()->type == 'admin')
+                    @if (Auth::user()->isAdmin())
                         <x-button
                             href="{{ route('dashboard.admin.index') }}"
                             variant="ghost-shadow"

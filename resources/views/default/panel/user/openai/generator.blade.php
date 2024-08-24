@@ -10,6 +10,8 @@
             @include('panel.user.openai.components.generator_video')
         @elseif($openai->type == 'voiceover')
             @include('panel.user.openai.components.generator_voiceover')
+        @elseif($openai->type == 'isolator')
+            @include('panel.user.openai.components.generator_voice_isolator')
         @else
             @include('panel.user.openai.components.generator_others')
         @endif
@@ -17,12 +19,17 @@
 @endsection
 
 @push('script')
+    <script>
+        var sayAs = '';
+    </script>
     <script src="{{ custom_theme_url('/assets/js/panel/openai_generator.js') }}"></script>
     <script src="{{ custom_theme_url('/assets/libs/fslightbox/fslightbox.js') }}"></script>
     <script src="{{ custom_theme_url('/assets/libs/wavesurfer/wavesurfer.js') }}"></script>
+    <script src="{{ custom_theme_url('/assets/libs/tinymce/tinymce.min.js') }}"></script>
+    <script src="{{ custom_theme_url('/assets/js/panel/tinymce-theme-handler.js') }}"></script>
     <script src="{{ custom_theme_url('/assets/js/panel/voiceover.js') }}"></script>
 
-    @if ($openai->type == 'voiceover')
+    @if ($openai->type == 'voiceover' || $openai->type == 'isolator')
         <script>
             function generateSpeech() {
                 "use strict";
@@ -46,7 +53,7 @@
                         break: $(this).find('textarea').attr('data-break'),
                         voice_openai: $(this).find('textarea').attr('data-voiceopenai'),
                         model_openai: $(this).find('textarea').attr('data-modelopenai'),
-                        content: $(this).find('textarea').val(),
+                        content: $(this).find('textarea').val() + ' ' + sayAs,
                         name: $(this).find('textarea').attr('name')
                     };
                     speechData.push(data);
@@ -217,15 +224,7 @@
             ];
 
 
-            const elevenLabsVoices = [
-                @if ($elevenlabs)
-                    @foreach ($elevenlabs as $voice)
-                        {
-                            "voice_id": "{{ $voice->voice_id }}",
-                            "name": "{{ $voice->name }}",
-                        },
-                    @endforeach
-                @endif {
+            const elevenLabsVoices = [{
                     "voice_id": "21m00Tcm4TlvDq8ikWAM",
                     "name": "Rachel",
                 },
@@ -400,7 +399,15 @@
                 {
                     "voice_id": "zrHiDhphv9ZnVXBqCLjz",
                     "name": "Mimi",
-                }
+                },
+                @if ($elevenlabs)
+                    @foreach ($elevenlabs as $voice)
+                        {
+                            "voice_id": "{{ $voice->voice_id }}",
+                            "name": "{{ $voice->name }}",
+                        },
+                    @endforeach
+                @endif
             ];
 
             const voicesData = {
@@ -4102,7 +4109,7 @@
                                 openaiVoiceData.forEach(option => {
                                     $("<option></option>")
                                         .val(option.value)
-                                        .text(option.label + (" (OpenAI)"))
+                                        .text(option.label)
                                         .attr('platform', "openai")
                                         .attr('name', option.label + (" (OpenAI)"))
                                         .appendTo(voiceSelect);
@@ -4115,7 +4122,7 @@
                                 elevenLabsVoices.forEach(option => {
                                     $("<option></option>")
                                         .val(option.voice_id)
-                                        .text(option.name + (" (ElevenLabs)"))
+                                        .text(option.name)
                                         .attr('name', option.name + (" (ElevenLabs)"))
                                         .attr('platform', "elevenlabs")
                                         .appendTo(voiceSelect);
@@ -4135,7 +4142,7 @@
                             openaiVoiceData.forEach(option => {
                                 $("<option></option>")
                                     .val(option.value)
-                                    .text(option.label + (" (OpenAI)"))
+                                    .text(option.label)
                                     .attr('platform', "openai")
                                     .attr('name', option.label + (" (OpenAI)"))
                                     .appendTo(voiceSelect);
@@ -4146,7 +4153,7 @@
                             elevenLabsVoices.forEach(option => {
                                 $("<option></option>")
                                     .val(option.voice_id)
-                                    .text(option.name + (" (ElevenLabs)"))
+                                    .text(option.name)
                                     .attr('name', option.name + (" (ElevenLabs)"))
                                     .attr('platform', "elevenlabs")
                                     .appendTo(voiceSelect);
@@ -4305,10 +4312,13 @@
                         selectedValue = "<say-as interpret-as='unit'>10 foot</say-as>";
                     } else if (selectedValue === 'time') {
                         selectedValue = "<say-as interpret-as='time' format='hms12'>2:30pm</say-as>";
+                    } else {
+                        selectedValue = '';
                     }
                     var textarea = $(this).closest('.speech').find('textarea');
                     var existingValue = textarea.val();
-                    textarea.val(existingValue + selectedValue);
+                    // textarea.val(existingValue + selectedValue);
+                    sayAs = selectedValue;
                     $(this).val('0');
                 });
 
@@ -4334,7 +4344,7 @@
                             break: speechElement.find('textarea').attr('data-break'),
                             voice_openai: speechElement.find('textarea').attr('data-voiceopenai'),
                             model_openai: speechElement.find('textarea').attr('data-modelopenai'),
-                            content: speechElement.find('textarea').val(),
+                            content: speechElement.find('textarea').val() + ' ' + sayAs,
                             name: speechElement.find('textarea').attr('name'),
                         };
                         speechData.push(data);
@@ -4342,7 +4352,6 @@
                         var jsonData = JSON.stringify(speechData);
                         formData.append('speeches', jsonData);
                         formData.append('preview', true);
-
 
                         $.ajax({
                             type: "post",
@@ -4493,6 +4502,7 @@
 
         function sendOpenaiGeneratorForm(ev) {
 
+
             ev?.preventDefault();
             ev?.stopPropagation();
 
@@ -4513,6 +4523,8 @@
 
             document.getElementById("openai_generator_button").disabled = true;
             document.getElementById("openai_generator_button").innerHTML = magicai_localize.please_wait;
+
+
             Alpine.store('appLoadingIndicator').show();
             @if ($openai->type == 'image')
                 var imageGenerator = document.querySelector('[data-generator-name][data-active=true]')?.getAttribute(
@@ -4530,7 +4542,13 @@
                 formData.append('tone_of_voice_custom', $("#tone_of_voice_custom").val());
                 formData.append('language', $("#language").val());
             @endif
-            @if ($openai->type == 'audio')
+
+            @if ($openai->type == 'audio' || $openai->type == 'isolator')
+                if ($('#file').prop('files').length == 0) {
+                    toastr.warning('Please upload an audio file');
+                    hideLoadingIndicators();
+                    return false;
+                }
                 formData.append('file', $('#file').prop('files')[0]);
             @endif
 
@@ -4665,7 +4683,7 @@
                         @elseif ($openai->type == 'video')
                             sourceImgUrl = res.sourceUrl;
                             intervalId = setInterval(checkVideoDone, 10000);
-                        @elseif ($openai->type == 'audio')
+                        @elseif ($openai->type == 'audio' || $openai->type == 'isolator')
                             $("#generator_sidebar_table").html(res?.data?.html2 || res.html2);
                             var audioElements = document.querySelectorAll('.data-audio');
                             if (audioElements.length) {
@@ -4736,5 +4754,10 @@
             });
             return false;
         }
+
+
+
     </script>
+
+
 @endpush

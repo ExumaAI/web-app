@@ -3,7 +3,6 @@
 namespace App\Services\Extension;
 
 use App\Repositories\Contracts\ExtensionRepositoryInterface;
-use App\Repositories\ExtensionRepository;
 use App\Services\Extension\Traits\InstallExtension;
 use App\Services\Extension\Traits\UninstallExtension;
 use Illuminate\Support\Facades\File;
@@ -25,8 +24,7 @@ class ExtensionService
     public function __construct(
         public ZipArchive $zipArchive,
         public ExtensionRepositoryInterface $extensionRepository
-    ) {
-    }
+    ) {}
 
     public function deleteOldVersionFiles(): void
     {
@@ -39,8 +37,7 @@ class ExtensionService
         foreach ($data as $file) {
             $destinationPath = base_path($file);
 
-            if (File::exists($destinationPath))
-            {
+            if (File::exists($destinationPath)) {
                 File::delete($destinationPath);
             }
         }
@@ -50,36 +47,29 @@ class ExtensionService
     {
         $extensionSlug = $extensionSlug ?? $this->extensionSlug;
 
-        # make resource dir for extension
-        if (! File::isDirectory(resource_path("extensions/$extensionSlug/")))
-        {
+        // make resource dir for extension
+        if (! File::isDirectory(resource_path("extensions/$extensionSlug/"))) {
             File::makeDirectory(resource_path("extensions/$extensionSlug/"), 0777, true);
         }
 
-        # make resource dir for extension
-        if (! File::isDirectory(resource_path("extensions/$extensionSlug/migrations/uninstall")))
-        {
+        // make resource dir for extension
+        if (! File::isDirectory(resource_path("extensions/$extensionSlug/migrations/uninstall"))) {
             File::makeDirectory(resource_path("extensions/$extensionSlug/migrations/uninstall"), 0777, true);
         }
 
-        # make routes dir for extension
-        if (! File::isDirectory(base_path('routes/extroutes/')))
-        {
+        // make routes dir for extension
+        if (! File::isDirectory(base_path('routes/extroutes/'))) {
             File::makeDirectory(base_path('routes/extroutes/'), 0777, true);
         }
 
-        # make header views dir for extension
-        if (! File::isDirectory(resource_path('views/default/components/navbar/extnavbars')))
-        {
+        // make header views dir for extension
+        if (! File::isDirectory(resource_path('views/default/components/navbar/extnavbars'))) {
             File::makeDirectory(resource_path('views/default/components/navbar/extnavbars'), 0777, true);
         }
     }
 
     /**
      * Get index.json from extracted zip
-     *
-     * @param string|null $zipExtractPath
-     * @return bool|string
      */
     public function getIndexJson(?string $zipExtractPath = null): bool|string
     {
@@ -104,14 +94,11 @@ class ExtensionService
 
     /**
      * Extracted zip json path
-     *
-     * @param string|null $zipExtractPath
-     * @return string
      */
     public function getZipJsonPath(?string $zipExtractPath = null): string
     {
         $zipExtractPath = $zipExtractPath ?? $this->zipExtractPath;
 
-        return $zipExtractPath . DIRECTORY_SEPARATOR .'index.json';
+        return $zipExtractPath . DIRECTORY_SEPARATOR . 'index.json';
     }
 }

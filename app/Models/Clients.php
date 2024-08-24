@@ -11,6 +11,6 @@ class Clients extends Model
     protected $fillable = [
         'avatar',
         'alt',
-        'title'
+        'title',
     ];
 }

@@ -48,13 +48,13 @@ class BrandController extends Controller
         if ($request->item_id != 'undefined') {
             $item = Company::where('id', $request->item_id)->firstOrFail();
         } else {
-            $item = new Company();
+            $item = new Company;
         }
 
         if ($request->hasFile('c_logo')) {
             $path = 'upload/images/companies/';
             $image = $request->file('c_logo');
-            $image_name = Str::random(4).'-'.Str::slug($request->c_name).'-logo.'.$image->getClientOriginalExtension();
+            $image_name = Str::random(4) . '-' . Str::slug($request->c_name) . '-logo.' . $image->getClientOriginalExtension();
 
             $imageTypes = ['jpg', 'jpeg', 'png', 'svg', 'webp'];
             if (! in_array(Str::lower($image->getClientOriginalExtension()), $imageTypes)) {
@@ -67,7 +67,7 @@ class BrandController extends Controller
 
             $image->move($path, $image_name);
 
-            $item->logo = $path.$image_name;
+            $item->logo = $path . $image_name;
         }
 
         $item->name = $request->c_name;
@@ -90,10 +90,10 @@ class BrandController extends Controller
             if ($request->item_id != 'undefined') {
                 $product = Product::where('user_id', auth()->user()->id)->where('company_id', $item->id)->where('name', $inputName)->first();
                 if ($product == null) {
-                    $product = new Product();
+                    $product = new Product;
                 }
             } else {
-                $product = new Product();
+                $product = new Product;
             }
             $product->name = $inputName;
             $product->key_features = $inputFeatures[$key];

@@ -14,5 +14,4 @@ class PrivacyTerms extends Model
         'lang_code',
         'content',
     ];
-    
 }
