@@ -4,7 +4,7 @@
 
 @section('content')
     <div class="py-10">
-        <div class="mx-auto w-full space-y-8 lg:w-1/2">
+        <div class="w-full mx-auto space-y-8 lg:w-1/2">
             @if ($settings_two->liquid_license_type == 'Regular License')
                 <x-alert
                     class="justify-center text-center"
@@ -31,7 +31,7 @@
                 </x-alert>
             @endif
 
-            @include('vendor.installer.magicai_c4st_Act', ['site_name' => $settings_two->site_name])
+            {{-- @include('vendor.installer.magicai_c4st_Act', ['site_name' => $settings_two->site_name]) --}}
         </div>
     </div>
 

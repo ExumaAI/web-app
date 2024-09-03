@@ -144,7 +144,7 @@
 
 </head>
 
-<body class="group/body bg-background font-body text-xs text-foreground antialiased transition-bg">
+<body class="text-xs antialiased group/body bg-background font-body text-foreground transition-bg">
     @includeIf('panel.layout.after-body-open')
 
     <script>
@@ -166,12 +166,12 @@
         :class="{ 'opacity-0': !$store.appLoadingIndicator.showing, 'invisible': !$store.appLoadingIndicator.showing }"
     >
         <div class="lqd-progress relative h-[3px] w-full bg-foreground/10">
-            <div class="lqd-progress-bar lqd-progress-bar-indeterminate lqd-app-loading-indicator-progress-bar absolute inset-0 bg-primary dark:bg-heading-foreground">
+            <div class="absolute inset-0 lqd-progress-bar lqd-progress-bar-indeterminate lqd-app-loading-indicator-progress-bar bg-primary dark:bg-heading-foreground">
             </div>
         </div>
     </div>
 
-    <div class="lqd-page relative flex min-h-full flex-col">
+    <div class="relative flex flex-col min-h-full lqd-page">
 
         <div @class(['lqd-page-wrapper flex grow-1'])>
             @auth
@@ -179,7 +179,7 @@
                     @include('panel.layout.navbar')
                 @endif
             @endauth
-            <div class="lqd-page-content-wrap flex grow flex-col overflow-hidden">
+            <div class="flex flex-col overflow-hidden lqd-page-content-wrap grow">
                 @if ($good_for_now)
                     @auth
                         @if (!isset($disable_header))
@@ -200,7 +200,7 @@
                     ])>
                         @yield('content')
                     </div>
-                @elseif(Auth::check() && !$good_for_now && Route::currentRouteName() != 'dashboard.admin.settings.general')
+                {{-- @elseif(Auth::check() && !$good_for_now && Route::currentRouteName() != 'dashboard.admin.settings.general')
                     <div @class([
                         'lqd-page-content-container',
                         'container' => !isset($layout_wide) || empty($layout_wide),
@@ -209,7 +209,7 @@
                             (isset($layout_wide) && !empty($layout_wide)),
                     ])>
                         @include('vendor.installer.magicai_c4st_Act')
-                    </div>
+                    </div> --}}
                 @else
                     @auth
                         @if (!isset($disable_header))
@@ -308,7 +308,7 @@
     <template id="typing-template">
         <div class="lqd-typing relative inline-flex items-center gap-3 rounded-full bg-secondary !px-3 !py-2 text-xs font-medium leading-none text-secondary-foreground">
             {{ __('Typing') }}
-            <div class="lqd-typing-dots flex h-5 items-center gap-1">
+            <div class="flex items-center h-5 gap-1 lqd-typing-dots">
                 <span class="lqd-typing-dot inline-block !h-1 !w-1 rounded-full !bg-current opacity-40 ![animation-delay:0.2s]"></span>
                 <span class="lqd-typing-dot inline-block !h-1 !w-1 rounded-full !bg-current opacity-60 ![animation-delay:0.3s]"></span>
                 <span class="lqd-typing-dot inline-block !h-1 !w-1 rounded-full !bg-current opacity-80 ![animation-delay:0.4s]"></span>
