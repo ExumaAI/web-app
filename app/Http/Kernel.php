@@ -35,7 +35,7 @@ class Kernel extends HttpKernel
             \Illuminate\Session\Middleware\StartSession::class,
             \Illuminate\View\Middleware\ShareErrorsFromSession::class,
             \RachidLaasri\LaravelInstaller\Middleware\ApplicationCheckLicense::class,
-            // \RachidLaasri\LaravelInstaller\Middleware\ApplicationStatus::class,
+            \RachidLaasri\LaravelInstaller\Middleware\ApplicationStatus::class,
             \App\Http\Middleware\VerifyCsrfToken::class,
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
             \App\Http\Middleware\UpdateUserActivity::class,
